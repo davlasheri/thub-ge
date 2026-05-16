@@ -123,32 +123,51 @@ export default function Admin() {
     return true;
   });
 
-  const switchTab = (t: Tab) => { setTab(t); setView('list'); };
+  const [navOpen, setNavOpen] = useState(false);
+  const switchTab = (t: Tab) => { setTab(t); setView('list'); setNavOpen(false); };
 
-  return (
-    <div className="admin-wrap">
-      <aside className="admin-sidebar">
+  const Sidebar = () => (
+    <aside className={`admin-sidebar ${navOpen ? 'admin-sidebar-open' : ''}`}>
+      <div className="admin-sidebar-top">
         <div className="admin-logo">
           <span className="admin-logo-t">T</span>Hub <span className="admin-logo-admin">Admin</span>
         </div>
-        <nav className="admin-nav">
-          <NavBtn active={tab === 'products'}   onClick={() => switchTab('products')}   icon={<IcoBox />}   label="პროდუქტები"     count={products.length} />
-          <NavBtn active={tab === 'categories'} onClick={() => switchTab('categories')} icon={<IcoList />}  label="კატეგორიები"    count={catalog.length} />
-          <NavBtn active={tab === 'models'}     onClick={() => switchTab('models')}     icon={<IcoCar />}   label="მოდელები"       count={models.length} />
-          <NavBtn active={tab === 'home'}       onClick={() => switchTab('home')}       icon={<IcoHome />}  label="მთავარი გვ." />
-          <NavBtn active={tab === 'contact'}    onClick={() => switchTab('contact')}    icon={<IcoPhone />} label="საკონტაქტო" />
-          <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="მომხმარებლები" />
-        </nav>
-        <button className="admin-logout" onClick={() => { sessionStorage.removeItem(SESSION_KEY); setAuthed(false); }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          გამოსვლა
+        <button className="admin-close-btn" onClick={() => setNavOpen(false)} aria-label="Close menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
-      </aside>
+      </div>
+      <nav className="admin-nav">
+        <NavBtn active={tab === 'products'}   onClick={() => switchTab('products')}   icon={<IcoBox />}   label="პროდუქტები"    count={products.length} />
+        <NavBtn active={tab === 'categories'} onClick={() => switchTab('categories')} icon={<IcoList />}  label="კატეგორიები"   count={catalog.length} />
+        <NavBtn active={tab === 'models'}     onClick={() => switchTab('models')}     icon={<IcoCar />}   label="მოდელები"      count={models.length} />
+        <NavBtn active={tab === 'home'}       onClick={() => switchTab('home')}       icon={<IcoHome />}  label="მთავარი გვ." />
+        <NavBtn active={tab === 'contact'}    onClick={() => switchTab('contact')}    icon={<IcoPhone />} label="საკონტაქტო" />
+        <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="მომხ." />
+      </nav>
+      <button className="admin-logout" onClick={() => { sessionStorage.removeItem(SESSION_KEY); setAuthed(false); }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        გამოსვლა
+      </button>
+    </aside>
+  );
+
+  return (
+    <div className="admin-wrap">
+      {navOpen && <div className="admin-backdrop" onClick={() => setNavOpen(false)} />}
+      <Sidebar />
 
       <main className="admin-main">
+        <div className="admin-topbar">
+          <button className="admin-hamburger" onClick={() => setNavOpen(true)} aria-label="Open menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <span className="admin-topbar-logo"><span style={{ color: 'var(--red)' }}>T</span>Hub Admin</span>
+        </div>
         {tab === 'products' && view === 'list' && (
           <ProductsList
             products={displayedProducts} allCount={products.length}
