@@ -2,6 +2,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { products, getProductById } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useVehicle } from '../context/VehicleContext';
+import { useLang } from '../context/LanguageContext';
+import { TranslationKey } from '../data/translations';
 import { MODELS } from '../data/vehicles';
 import { CATALOG } from '../data/catalog';
 import './ProductDetail.css';
@@ -11,13 +13,14 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { vehicle } = useVehicle();
+  const { t, lang } = useLang();
   const product = getProductById(id ?? '');
 
   if (!product) {
     return (
       <div className="not-found">
-        <h2>Product not found</h2>
-        <Link to="/catalog" className="btn-primary">Back to Catalogue</Link>
+        <h2>{t('detail_not_found')}</h2>
+        <Link to="/catalog" className="btn-primary">{t('detail_back_cat')}</Link>
       </div>
     );
   }
@@ -36,17 +39,22 @@ export default function ProductDetail() {
     <span key={i} className={i < Math.floor(product.rating) ? 'star-filled' : 'star-empty'}>★</span>
   ));
 
+  const tSection = (id: string) => t(('section_' + id) as TranslationKey);
+  const tSub = (id: string) => t(('sub_' + id.replace(/-/g, '_')) as TranslationKey);
+
+  const displayName = lang === 'ka' ? product.nameGe : product.name;
+
   return (
     <main className="detail-page">
       <div className="container">
         <nav className="breadcrumb">
-          <Link to="/catalog">Catalogue</Link>
+          <Link to="/catalog">{t('detail_catalogue')}</Link>
           <span>/</span>
-          <span>{section?.name}</span>
+          <span>{section && tSection(section.id)}</span>
           <span>/</span>
-          <span>{subsection?.name}</span>
+          <span>{subsection && tSub(subsection.id)}</span>
           <span>/</span>
-          <span className="breadcrumb-current">{product.name}</span>
+          <span className="breadcrumb-current">{displayName}</span>
         </nav>
 
         <div className="detail-grid">
@@ -58,28 +66,29 @@ export default function ProductDetail() {
           </div>
 
           <div className="detail-info">
-            <p className="detail-pn">Part #{product.partNumber}</p>
-            <h1 className="detail-name">{product.name}</h1>
-            <p className="detail-name-ge">{product.nameGe}</p>
+            <p className="detail-pn">{t('detail_part_num')}{product.partNumber}</p>
+            <h1 className="detail-name">{displayName}</h1>
+            {lang !== 'ka' && product.nameGe && (
+              <p className="detail-name-ge">{product.nameGe}</p>
+            )}
 
             <div className="detail-rating">
               <div className="stars">{stars}</div>
               <span className="rating-val">{product.rating}</span>
-              <span className="rating-count">({product.reviews} reviews)</span>
+              <span className="rating-count">({product.reviews} {t('detail_reviews')})</span>
             </div>
 
             <div className="detail-price-row">
               <span className="detail-price">{product.price.toLocaleString()} ₾</span>
               <span className={`detail-stock ${product.inStock ? 'in-stock' : 'out-of-stock'}`}>
-                {product.inStock ? '✓ In Stock' : '✗ Out of Stock'}
+                {product.inStock ? t('detail_in_stock') : t('detail_out_of_stock')}
               </span>
             </div>
 
             <p className="detail-desc">{product.description}</p>
 
-            {/* Compatibility table */}
             <div className="fits-section">
-              <p className="fits-title">Compatibility</p>
+              <p className="fits-title">{t('detail_compatibility')}</p>
               <div className="fits-grid">
                 {fitEntries.map(([modelId, range]) => {
                   const m = MODELS.find(x => x.id === modelId);
@@ -92,7 +101,7 @@ export default function ProductDetail() {
                     >
                       <span className="fits-model">{m?.name}</span>
                       <span className="fits-years">{range.from}–{range.to}</span>
-                      {isCurrent && <span className="fits-yours">Your car</span>}
+                      {isCurrent && <span className="fits-yours">{t('detail_your_car')}</span>}
                     </div>
                   );
                 })}
@@ -112,31 +121,31 @@ export default function ProductDetail() {
                       <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
                       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                     </svg>
-                    Add to Cart
+                    {t('detail_add_to_cart')}
                   </>
-                ) : 'Out of Stock'}
+                ) : t('detail_out_of_stock')}
               </button>
-              <button className="btn-secondary" onClick={() => navigate(-1)}>← Back</button>
+              <button className="btn-secondary" onClick={() => navigate(-1)}>{t('detail_back')}</button>
             </div>
 
             <div className="detail-features">
-              <div className="feature"><span>🚀</span><span>1–3 day delivery across Georgia</span></div>
-              <div className="feature"><span>↩️</span><span>30-day returns</span></div>
-              <div className="feature"><span>✅</span><span>OEM quality guaranteed</span></div>
+              <div className="feature"><span>🚀</span><span>{t('detail_delivery')}</span></div>
+              <div className="feature"><span>↩️</span><span>{t('detail_returns')}</span></div>
+              <div className="feature"><span>✅</span><span>{t('detail_quality')}</span></div>
             </div>
           </div>
         </div>
 
         {related.length > 0 && (
           <section className="related-section">
-            <h2 className="related-title">Related Parts</h2>
+            <h2 className="related-title">{t('detail_related')}</h2>
             <div className="related-grid">
               {related.map(p => (
                 <Link key={p.id} to={`/products/${p.id}`} className="related-card">
                   <img src={p.image} alt={p.name} />
                   <div className="related-info">
                     <p style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>#{p.partNumber}</p>
-                    <p className="related-name">{p.name}</p>
+                    <p className="related-name">{lang === 'ka' ? p.nameGe : p.name}</p>
                     <p className="related-price">{p.price.toLocaleString()} ₾</p>
                   </div>
                 </Link>

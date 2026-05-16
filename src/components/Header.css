@@ -63,6 +63,32 @@
   margin-left: auto;
 }
 
+.lang-switcher {
+  display: flex;
+  gap: 2px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.lang-btn {
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+  background: none;
+  transition: background var(--transition), color var(--transition);
+}
+
+.lang-btn:hover { color: var(--text); }
+
+.lang-btn-active {
+  background: var(--red);
+  color: #fff;
+}
+
 .cart-btn {
   background: none;
   color: var(--text);

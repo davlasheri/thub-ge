@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useVehicle } from '../context/VehicleContext';
 import { useCart } from '../context/CartContext';
+import { useLang } from '../context/LanguageContext';
+import { TranslationKey } from '../data/translations';
 import { CATALOG } from '../data/catalog';
 import { MODELS, getYearsForModel } from '../data/vehicles';
 import { products } from '../data/products';
@@ -17,11 +19,15 @@ interface ActiveLeaf {
 export default function Catalog() {
   const { vehicle } = useVehicle();
   const { addToCart } = useCart();
+  const { t, tf, lang } = useLang();
 
   const [openModelId, setOpenModelId]     = useState<ModelId | null>(vehicle?.modelId ?? null);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [activeLeaf, setActiveLeaf]       = useState<ActiveLeaf | null>(null);
   const [yearFilter, setYearFilter]       = useState<number | 'all'>(vehicle?.year ?? 'all');
+
+  const tSection = (id: string) => t(('section_' + id) as TranslationKey);
+  const tSub = (id: string) => t(('sub_' + id.replace(/-/g, '_')) as TranslationKey);
 
   const toggleModel = (id: ModelId) => {
     if (openModelId === id) {
@@ -70,6 +76,9 @@ export default function Catalog() {
   const activeSection = activeLeaf ? CATALOG.find(s => s.id === activeLeaf.sectionId)       : null;
   const activeSub     = activeSection?.subsections.find(s => s.id === activeLeaf?.subsectionId);
 
+  const partCount = displayedProducts.length;
+  const partWord = partCount === 1 ? t('cat_part') : t('cat_parts');
+
   return (
     <main className="catalog-page">
       <div className="container catalog-layout">
@@ -77,7 +86,7 @@ export default function Catalog() {
         {/* ── Left sidebar: tree ── */}
         <aside className="cat-sidebar">
           <div className="cat-sidebar-header">
-            <span className="cat-sidebar-title">Parts Catalogue</span>
+            <span className="cat-sidebar-title">{t('cat_sidebar_title')}</span>
           </div>
 
           <nav className="cat-tree">
@@ -88,7 +97,6 @@ export default function Catalog() {
               return (
                 <div key={model.id} className={`tree-model ${modelOpen ? 'tree-model-open' : ''}`}>
 
-                  {/* Model root node */}
                   <button
                     className="tree-model-btn"
                     onClick={() => toggleModel(model.id as ModelId)}
@@ -106,7 +114,6 @@ export default function Catalog() {
                     </svg>
                   </button>
 
-                  {/* Sections under open model */}
                   {modelOpen && (
                     <div className="tree-sections">
                       {CATALOG.map(section => {
@@ -117,17 +124,16 @@ export default function Catalog() {
                         return (
                           <div key={section.id} className="tree-section">
 
-                            {/* Section node — thumbnail + name */}
                             <button
                               className={`tree-section-btn ${sectionOpen ? 'tree-section-btn-open' : ''}`}
                               onClick={() => toggleSection(section.id)}
                             >
                               <img
                                 src={section.image}
-                                alt={section.name}
+                                alt={tSection(section.id)}
                                 className="tree-section-thumb"
                               />
-                              <span className="tree-section-name">{section.name}</span>
+                              <span className="tree-section-name">{tSection(section.id)}</span>
                               <span className="tree-section-count">{sectionCount}</span>
                               <svg
                                 className={`tree-chevron ${sectionOpen ? 'tree-chevron-open' : ''}`}
@@ -138,7 +144,6 @@ export default function Catalog() {
                               </svg>
                             </button>
 
-                            {/* Subsection leaves */}
                             {sectionOpen && (
                               <ul className="tree-subsections">
                                 {section.subsections.map(sub => {
@@ -158,7 +163,7 @@ export default function Catalog() {
                                           : {}}
                                         onClick={() => selectLeaf(model.id as ModelId, section.id, sub.id)}
                                       >
-                                        <span className="tree-sub-name">{sub.name}</span>
+                                        <span className="tree-sub-name">{tSub(sub.id)}</span>
                                         <span className="tree-sub-count">({subCount})</span>
                                       </button>
                                     </li>
@@ -182,8 +187,8 @@ export default function Catalog() {
           {!activeLeaf ? (
             <div className="cat-welcome">
               <div className="cat-welcome-icon">⚡</div>
-              <h2>Select a category</h2>
-              <p>Expand a model in the tree, then choose a parts category to browse compatible parts.</p>
+              <h2>{t('cat_welcome_title')}</h2>
+              <p>{t('cat_welcome_sub')}</p>
               <div className="cat-welcome-hints">
                 {MODELS.map(m => (
                   <button
@@ -204,13 +209,13 @@ export default function Catalog() {
                 <nav className="cat-breadcrumb">
                   <span style={{ color: activeModel?.color, fontWeight: 700 }}>{activeModel?.name}</span>
                   <span className="bc-sep">›</span>
-                  <span>{activeSection?.name}</span>
+                  <span>{activeSection && tSection(activeSection.id)}</span>
                   <span className="bc-sep">›</span>
-                  <span className="bc-active">{activeSub?.name}</span>
+                  <span className="bc-active">{activeSub && tSub(activeSub.id)}</span>
                 </nav>
 
                 <div className="cat-year-filter">
-                  <label className="cat-year-label">Year:</label>
+                  <label className="cat-year-label">{t('cat_year_label')}</label>
                   <select
                     className="cat-year-select"
                     value={yearFilter}
@@ -218,7 +223,7 @@ export default function Catalog() {
                       setYearFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value))
                     }
                   >
-                    <option value="all">All years</option>
+                    <option value="all">{t('cat_all_years')}</option>
                     {activeLeaf &&
                       getYearsForModel(activeLeaf.modelId).map(y => (
                         <option key={y} value={y}>{y}</option>
@@ -228,22 +233,24 @@ export default function Catalog() {
               </div>
 
               <div className="cat-content-title-row">
-                <h2 className="cat-content-title">{activeSub?.name}</h2>
+                <h2 className="cat-content-title">{activeSub && tSub(activeSub.id)}</h2>
                 <span className="cat-result-count">
-                  {displayedProducts.length} part{displayedProducts.length !== 1 ? 's' : ''}
+                  {partCount} {partWord}
                 </span>
               </div>
 
               {displayedProducts.length === 0 ? (
                 <div className="cat-empty">
                   <div className="cat-empty-icon">🔍</div>
-                  <h3>No parts found</h3>
-                  <p>
-                    No {activeSub?.name} parts listed for {activeModel?.name}
-                    {yearFilter !== 'all' ? ` ${yearFilter}` : ''} yet.<br />
-                    Contact us — we can source it.
+                  <h3>{t('cat_no_parts_title')}</h3>
+                  <p style={{ whiteSpace: 'pre-line' }}>
+                    {tf('cat_no_parts_body', {
+                      sub: activeSub ? tSub(activeSub.id) : '',
+                      model: activeModel?.name ?? '',
+                      year: yearFilter !== 'all' ? ` ${yearFilter}` : '',
+                    })}
                   </p>
-                  <Link to="/contact" className="btn-primary">Contact Us</Link>
+                  <Link to="/contact" className="btn-primary">{t('cat_contact_btn')}</Link>
                 </div>
               ) : (
                 <div className="catalog-grid">
@@ -253,6 +260,7 @@ export default function Catalog() {
                       product={p}
                       onAddToCart={() => addToCart(p)}
                       accentColor={activeModel?.color}
+                      lang={lang}
                     />
                   ))}
                 </div>
@@ -269,20 +277,26 @@ function CatalogCard({
   product,
   onAddToCart,
   accentColor,
+  lang,
 }: {
   product: Product;
   onAddToCart: () => void;
   accentColor?: string;
+  lang: string;
 }) {
+  const { t } = useLang();
+
   const stars = Array.from({ length: 5 }, (_, i) => (
     <span key={i} className={i < Math.floor(product.rating) ? 'star-on' : 'star-off'}>★</span>
   ));
+
+  const displayName = lang === 'ka' ? product.nameGe : product.name;
 
   return (
     <div className="cat-card">
       <Link to={`/products/${product.id}`} className="cat-card-img-wrap">
         <img src={product.image} alt={product.name} loading="lazy" />
-        {!product.inStock && <div className="cat-oos">Out of Stock</div>}
+        {!product.inStock && <div className="cat-oos">{t('prod_out_of_stock')}</div>}
         {product.badge && (
           <span className={`badge badge-${product.badge} cat-badge`}>{product.badge}</span>
         )}
@@ -291,7 +305,7 @@ function CatalogCard({
       <div className="cat-card-body">
         <p className="cat-pn">#{product.partNumber}</p>
         <Link to={`/products/${product.id}`}>
-          <h3 className="cat-name">{product.name}</h3>
+          <h3 className="cat-name">{displayName}</h3>
         </Link>
         <p className="cat-desc">{product.description}</p>
 
@@ -310,7 +324,7 @@ function CatalogCard({
             onClick={onAddToCart}
             disabled={!product.inStock}
           >
-            {product.inStock ? 'Add to Cart' : 'Unavailable'}
+            {product.inStock ? t('cat_add_btn') : t('cat_unavailable')}
           </button>
         </div>
       </div>

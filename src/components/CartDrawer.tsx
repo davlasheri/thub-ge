@@ -1,4 +1,5 @@
 import { useCart } from '../context/CartContext';
+import { useLang } from '../context/LanguageContext';
 import './CartDrawer.css';
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 
 export default function CartDrawer({ isOpen, onClose }: Props) {
   const { items, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+  const { t } = useLang();
 
   return (
     <>
@@ -17,7 +19,7 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
       />
       <aside className={`cart-drawer ${isOpen ? 'cart-drawer-open' : ''}`}>
         <div className="cart-header">
-          <h2>Shopping Cart</h2>
+          <h2>{t('cart_title')}</h2>
           <button className="cart-close" onClick={onClose} aria-label="Close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -29,8 +31,8 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
         {items.length === 0 ? (
           <div className="cart-empty">
             <div className="cart-empty-icon">🛒</div>
-            <p>Your cart is empty</p>
-            <button className="btn-primary" onClick={onClose}>Continue Shopping</button>
+            <p>{t('cart_empty')}</p>
+            <button className="btn-primary" onClick={onClose}>{t('cart_continue')}</button>
           </div>
         ) : (
           <>
@@ -59,18 +61,18 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
 
             <div className="cart-footer">
               <div className="cart-total">
-                <span>Total</span>
+                <span>{t('cart_total')}</span>
                 <span>{totalPrice.toLocaleString()} ₾</span>
               </div>
               <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                Proceed to Checkout
+                {t('cart_checkout')}
               </button>
               <button
                 className="btn-secondary"
                 style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
                 onClick={clearCart}
               >
-                Clear Cart
+                {t('cart_clear')}
               </button>
             </div>
           </>

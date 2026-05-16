@@ -1,21 +1,30 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useLang } from '../context/LanguageContext';
+import { Lang } from '../data/translations';
 import CartDrawer from './CartDrawer';
 import './Header.css';
 
+const LANGS: { code: Lang; label: string }[] = [
+  { code: 'en', label: 'EN' },
+  { code: 'ka', label: 'KA' },
+  { code: 'ru', label: 'RU' },
+];
+
 export default function Header() {
   const { totalItems } = useCart();
+  const { t, lang, setLang } = useLang();
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
   const navLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/catalog', label: 'Catalogue' },
-    { to: '/products', label: 'All Parts' },
-    { to: '/about', label: 'About' },
-    { to: '/contact', label: 'Contact' },
+    { to: '/', label: t('nav_home') },
+    { to: '/catalog', label: t('nav_catalogue') },
+    { to: '/products', label: t('nav_all_parts') },
+    { to: '/about', label: t('nav_about') },
+    { to: '/contact', label: t('nav_contact') },
   ];
 
   return (
@@ -41,6 +50,18 @@ export default function Header() {
           </nav>
 
           <div className="header-actions">
+            <div className="lang-switcher">
+              {LANGS.map(l => (
+                <button
+                  key={l.code}
+                  className={`lang-btn ${lang === l.code ? 'lang-btn-active' : ''}`}
+                  onClick={() => setLang(l.code)}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+
             <button
               className="cart-btn"
               onClick={() => setCartOpen(true)}

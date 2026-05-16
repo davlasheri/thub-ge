@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useVehicle } from '../context/VehicleContext';
 import { useCart } from '../context/CartContext';
+import { useLang } from '../context/LanguageContext';
+import { TranslationKey } from '../data/translations';
 import { filterByVehicle } from '../data/products';
 import { MODELS } from '../data/vehicles';
 import { CATALOG } from '../data/catalog';
@@ -11,6 +13,7 @@ import './Products.css';
 export default function Products() {
   const { vehicle } = useVehicle();
   const { addToCart } = useCart();
+  const { t, tf, lang } = useLang();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
   const [activeSectionId, setActiveSectionId] = useState('all');
@@ -43,14 +46,16 @@ export default function Products() {
     return list;
   }, [vehicleParts, activeSectionId, search, sort]);
 
+  const tSection = (id: string) => t(('section_' + id) as TranslationKey);
+
   return (
     <main className="products-page">
       <div className="container">
         <div className="products-header">
           <div>
-            <h1 className="products-title">All Parts</h1>
+            <h1 className="products-title">{t('prod_title')}</h1>
             <p className="products-count">
-              {filtered.length} of {vehicleParts.length} parts for{' '}
+              {tf('prod_count', { n: filtered.length, total: vehicleParts.length })}{' '}
               <span style={{ color: model?.color, fontWeight: 700 }}>
                 {model?.name} {vehicle.year}
               </span>
@@ -60,7 +65,7 @@ export default function Products() {
             <input
               className="search-input"
               type="text"
-              placeholder="Search by name or part #..."
+              placeholder={t('prod_search_ph')}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -69,23 +74,23 @@ export default function Products() {
               value={sort}
               onChange={e => setSort(e.target.value)}
             >
-              <option value="default">Sort: Default</option>
-              <option value="price-asc">Price: Low → High</option>
-              <option value="price-desc">Price: High → Low</option>
-              <option value="rating">Top Rated</option>
+              <option value="default">{t('prod_sort_default')}</option>
+              <option value="price-asc">{t('prod_sort_price_asc')}</option>
+              <option value="price-desc">{t('prod_sort_price_desc')}</option>
+              <option value="rating">{t('prod_sort_rating')}</option>
             </select>
           </div>
         </div>
 
         <div className="products-layout">
           <aside className="sidebar">
-            <h3 className="sidebar-title">Section</h3>
+            <h3 className="sidebar-title">{t('prod_section_label')}</h3>
             <nav className="category-nav">
               <button
                 className={`cat-btn ${activeSectionId === 'all' ? 'cat-btn-active' : ''}`}
                 onClick={() => setActiveSectionId('all')}
               >
-                <span>⚡</span><span>All Sections</span>
+                <span>⚡</span><span>{t('prod_all_sections')}</span>
               </button>
               {CATALOG.map(section => {
                 const count = vehicleParts.filter(p => p.sectionId === section.id).length;
@@ -97,7 +102,7 @@ export default function Products() {
                     onClick={() => setActiveSectionId(section.id)}
                   >
                     <span>{section.icon}</span>
-                    <span>{section.name}</span>
+                    <span>{tSection(section.id)}</span>
                     <span className="cat-btn-count">{count}</span>
                   </button>
                 );
@@ -108,15 +113,15 @@ export default function Products() {
           <div className="products-grid-wrap">
             {filtered.length === 0 ? (
               <div className="no-results">
-                <p>No parts found</p>
+                <p>{t('prod_no_results')}</p>
                 <button className="btn-secondary" onClick={() => { setSearch(''); setActiveSectionId('all'); }}>
-                  Clear filters
+                  {t('prod_clear_filters')}
                 </button>
               </div>
             ) : (
               <div className="products-grid-main">
                 {filtered.map(p => (
-                  <ShopCard key={p.id} product={p} onAdd={() => addToCart(p)} modelColor={model?.color} />
+                  <ShopCard key={p.id} product={p} onAdd={() => addToCart(p)} modelColor={model?.color} lang={lang} />
                 ))}
               </div>
             )}
@@ -127,22 +132,26 @@ export default function Products() {
   );
 }
 
-function ShopCard({ product, onAdd, modelColor }: { product: Product; onAdd: () => void; modelColor?: string }) {
+function ShopCard({ product, onAdd, modelColor, lang }: { product: Product; onAdd: () => void; modelColor?: string; lang: string }) {
+  const { t } = useLang();
+
   const stars = Array.from({ length: 5 }, (_, i) => (
     <span key={i} style={{ color: i < Math.floor(product.rating) ? '#f5a623' : 'var(--border)' }}>★</span>
   ));
+
+  const displayName = lang === 'ka' ? product.nameGe : product.name;
 
   return (
     <div className="product-card">
       <Link to={`/products/${product.id}`} className="product-card-img-wrap">
         <img src={product.image} alt={product.name} loading="lazy" />
         {product.badge && <span className={`badge badge-${product.badge} product-badge`}>{product.badge}</span>}
-        {!product.inStock && <div className="out-of-stock-overlay">Out of Stock</div>}
+        {!product.inStock && <div className="out-of-stock-overlay">{t('prod_out_of_stock')}</div>}
       </Link>
       <div className="product-card-body">
         <p style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>#{product.partNumber}</p>
         <Link to={`/products/${product.id}`}>
-          <h3 className="product-name">{product.name}</h3>
+          <h3 className="product-name">{displayName}</h3>
         </Link>
         <div className="product-rating">
           <div className="stars" style={{ fontSize: 12 }}>{stars}</div>
@@ -156,7 +165,7 @@ function ShopCard({ product, onAdd, modelColor }: { product: Product; onAdd: () 
             onClick={onAdd}
             style={product.inStock && modelColor ? { background: modelColor } as React.CSSProperties : {}}
           >
-            {product.inStock ? 'Add' : 'N/A'}
+            {product.inStock ? t('prod_add') : t('prod_na')}
           </button>
         </div>
       </div>

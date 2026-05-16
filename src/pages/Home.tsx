@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVehicle } from '../context/VehicleContext';
+import { useLang } from '../context/LanguageContext';
 import { MODELS, getYearsForModel } from '../data/vehicles';
 import { ModelId } from '../types';
 import './Home.css';
 
 export default function Home() {
   const { setVehicle } = useVehicle();
+  const { t, tf } = useLang();
   const navigate = useNavigate();
   const [selectedModel, setSelectedModel] = useState<ModelId | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -25,6 +27,10 @@ export default function Home() {
     navigate('/catalog');
   };
 
+  const findBtnLabel = selectedModel && selectedYear
+    ? tf('home_find_selected', { name: model?.name ?? '', year: selectedYear })
+    : t('home_find_default');
+
   return (
     <main className="home-page">
       <div className="home-bg" />
@@ -33,11 +39,11 @@ export default function Home() {
         <div className="home-brand">
           <span className="home-logo-t">T</span>Hub<span className="home-logo-ge">.ge</span>
         </div>
-        <p className="home-tagline">Tesla Parts Catalogue · Georgia 🇬🇪</p>
+        <p className="home-tagline">{t('home_tagline')}</p>
 
         <div className="selector-card">
-          <h1 className="selector-title">Select Your Tesla</h1>
-          <p className="selector-sub">Choose your model and year to browse compatible parts</p>
+          <h1 className="selector-title">{t('home_select_title')}</h1>
+          <p className="selector-sub">{t('home_select_sub')}</p>
 
           <div className="model-grid">
             {MODELS.map(m => (
@@ -67,7 +73,7 @@ export default function Home() {
 
           {selectedModel && (
             <div className="year-section">
-              <p className="year-label">Select Year — {model?.fullName}</p>
+              <p className="year-label">{t('home_year_label')} — {model?.fullName}</p>
               <div className="year-grid">
                 {years.map(y => (
                   <button
@@ -95,20 +101,18 @@ export default function Home() {
                 : {}
             }
           >
-            {selectedModel && selectedYear
-              ? `Browse Parts for ${model?.name} ${selectedYear} →`
-              : 'Select a model and year to continue'}
+            {findBtnLabel}
           </button>
         </div>
 
         <div className="home-trust">
-          <span>✅ OEM &amp; Aftermarket</span>
+          <span>✅ {t('home_trust_oem')}</span>
           <span>·</span>
-          <span>🚀 1–3 Day Delivery</span>
+          <span>🚀 {t('home_trust_delivery')}</span>
           <span>·</span>
-          <span>📞 Georgian Support</span>
+          <span>📞 {t('home_trust_support')}</span>
           <span>·</span>
-          <span>↩️ 30-Day Returns</span>
+          <span>↩️ {t('home_trust_returns')}</span>
         </div>
       </div>
     </main>
