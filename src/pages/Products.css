@@ -123,9 +123,15 @@
 }
 
 .cat-btn-active {
-  color: var(--text);
-  background: rgba(227, 25, 55, 0.1);
   color: var(--red);
+  background: rgba(227, 25, 55, 0.1);
+}
+
+.cat-btn-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 600;
 }
 
 .checkbox-label {

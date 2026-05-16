@@ -1,132 +1,146 @@
-import { Link } from 'react-router-dom';
-import ProductCard from '../components/ProductCard';
-import { products, categories } from '../data/products';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useVehicle } from '../context/VehicleContext';
+import { MODELS, getYearsForModel } from '../data/vehicles';
+import { ModelId } from '../types';
 import './Home.css';
 
-const featuredProducts = products.filter(p => p.badge === 'popular' || p.badge === 'new').slice(0, 4);
-
 export default function Home() {
+  const { setVehicle } = useVehicle();
+  const navigate = useNavigate();
+  const [selectedModel, setSelectedModel] = useState<ModelId | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+
+  const years = selectedModel ? getYearsForModel(selectedModel) : [];
+  const model = selectedModel ? MODELS.find(m => m.id === selectedModel) : null;
+
+  const handleModelSelect = (id: ModelId) => {
+    setSelectedModel(id);
+    setSelectedYear(null);
+  };
+
+  const handleFindParts = () => {
+    if (!selectedModel || !selectedYear) return;
+    setVehicle({ modelId: selectedModel, year: selectedYear });
+    navigate('/catalog');
+  };
+
   return (
-    <main>
-      {/* Hero */}
-      <section className="hero">
-        <div className="hero-bg" />
-        <div className="container hero-content">
-          <div className="hero-badge">⚡ Georgia's #1 Tesla Parts Store</div>
-          <h1 className="hero-title">
-            Power Your<br />
-            <span className="hero-accent">Tesla</span> Experience
-          </h1>
-          <p className="hero-sub">
-            Premium OEM and aftermarket parts for every Tesla model.<br />
-            Fast delivery across Georgia. Expert support in Georgian.
-          </p>
-          <div className="hero-cta">
-            <Link to="/products" className="btn-primary hero-btn">
-              Shop Now
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </Link>
-            <Link to="/about" className="btn-secondary hero-btn">Learn More</Link>
-          </div>
-          <div className="hero-stats">
-            <div className="stat">
-              <span className="stat-num">2,000+</span>
-              <span className="stat-label">Products</span>
-            </div>
-            <div className="stat-div" />
-            <div className="stat">
-              <span className="stat-num">5,400+</span>
-              <span className="stat-label">Happy Customers</span>
-            </div>
-            <div className="stat-div" />
-            <div className="stat">
-              <span className="stat-num">1–3</span>
-              <span className="stat-label">Day Delivery</span>
-            </div>
-          </div>
-        </div>
-      </section>
+    <main className="home-page">
+      <div className="home-bg" />
 
-      {/* Categories */}
-      <section className="section">
-        <div className="container">
-          <h2 className="section-title">Shop by Category</h2>
-          <div className="category-grid">
-            {categories.filter(c => c.id !== 'all').map(cat => (
-              <Link
-                key={cat.id}
-                to={`/products?category=${cat.id}`}
-                className="category-card"
+      <div className="home-inner">
+        <div className="home-brand">
+          <span className="home-logo-t">T</span>Hub<span className="home-logo-ge">.ge</span>
+        </div>
+        <p className="home-tagline">Tesla Parts Catalogue · Georgia 🇬🇪</p>
+
+        <div className="selector-card">
+          <h1 className="selector-title">Select Your Tesla</h1>
+          <p className="selector-sub">Choose your model and year to browse compatible parts</p>
+
+          <div className="model-grid">
+            {MODELS.map(m => (
+              <button
+                key={m.id}
+                className={`model-card ${selectedModel === m.id ? 'model-card-active' : ''}`}
+                style={selectedModel === m.id
+                  ? { borderColor: m.color, '--model-color': m.color } as React.CSSProperties
+                  : {}}
+                onClick={() => handleModelSelect(m.id as ModelId)}
               >
-                <span className="category-icon">{cat.icon}</span>
-                <span className="category-name">{cat.name}</span>
-                <span className="category-name-ge">{cat.nameGe}</span>
-              </Link>
+                <div
+                  className="model-silhouette"
+                  style={{ color: selectedModel === m.id ? m.color : undefined }}
+                >
+                  {(m.id === 'M3' || m.id === 'MS') && <SilhouetteSedan tall={m.id === 'MS'} />}
+                  {(m.id === 'MY' || m.id === 'MX') && <SilhouetteSUV tall={m.id === 'MX'} />}
+                </div>
+                <span className="model-name">{m.name}</span>
+                <span className="model-years">{m.years.from}–{m.years.to}</span>
+                {selectedModel === m.id && (
+                  <span className="model-check" style={{ background: m.color }}>✓</span>
+                )}
+              </button>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Featured Products */}
-      <section className="section section-alt">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">Featured Products</h2>
-            <Link to="/products" className="see-all">
-              See All
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </Link>
-          </div>
-          <div className="product-grid">
-            {featuredProducts.map(p => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </div>
-      </section>
+          {selectedModel && (
+            <div className="year-section">
+              <p className="year-label">Select Year — {model?.fullName}</p>
+              <div className="year-grid">
+                {years.map(y => (
+                  <button
+                    key={y}
+                    className={`year-btn ${selectedYear === y ? 'year-btn-active' : ''}`}
+                    style={selectedYear === y
+                      ? { background: model?.color, borderColor: model?.color } as React.CSSProperties
+                      : {}}
+                    onClick={() => setSelectedYear(y)}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* Trust Badges */}
-      <section className="section">
-        <div className="container">
-          <div className="trust-grid">
-            <div className="trust-item">
-              <span className="trust-icon">🚀</span>
-              <h3>Fast Delivery</h3>
-              <p>1–3 day shipping to all major cities in Georgia</p>
-            </div>
-            <div className="trust-item">
-              <span className="trust-icon">✅</span>
-              <h3>OEM Quality</h3>
-              <p>Genuine and premium aftermarket parts only</p>
-            </div>
-            <div className="trust-item">
-              <span className="trust-icon">🔧</span>
-              <h3>Expert Support</h3>
-              <p>Tesla-certified technicians available by phone</p>
-            </div>
-            <div className="trust-item">
-              <span className="trust-icon">↩️</span>
-              <h3>Easy Returns</h3>
-              <p>30-day hassle-free return policy</p>
-            </div>
-          </div>
+          <button
+            className="find-parts-btn"
+            disabled={!selectedModel || !selectedYear}
+            onClick={handleFindParts}
+            style={
+              selectedModel && selectedYear && model
+                ? { background: model.color } as React.CSSProperties
+                : {}
+            }
+          >
+            {selectedModel && selectedYear
+              ? `Browse Parts for ${model?.name} ${selectedYear} →`
+              : 'Select a model and year to continue'}
+          </button>
         </div>
-      </section>
 
-      {/* CTA Banner */}
-      <section className="cta-banner">
-        <div className="container cta-inner">
-          <div>
-            <h2>New to THub.ge?</h2>
-            <p>Get 10% off your first order. Use code <strong>THUB10</strong> at checkout.</p>
-          </div>
-          <Link to="/products" className="btn-primary cta-btn">Start Shopping</Link>
+        <div className="home-trust">
+          <span>✅ OEM &amp; Aftermarket</span>
+          <span>·</span>
+          <span>🚀 1–3 Day Delivery</span>
+          <span>·</span>
+          <span>📞 Georgian Support</span>
+          <span>·</span>
+          <span>↩️ 30-Day Returns</span>
         </div>
-      </section>
+      </div>
     </main>
+  );
+}
+
+function SilhouetteSedan({ tall }: { tall?: boolean }) {
+  return (
+    <svg viewBox="0 0 120 52" fill="currentColor" aria-hidden="true" className="silhouette">
+      <path d={tall
+        ? 'M8 34 C8 34 18 18 35 16 L52 13 L68 13 L85 16 C102 18 112 34 112 34 L112 38 L100 38 C100 35 97 32 93 32 C89 32 86 35 86 38 L34 38 C34 35 31 32 27 32 C23 32 20 35 20 38 L8 38 Z'
+        : 'M8 36 C8 36 20 22 36 20 L50 16 L70 16 L84 20 C100 22 112 36 112 36 L112 39 L100 39 C100 36 97 33 93 33 C89 33 86 36 86 39 L34 39 C34 36 31 33 27 33 C23 33 20 36 20 39 L8 39 Z'}
+      />
+      <circle cx="27" cy="39" r="6" />
+      <circle cx="93" cy="39" r="6" />
+      <circle cx="27" cy="39" r="2.5" fill="var(--bg2)" />
+      <circle cx="93" cy="39" r="2.5" fill="var(--bg2)" />
+    </svg>
+  );
+}
+
+function SilhouetteSUV({ tall }: { tall?: boolean }) {
+  return (
+    <svg viewBox="0 0 120 52" fill="currentColor" aria-hidden="true" className="silhouette">
+      <path d={tall
+        ? 'M8 34 C8 34 15 14 30 12 L45 10 L75 10 L90 12 C105 14 112 34 112 34 L112 38 L100 38 C100 35 97 32 93 32 C89 32 86 35 86 38 L34 38 C34 35 31 32 27 32 C23 32 20 35 20 38 L8 38 Z'
+        : 'M8 35 C8 35 16 16 30 14 L44 11 L76 11 L90 14 C104 16 112 35 112 35 L112 39 L100 39 C100 36 97 33 93 33 C89 33 86 36 86 39 L34 39 C34 36 31 33 27 33 C23 33 20 36 20 39 L8 39 Z'}
+      />
+      <circle cx="27" cy="39" r="6" />
+      <circle cx="93" cy="39" r="6" />
+      <circle cx="27" cy="39" r="2.5" fill="var(--bg2)" />
+      <circle cx="93" cy="39" r="2.5" fill="var(--bg2)" />
+    </svg>
   );
 }

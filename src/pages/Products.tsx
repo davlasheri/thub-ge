@@ -1,28 +1,30 @@
 import { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import ProductCard from '../components/ProductCard';
-import { products, categories } from '../data/products';
+import { Navigate, Link } from 'react-router-dom';
+import { useVehicle } from '../context/VehicleContext';
+import { useCart } from '../context/CartContext';
+import { filterByVehicle } from '../data/products';
+import { MODELS } from '../data/vehicles';
+import { CATALOG } from '../data/catalog';
+import { Product } from '../types';
 import './Products.css';
 
 export default function Products() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { vehicle } = useVehicle();
+  const { addToCart } = useCart();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
-  const activeCategory = searchParams.get('category') || 'all';
+  const [activeSectionId, setActiveSectionId] = useState('all');
 
-  const setCategory = (id: string) => {
-    if (id === 'all') {
-      setSearchParams({});
-    } else {
-      setSearchParams({ category: id });
-    }
-  };
+  if (!vehicle) return <Navigate to="/" replace />;
+
+  const model = MODELS.find(m => m.id === vehicle.modelId);
+  const vehicleParts = filterByVehicle(vehicle.modelId, vehicle.year);
 
   const filtered = useMemo(() => {
-    let list = [...products];
+    let list = [...vehicleParts];
 
-    if (activeCategory !== 'all') {
-      list = list.filter(p => p.category === activeCategory);
+    if (activeSectionId !== 'all') {
+      list = list.filter(p => p.sectionId === activeSectionId);
     }
 
     if (search.trim()) {
@@ -30,7 +32,7 @@ export default function Products() {
       list = list.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
-        p.compatibility.some(c => c.toLowerCase().includes(q))
+        p.partNumber.toLowerCase().includes(q)
       );
     }
 
@@ -39,21 +41,26 @@ export default function Products() {
     if (sort === 'rating') list.sort((a, b) => b.rating - a.rating);
 
     return list;
-  }, [activeCategory, search, sort]);
+  }, [vehicleParts, activeSectionId, search, sort]);
 
   return (
     <main className="products-page">
       <div className="container">
         <div className="products-header">
           <div>
-            <h1 className="products-title">Shop Tesla Parts</h1>
-            <p className="products-count">{filtered.length} products</p>
+            <h1 className="products-title">All Parts</h1>
+            <p className="products-count">
+              {filtered.length} of {vehicleParts.length} parts for{' '}
+              <span style={{ color: model?.color, fontWeight: 700 }}>
+                {model?.name} {vehicle.year}
+              </span>
+            </p>
           </div>
           <div className="products-controls">
             <input
               className="search-input"
               type="text"
-              placeholder="Search parts, models..."
+              placeholder="Search by name or part #..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -63,51 +70,53 @@ export default function Products() {
               onChange={e => setSort(e.target.value)}
             >
               <option value="default">Sort: Default</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
+              <option value="price-asc">Price: Low → High</option>
+              <option value="price-desc">Price: High → Low</option>
               <option value="rating">Top Rated</option>
             </select>
           </div>
         </div>
 
         <div className="products-layout">
-          {/* Sidebar */}
           <aside className="sidebar">
-            <h3 className="sidebar-title">Category</h3>
+            <h3 className="sidebar-title">Section</h3>
             <nav className="category-nav">
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  className={`cat-btn ${activeCategory === cat.id ? 'cat-btn-active' : ''}`}
-                  onClick={() => setCategory(cat.id)}
-                >
-                  <span>{cat.icon}</span>
-                  <span>{cat.name}</span>
-                </button>
-              ))}
+              <button
+                className={`cat-btn ${activeSectionId === 'all' ? 'cat-btn-active' : ''}`}
+                onClick={() => setActiveSectionId('all')}
+              >
+                <span>⚡</span><span>All Sections</span>
+              </button>
+              {CATALOG.map(section => {
+                const count = vehicleParts.filter(p => p.sectionId === section.id).length;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={section.id}
+                    className={`cat-btn ${activeSectionId === section.id ? 'cat-btn-active' : ''}`}
+                    onClick={() => setActiveSectionId(section.id)}
+                  >
+                    <span>{section.icon}</span>
+                    <span>{section.name}</span>
+                    <span className="cat-btn-count">{count}</span>
+                  </button>
+                );
+              })}
             </nav>
-
-            <div className="sidebar-section">
-              <h3 className="sidebar-title">Availability</h3>
-              <label className="checkbox-label">
-                <input type="checkbox" defaultChecked /> In Stock Only
-              </label>
-            </div>
           </aside>
 
-          {/* Grid */}
           <div className="products-grid-wrap">
             {filtered.length === 0 ? (
               <div className="no-results">
-                <p>No products found</p>
-                <button className="btn-secondary" onClick={() => { setSearch(''); setCategory('all'); }}>
+                <p>No parts found</p>
+                <button className="btn-secondary" onClick={() => { setSearch(''); setActiveSectionId('all'); }}>
                   Clear filters
                 </button>
               </div>
             ) : (
               <div className="products-grid-main">
                 {filtered.map(p => (
-                  <ProductCard key={p.id} product={p} />
+                  <ShopCard key={p.id} product={p} onAdd={() => addToCart(p)} modelColor={model?.color} />
                 ))}
               </div>
             )}
@@ -115,5 +124,42 @@ export default function Products() {
         </div>
       </div>
     </main>
+  );
+}
+
+function ShopCard({ product, onAdd, modelColor }: { product: Product; onAdd: () => void; modelColor?: string }) {
+  const stars = Array.from({ length: 5 }, (_, i) => (
+    <span key={i} style={{ color: i < Math.floor(product.rating) ? '#f5a623' : 'var(--border)' }}>★</span>
+  ));
+
+  return (
+    <div className="product-card">
+      <Link to={`/products/${product.id}`} className="product-card-img-wrap">
+        <img src={product.image} alt={product.name} loading="lazy" />
+        {product.badge && <span className={`badge badge-${product.badge} product-badge`}>{product.badge}</span>}
+        {!product.inStock && <div className="out-of-stock-overlay">Out of Stock</div>}
+      </Link>
+      <div className="product-card-body">
+        <p style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>#{product.partNumber}</p>
+        <Link to={`/products/${product.id}`}>
+          <h3 className="product-name">{product.name}</h3>
+        </Link>
+        <div className="product-rating">
+          <div className="stars" style={{ fontSize: 12 }}>{stars}</div>
+          <span className="rating-count">({product.reviews})</span>
+        </div>
+        <div className="product-footer">
+          <span className="product-price">{product.price.toLocaleString()} ₾</span>
+          <button
+            className="add-to-cart-btn btn-primary"
+            disabled={!product.inStock}
+            onClick={onAdd}
+            style={product.inStock && modelColor ? { background: modelColor } as React.CSSProperties : {}}
+          >
+            {product.inStock ? 'Add' : 'N/A'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

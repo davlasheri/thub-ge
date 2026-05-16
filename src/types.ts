@@ -1,14 +1,48 @@
-export interface Product {
+export type ModelId = 'M3' | 'MY' | 'MS' | 'MX';
+
+export interface ModelYearRange {
+  from: number;
+  to: number;
+}
+
+export interface TeslaModel {
+  id: ModelId;
+  name: string;
+  fullName: string;
+  years: ModelYearRange;
+  color: string;
+}
+
+export interface VehicleSelection {
+  modelId: ModelId;
+  year: number;
+}
+
+export interface CatalogSubsection {
   id: string;
   name: string;
+  icon: string;
+}
+
+export interface CatalogSection {
+  id: string;
+  name: string;
+  icon: string;
+  subsections: CatalogSubsection[];
+}
+
+export interface Product {
+  id: string;
+  partNumber: string;
+  name: string;
   nameGe: string;
-  category: string;
+  sectionId: string;
+  subsectionId: string;
   price: number;
   currency: 'GEL';
   image: string;
   description: string;
-  descriptionGe: string;
-  compatibility: string[];
+  fits: Partial<Record<ModelId, ModelYearRange>>;
   inStock: boolean;
   badge?: 'new' | 'sale' | 'popular';
   rating: number;
@@ -19,10 +53,3 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
-
-export type Category = {
-  id: string;
-  name: string;
-  nameGe: string;
-  icon: string;
-};

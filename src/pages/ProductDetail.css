@@ -69,6 +69,65 @@
   gap: 16px;
 }
 
+.detail-pn {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: monospace;
+  letter-spacing: 0.3px;
+}
+
+.fits-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  background: var(--bg3);
+}
+
+.fits-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 12px;
+}
+
+.fits-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fits-chip {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fits-chip-current {
+  background: rgba(255,255,255,0.03);
+}
+
+.fits-model {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fits-years {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.fits-yours {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  opacity: 0.8;
+}
+
 .detail-compat {
   display: flex;
   flex-wrap: wrap;

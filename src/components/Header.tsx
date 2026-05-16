@@ -12,7 +12,8 @@ export default function Header() {
 
   const navLinks = [
     { to: '/', label: 'Home' },
-    { to: '/products', label: 'Shop' },
+    { to: '/catalog', label: 'Catalogue' },
+    { to: '/products', label: 'All Parts' },
     { to: '/about', label: 'About' },
     { to: '/contact', label: 'Contact' },
   ];
@@ -31,7 +32,7 @@ export default function Header() {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`nav-link ${location.pathname === link.to ? 'nav-link-active' : ''}`}
+                className={`nav-link ${location.pathname.startsWith(link.to) && (link.to !== '/' || location.pathname === '/') ? 'nav-link-active' : ''}`}
                 onClick={() => setMenuOpen(false)}
               >
                 {link.label}

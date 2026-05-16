@@ -1,7 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
+import { VehicleProvider } from './context/VehicleContext';
 import Header from './components/Header';
+import VehicleBar from './components/VehicleBar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
+import Catalog from './pages/Catalog';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import About from './pages/About';
@@ -9,10 +12,12 @@ import Contact from './pages/Contact';
 
 export default function App() {
   return (
-    <>
+    <VehicleProvider>
       <Header />
+      <VehicleBar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/catalog" element={<Catalog />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/about" element={<About />} />
@@ -26,6 +31,6 @@ export default function App() {
         } />
       </Routes>
       <Footer />
-    </>
+    </VehicleProvider>
   );
 }

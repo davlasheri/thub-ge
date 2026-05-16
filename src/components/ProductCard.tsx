@@ -30,7 +30,7 @@ export default function ProductCard({ product }: Props) {
 
       <div className="product-card-body">
         <div className="product-compat">
-          {product.compatibility.slice(0, 2).map(c => (
+          {Object.keys(product.fits).slice(0, 2).map(c => (
             <span key={c} className="compat-tag">{c}</span>
           ))}
         </div>
