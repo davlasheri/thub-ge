@@ -1,4 +1,4 @@
-export type ModelId = 'M3' | 'MY' | 'MS' | 'MX';
+export type ModelId = string;
 
 export interface ModelYearRange {
   from: number;

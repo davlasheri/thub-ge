@@ -2,34 +2,46 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVehicle } from '../context/VehicleContext';
 import { useLang } from '../context/LanguageContext';
-import { MODELS, getYearsForModel } from '../data/vehicles';
+import { useModels } from '../context/ModelsContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { ModelId } from '../types';
 import './Home.css';
 
 export default function Home() {
   const { setVehicle } = useVehicle();
-  const { t, tf } = useLang();
+  const { t, tf, lang } = useLang();
+  const { models, getYearsForModel } = useModels();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
-  const [selectedModel, setSelectedModel] = useState<ModelId | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear]   = useState<number | null>(null);
 
   const years = selectedModel ? getYearsForModel(selectedModel) : [];
-  const model = selectedModel ? MODELS.find(m => m.id === selectedModel) : null;
+  const model = selectedModel ? models.find(m => m.id === selectedModel) : null;
 
-  const handleModelSelect = (id: ModelId) => {
+  const handleModelSelect = (id: string) => {
     setSelectedModel(id);
     setSelectedYear(null);
   };
 
   const handleFindParts = () => {
     if (!selectedModel || !selectedYear) return;
-    setVehicle({ modelId: selectedModel, year: selectedYear });
+    setVehicle({ modelId: selectedModel as ModelId, year: selectedYear });
     navigate('/catalog');
   };
 
   const findBtnLabel = selectedModel && selectedYear
     ? tf('home_find_selected', { name: model?.name ?? '', year: selectedYear })
     : t('home_find_default');
+
+  const adminTagline = lang === 'ka' ? settings.home.taglineKa
+    : lang === 'ru' ? settings.home.taglineRu
+    : settings.home.taglineEn;
+  const tagline = adminTagline.trim() || t('home_tagline');
+
+  const banner = lang === 'ka' ? settings.home.bannerKa
+    : lang === 'ru' ? settings.home.bannerRu
+    : settings.home.bannerEn;
 
   return (
     <main className="home-page">
@@ -39,21 +51,21 @@ export default function Home() {
         <div className="home-brand">
           <span className="home-logo-t">T</span>Hub<span className="home-logo-ge">.ge</span>
         </div>
-        <p className="home-tagline">{t('home_tagline')}</p>
+        <p className="home-tagline">{tagline}</p>
 
         <div className="selector-card">
           <h1 className="selector-title">{t('home_select_title')}</h1>
           <p className="selector-sub">{t('home_select_sub')}</p>
 
           <div className="model-grid">
-            {MODELS.map(m => (
+            {models.map(m => (
               <button
                 key={m.id}
                 className={`model-card ${selectedModel === m.id ? 'model-card-active' : ''}`}
                 style={selectedModel === m.id
                   ? { borderColor: m.color, '--model-color': m.color } as React.CSSProperties
                   : {}}
-                onClick={() => handleModelSelect(m.id as ModelId)}
+                onClick={() => handleModelSelect(m.id)}
               >
                 <div
                   className="model-silhouette"
@@ -61,6 +73,7 @@ export default function Home() {
                 >
                   {(m.id === 'M3' || m.id === 'MS') && <SilhouetteSedan tall={m.id === 'MS'} />}
                   {(m.id === 'MY' || m.id === 'MX') && <SilhouetteSUV tall={m.id === 'MX'} />}
+                  {m.id !== 'M3' && m.id !== 'MS' && m.id !== 'MY' && m.id !== 'MX' && <SilhouetteSedan />}
                 </div>
                 <span className="model-name">{m.name}</span>
                 <span className="model-years">{m.years.from}–{m.years.to}</span>
@@ -103,6 +116,10 @@ export default function Home() {
           >
             {findBtnLabel}
           </button>
+
+          {banner.trim() && (
+            <div className="home-banner">{banner}</div>
+          )}
         </div>
 
         <div className="home-trust">

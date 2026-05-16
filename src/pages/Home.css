@@ -205,6 +205,19 @@
   cursor: not-allowed;
 }
 
+.home-banner {
+  margin-top: 18px;
+  padding: 12px 16px;
+  background: rgba(227, 25, 55, 0.08);
+  border: 1px solid rgba(227, 25, 55, 0.25);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text);
+  text-align: center;
+  white-space: pre-line;
+  line-height: 1.5;
+}
+
 .home-trust {
   display: flex;
   flex-wrap: wrap;

@@ -4,8 +4,8 @@ import { useVehicle } from '../context/VehicleContext';
 import { useLang } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
+import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
-import { MODELS } from '../data/vehicles';
 import './ProductDetail.css';
 
 export default function ProductDetail() {
@@ -16,6 +16,7 @@ export default function ProductDetail() {
   const { t, lang } = useLang();
   const { products, getById } = useProducts();
   const { catalog } = useCatalog();
+  const { models } = useModels();
   const product = getById(id ?? '');
 
   if (!product) {
@@ -29,7 +30,7 @@ export default function ProductDetail() {
 
   const section = catalog.find(s => s.id === product.sectionId);
   const subsection = section?.subsections.find(s => s.id === product.subsectionId);
-  const model = vehicle ? MODELS.find(m => m.id === vehicle.modelId) : null;
+  const model = vehicle ? models.find(m => m.id === vehicle.modelId) : null;
 
   const related = products
     .filter(p => p.subsectionId === product.subsectionId && p.id !== product.id)
@@ -99,7 +100,7 @@ export default function ProductDetail() {
               <p className="fits-title">{t('detail_compatibility')}</p>
               <div className="fits-grid">
                 {fitEntries.map(([modelId, range]) => {
-                  const m = MODELS.find(x => x.id === modelId);
+                  const m = models.find(x => x.id === modelId);
                   const isCurrent = vehicle?.modelId === modelId;
                   return (
                     <div
@@ -107,8 +108,8 @@ export default function ProductDetail() {
                       className={`fits-chip ${isCurrent ? 'fits-chip-current' : ''}`}
                       style={isCurrent ? { borderColor: model?.color, color: model?.color } as React.CSSProperties : {}}
                     >
-                      <span className="fits-model">{m?.name}</span>
-                      <span className="fits-years">{range.from}–{range.to}</span>
+                      <span className="fits-model">{m?.name ?? modelId}</span>
+                      <span className="fits-years">{range?.from}–{range?.to}</span>
                       {isCurrent && <span className="fits-yours">{t('detail_your_car')}</span>}
                     </div>
                   );

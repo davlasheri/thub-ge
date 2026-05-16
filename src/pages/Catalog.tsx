@@ -5,8 +5,8 @@ import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
+import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
-import { MODELS, getYearsForModel } from '../data/vehicles';
 import { ModelId, Product } from '../types';
 import './Catalog.css';
 
@@ -22,6 +22,7 @@ export default function Catalog() {
   const { t, tf, lang } = useLang();
   const { products } = useProducts();
   const { catalog } = useCatalog();
+  const { models, getYearsForModel } = useModels();
 
   const [openModelId, setOpenModelId]     = useState<ModelId | null>(vehicle?.modelId ?? null);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
@@ -78,9 +79,9 @@ export default function Catalog() {
       if (yearFilter !== 'all' && (yearFilter < range.from || yearFilter > range.to)) return false;
       return p.subsectionId === activeLeaf.subsectionId;
     });
-  }, [activeLeaf, yearFilter]);
+  }, [activeLeaf, yearFilter, products]);
 
-  const activeModel   = activeLeaf ? MODELS.find(m => m.id === activeLeaf.modelId)   : null;
+  const activeModel   = activeLeaf ? models.find(m => m.id === activeLeaf.modelId)   : null;
   const activeSection = activeLeaf ? catalog.find(s => s.id === activeLeaf.sectionId) : null;
   const activeSub     = activeSection?.subsections.find(s => s.id === activeLeaf?.subsectionId);
 
@@ -98,16 +99,16 @@ export default function Catalog() {
           </div>
 
           <nav className="cat-tree">
-            {MODELS.map(model => {
+            {models.map(model => {
               const modelOpen   = openModelId === model.id;
-              const totalCount  = countFor(model.id as ModelId);
+              const totalCount  = countFor(model.id);
 
               return (
                 <div key={model.id} className={`tree-model ${modelOpen ? 'tree-model-open' : ''}`}>
 
                   <button
                     className="tree-model-btn"
-                    onClick={() => toggleModel(model.id as ModelId)}
+                    onClick={() => toggleModel(model.id)}
                     style={modelOpen ? { borderLeftColor: model.color } as React.CSSProperties : {}}
                   >
                     <span className="tree-model-dot" style={{ background: model.color }} />
@@ -126,7 +127,7 @@ export default function Catalog() {
                     <div className="tree-sections">
                       {catalog.map(section => {
                         const sectionOpen  = openSectionId === section.id;
-                        const sectionCount = countFor(model.id as ModelId, section.id);
+                        const sectionCount = countFor(model.id, section.id);
                         if (sectionCount === 0) return null;
 
                         return (
@@ -155,7 +156,7 @@ export default function Catalog() {
                             {sectionOpen && (
                               <ul className="tree-subsections">
                                 {section.subsections.map(sub => {
-                                  const subCount = countFor(model.id as ModelId, section.id, sub.id);
+                                  const subCount = countFor(model.id, section.id, sub.id);
                                   if (subCount === 0) return null;
                                   const isActive =
                                     activeLeaf?.modelId      === model.id &&
@@ -169,7 +170,7 @@ export default function Catalog() {
                                         style={isActive
                                           ? { color: model.color, borderLeftColor: model.color } as React.CSSProperties
                                           : {}}
-                                        onClick={() => selectLeaf(model.id as ModelId, section.id, sub.id)}
+                                        onClick={() => selectLeaf(model.id, section.id, sub.id)}
                                       >
                                         <span className="tree-sub-name">{tSub(section.id, sub.id)}</span>
                                         <span className="tree-sub-count">({subCount})</span>
@@ -198,12 +199,12 @@ export default function Catalog() {
               <h2>{t('cat_welcome_title')}</h2>
               <p>{t('cat_welcome_sub')}</p>
               <div className="cat-welcome-hints">
-                {MODELS.map(m => (
+                {models.map(m => (
                   <button
                     key={m.id}
                     className="cat-welcome-model"
                     style={{ borderColor: m.color }}
-                    onClick={() => toggleModel(m.id as ModelId)}
+                    onClick={() => toggleModel(m.id)}
                   >
                     <span style={{ color: m.color, fontWeight: 800 }}>{m.name}</span>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.years.from}–{m.years.to}</span>

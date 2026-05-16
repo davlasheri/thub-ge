@@ -1,8 +1,11 @@
 import { useLang } from '../context/LanguageContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import './Contact.css';
 
 export default function Contact() {
   const { t } = useLang();
+  const { settings } = useSiteSettings();
+  const c = settings.contact;
 
   return (
     <main className="contact-page">
@@ -18,11 +21,11 @@ export default function Contact() {
             <div className="contact-card">
               <span className="contact-icon">📍</span>
               <h3>{t('contact_visit')}</h3>
-              <p>Tbilisi, Georgia</p>
-              <p className="contact-sub">{t('contact_hours_wday')}</p>
-              <p className="contact-sub">{t('contact_hours_wend')}</p>
+              <p>{c.address}</p>
+              <p className="contact-sub">{c.hoursWeekday}</p>
+              <p className="contact-sub">{c.hoursWeekend}</p>
               <a
-                href="https://maps.app.goo.gl/3Mwx3WmQCfhRRTcb8"
+                href={c.mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="maps-btn"
@@ -37,15 +40,15 @@ export default function Contact() {
             <div className="contact-card">
               <span className="contact-icon">📞</span>
               <h3>{t('contact_call')}</h3>
-              <a href="tel:+995599286244">+995 599 286 244</a>
-              <p className="contact-sub">{t('contact_hours_wday')}</p>
-              <p className="contact-sub">{t('contact_hours_wend')}</p>
+              <a href={c.phoneHref}>{c.phone}</a>
+              <p className="contact-sub">{c.hoursWeekday}</p>
+              <p className="contact-sub">{c.hoursWeekend}</p>
             </div>
             <div className="contact-card">
               <span className="contact-icon">✉️</span>
               <h3>{t('contact_email_title')}</h3>
-              <a href="mailto:info@thub.ge">info@thub.ge</a>
-              <a href="mailto:orders@thub.ge">orders@thub.ge</a>
+              <a href={`mailto:${c.email1}`}>{c.email1}</a>
+              <a href={`mailto:${c.email2}`}>{c.email2}</a>
               <p className="contact-sub">{t('contact_email_response')}</p>
             </div>
           </div>

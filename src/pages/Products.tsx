@@ -5,8 +5,8 @@ import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
+import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
-import { MODELS } from '../data/vehicles';
 import { Product } from '../types';
 import './Products.css';
 
@@ -16,13 +16,14 @@ export default function Products() {
   const { t, tf, lang } = useLang();
   const { filterByVehicle } = useProducts();
   const { catalog } = useCatalog();
+  const { models } = useModels();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
   const [activeSectionId, setActiveSectionId] = useState('all');
 
   if (!vehicle) return <Navigate to="/" replace />;
 
-  const model = MODELS.find(m => m.id === vehicle.modelId);
+  const model = models.find(m => m.id === vehicle.modelId);
   const vehicleParts = filterByVehicle(vehicle.modelId, vehicle.year);
 
   const filtered = useMemo(() => {
