@@ -7,8 +7,8 @@ import CartDrawer from './CartDrawer';
 import './Header.css';
 
 const LANGS: { code: Lang; label: string }[] = [
-  { code: 'en', label: 'EN' },
   { code: 'ka', label: 'KA' },
+  { code: 'en', label: 'EN' },
   { code: 'ru', label: 'RU' },
 ];
 

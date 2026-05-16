@@ -14,7 +14,7 @@ const STORAGE_KEY = 'thub_lang';
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Lang | null;
-    return stored && (stored === 'en' || stored === 'ka' || stored === 'ru') ? stored : 'en';
+    return stored && (stored === 'en' || stored === 'ka' || stored === 'ru') ? stored : 'ka';
   });
 
   const setLang = (l: Lang) => {
