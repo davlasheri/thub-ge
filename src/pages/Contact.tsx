@@ -15,15 +15,28 @@ export default function Contact() {
             <div className="contact-card">
               <span className="contact-icon">📍</span>
               <h3>Visit Us</h3>
-              <p>Vazha-Pshavela Ave 37<br />Tbilisi, 0177, Georgia</p>
-              <p className="contact-sub">Mon–Sat: 10:00–19:00</p>
+              <p>Tbilisi, Georgia</p>
+              <p className="contact-sub">Mon–Fri: 10:00–19:00</p>
+              <p className="contact-sub">Sat–Sun: 10:00–18:00</p>
+              <a
+                href="https://maps.app.goo.gl/3Mwx3WmQCfhRRTcb8"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="maps-btn"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                  <circle cx="12" cy="9" r="2.5"/>
+                </svg>
+                Open in Google Maps
+              </a>
             </div>
             <div className="contact-card">
               <span className="contact-icon">📞</span>
               <h3>Call Us</h3>
-              <a href="tel:+995322001234">+995 32 200 12 34</a>
-              <a href="tel:+995599001234">+995 599 00 12 34</a>
-              <p className="contact-sub">Mon–Sat: 09:00–20:00</p>
+              <a href="tel:+995599286244">+995 599 286 244</a>
+              <p className="contact-sub">Mon–Fri: 10:00–19:00</p>
+              <p className="contact-sub">Sat–Sun: 10:00–18:00</p>
             </div>
             <div className="contact-card">
               <span className="contact-icon">✉️</span>
