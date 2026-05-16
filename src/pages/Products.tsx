@@ -4,9 +4,9 @@ import { useVehicle } from '../context/VehicleContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductsContext';
-import { TranslationKey } from '../data/translations';
+import { useCatalog } from '../context/CatalogContext';
+import { getCatName } from '../utils/catalog';
 import { MODELS } from '../data/vehicles';
-import { CATALOG } from '../data/catalog';
 import { Product } from '../types';
 import './Products.css';
 
@@ -15,6 +15,7 @@ export default function Products() {
   const { addToCart } = useCart();
   const { t, tf, lang } = useLang();
   const { filterByVehicle } = useProducts();
+  const { catalog } = useCatalog();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
   const [activeSectionId, setActiveSectionId] = useState('all');
@@ -47,7 +48,10 @@ export default function Products() {
     return list;
   }, [vehicleParts, activeSectionId, search, sort]);
 
-  const tSection = (id: string) => t(('section_' + id) as TranslationKey);
+  const tSection = (id: string) => {
+    const s = catalog.find(x => x.id === id);
+    return s ? getCatName(s, lang, 'section') : id;
+  };
 
   return (
     <main className="products-page">
@@ -93,7 +97,7 @@ export default function Products() {
               >
                 <span>⚡</span><span>{t('prod_all_sections')}</span>
               </button>
-              {CATALOG.map(section => {
+              {catalog.map(section => {
                 const count = vehicleParts.filter(p => p.sectionId === section.id).length;
                 if (count === 0) return null;
                 return (

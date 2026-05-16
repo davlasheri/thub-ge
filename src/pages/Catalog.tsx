@@ -4,8 +4,8 @@ import { useVehicle } from '../context/VehicleContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductsContext';
-import { TranslationKey } from '../data/translations';
-import { CATALOG } from '../data/catalog';
+import { useCatalog } from '../context/CatalogContext';
+import { getCatName } from '../utils/catalog';
 import { MODELS, getYearsForModel } from '../data/vehicles';
 import { ModelId, Product } from '../types';
 import './Catalog.css';
@@ -21,14 +21,21 @@ export default function Catalog() {
   const { addToCart } = useCart();
   const { t, tf, lang } = useLang();
   const { products } = useProducts();
+  const { catalog } = useCatalog();
 
   const [openModelId, setOpenModelId]     = useState<ModelId | null>(vehicle?.modelId ?? null);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
   const [activeLeaf, setActiveLeaf]       = useState<ActiveLeaf | null>(null);
   const [yearFilter, setYearFilter]       = useState<number | 'all'>(vehicle?.year ?? 'all');
 
-  const tSection = (id: string) => t(('section_' + id) as TranslationKey);
-  const tSub = (id: string) => t(('sub_' + id.replace(/-/g, '_')) as TranslationKey);
+  const tSection = (id: string) => {
+    const s = catalog.find(x => x.id === id);
+    return s ? getCatName(s, lang, 'section') : id;
+  };
+  const tSub = (sectionId: string, subId: string) => {
+    const sub = catalog.find(x => x.id === sectionId)?.subsections.find(x => x.id === subId);
+    return sub ? getCatName(sub, lang, 'sub') : subId;
+  };
 
   const toggleModel = (id: ModelId) => {
     if (openModelId === id) {
@@ -73,8 +80,8 @@ export default function Catalog() {
     });
   }, [activeLeaf, yearFilter]);
 
-  const activeModel   = activeLeaf ? MODELS.find(m => m.id === activeLeaf.modelId)         : null;
-  const activeSection = activeLeaf ? CATALOG.find(s => s.id === activeLeaf.sectionId)       : null;
+  const activeModel   = activeLeaf ? MODELS.find(m => m.id === activeLeaf.modelId)   : null;
+  const activeSection = activeLeaf ? catalog.find(s => s.id === activeLeaf.sectionId) : null;
   const activeSub     = activeSection?.subsections.find(s => s.id === activeLeaf?.subsectionId);
 
   const partCount = displayedProducts.length;
@@ -117,7 +124,7 @@ export default function Catalog() {
 
                   {modelOpen && (
                     <div className="tree-sections">
-                      {CATALOG.map(section => {
+                      {catalog.map(section => {
                         const sectionOpen  = openSectionId === section.id;
                         const sectionCount = countFor(model.id as ModelId, section.id);
                         if (sectionCount === 0) return null;
@@ -164,7 +171,7 @@ export default function Catalog() {
                                           : {}}
                                         onClick={() => selectLeaf(model.id as ModelId, section.id, sub.id)}
                                       >
-                                        <span className="tree-sub-name">{tSub(sub.id)}</span>
+                                        <span className="tree-sub-name">{tSub(section.id, sub.id)}</span>
                                         <span className="tree-sub-count">({subCount})</span>
                                       </button>
                                     </li>
@@ -212,7 +219,7 @@ export default function Catalog() {
                   <span className="bc-sep">›</span>
                   <span>{activeSection && tSection(activeSection.id)}</span>
                   <span className="bc-sep">›</span>
-                  <span className="bc-active">{activeSub && tSub(activeSub.id)}</span>
+                  <span className="bc-active">{activeSub && activeSection && tSub(activeSection.id, activeSub.id)}</span>
                 </nav>
 
                 <div className="cat-year-filter">
@@ -234,7 +241,7 @@ export default function Catalog() {
               </div>
 
               <div className="cat-content-title-row">
-                <h2 className="cat-content-title">{activeSub && tSub(activeSub.id)}</h2>
+                <h2 className="cat-content-title">{activeSub && activeSection && tSub(activeSection.id, activeSub.id)}</h2>
                 <span className="cat-result-count">
                   {partCount} {partWord}
                 </span>
@@ -246,7 +253,7 @@ export default function Catalog() {
                   <h3>{t('cat_no_parts_title')}</h3>
                   <p style={{ whiteSpace: 'pre-line' }}>
                     {tf('cat_no_parts_body', {
-                      sub: activeSub ? tSub(activeSub.id) : '',
+                      sub: activeSub && activeSection ? tSub(activeSection.id, activeSub.id) : '',
                       model: activeModel?.name ?? '',
                       year: yearFilter !== 'all' ? ` ${yearFilter}` : '',
                     })}

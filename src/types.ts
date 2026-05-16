@@ -21,12 +21,14 @@ export interface VehicleSelection {
 export interface CatalogSubsection {
   id: string;
   name: string;
+  nameGe?: string;
   icon: string;
 }
 
 export interface CatalogSection {
   id: string;
   name: string;
+  nameGe?: string;
   icon: string;
   image: string;
   subsections: CatalogSubsection[];

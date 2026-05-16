@@ -2,20 +2,26 @@ import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { products as HARDCODED } from '../data/products';
 import { Product, ModelId } from '../types';
 
-const STORAGE_KEY = 'thub_admin_products';
+const ADMIN_KEY   = 'thub_admin_products';
+const DELETED_KEY = 'thub_deleted_products';
 
 function readStored(): Product[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); }
+  try { return JSON.parse(localStorage.getItem(ADMIN_KEY) ?? '[]'); }
   catch { return []; }
+}
+function readDeleted(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(DELETED_KEY) ?? '[]')); }
+  catch { return new Set(); }
 }
 
 interface ProductsContextType {
-  products: Product[];
+  products:      Product[];
   adminProducts: Product[];
+  isAdminProduct: (id: string) => boolean;
   addProduct:    (p: Product) => void;
   updateProduct: (p: Product) => void;
   deleteProduct: (id: string) => void;
-  getById: (id: string) => Product | undefined;
+  getById:       (id: string) => Product | undefined;
   filterByVehicle: (modelId: ModelId, year: number) => Product[];
 }
 
@@ -23,20 +29,39 @@ const ProductsContext = createContext<ProductsContextType | undefined>(undefined
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
   const [adminProducts, setAdminProducts] = useState<Product[]>(readStored);
+  const [deletedIds,    setDeletedIds]    = useState<Set<string>>(readDeleted);
 
   const products = useMemo(() => {
     const adminIds = new Set(adminProducts.map(p => p.id));
-    return [...HARDCODED.filter(p => !adminIds.has(p.id)), ...adminProducts];
-  }, [adminProducts]);
+    return [
+      ...HARDCODED.filter(p => !adminIds.has(p.id) && !deletedIds.has(p.id)),
+      ...adminProducts.filter(p => !deletedIds.has(p.id)),
+    ];
+  }, [adminProducts, deletedIds]);
 
-  const persist = (list: Product[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  const persistAdmin = (list: Product[]) => {
+    localStorage.setItem(ADMIN_KEY, JSON.stringify(list));
     setAdminProducts(list);
   };
+  const persistDeleted = (set: Set<string>) => {
+    localStorage.setItem(DELETED_KEY, JSON.stringify([...set]));
+    setDeletedIds(set);
+  };
 
-  const addProduct    = (p: Product) => persist([...adminProducts, p]);
-  const updateProduct = (p: Product) => persist(adminProducts.map(x => x.id === p.id ? p : x));
-  const deleteProduct = (id: string) => persist(adminProducts.filter(p => p.id !== id));
+  const addProduct = (p: Product) => persistAdmin([...adminProducts, p]);
+
+  // Works for both hardcoded (saves override) and admin products
+  const updateProduct = (p: Product) => {
+    const exists = adminProducts.some(x => x.id === p.id);
+    persistAdmin(exists ? adminProducts.map(x => x.id === p.id ? p : x) : [...adminProducts, p]);
+  };
+
+  const deleteProduct = (id: string) => {
+    persistAdmin(adminProducts.filter(p => p.id !== id));
+    persistDeleted(new Set([...deletedIds, id]));
+  };
+
+  const isAdminProduct = (id: string) => adminProducts.some(p => p.id === id);
 
   const getById = (id: string) => products.find(p => p.id === id);
 
@@ -48,7 +73,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 
   return (
     <ProductsContext.Provider value={{
-      products, adminProducts,
+      products, adminProducts, isAdminProduct,
       addProduct, updateProduct, deleteProduct,
       getById, filterByVehicle,
     }}>

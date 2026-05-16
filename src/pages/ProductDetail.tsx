@@ -3,9 +3,9 @@ import { useCart } from '../context/CartContext';
 import { useVehicle } from '../context/VehicleContext';
 import { useLang } from '../context/LanguageContext';
 import { useProducts } from '../context/ProductsContext';
-import { TranslationKey } from '../data/translations';
+import { useCatalog } from '../context/CatalogContext';
+import { getCatName } from '../utils/catalog';
 import { MODELS } from '../data/vehicles';
-import { CATALOG } from '../data/catalog';
 import './ProductDetail.css';
 
 export default function ProductDetail() {
@@ -15,6 +15,7 @@ export default function ProductDetail() {
   const { vehicle } = useVehicle();
   const { t, lang } = useLang();
   const { products, getById } = useProducts();
+  const { catalog } = useCatalog();
   const product = getById(id ?? '');
 
   if (!product) {
@@ -26,7 +27,7 @@ export default function ProductDetail() {
     );
   }
 
-  const section = CATALOG.find(s => s.id === product.sectionId);
+  const section = catalog.find(s => s.id === product.sectionId);
   const subsection = section?.subsections.find(s => s.id === product.subsectionId);
   const model = vehicle ? MODELS.find(m => m.id === vehicle.modelId) : null;
 
@@ -40,8 +41,14 @@ export default function ProductDetail() {
     <span key={i} className={i < Math.floor(product.rating) ? 'star-filled' : 'star-empty'}>★</span>
   ));
 
-  const tSection = (id: string) => t(('section_' + id) as TranslationKey);
-  const tSub = (id: string) => t(('sub_' + id.replace(/-/g, '_')) as TranslationKey);
+  const tSection = (id: string) => {
+    const s = catalog.find(x => x.id === id);
+    return s ? getCatName(s, lang, 'section') : id;
+  };
+  const tSub = (sectionId: string, subId: string) => {
+    const sub = catalog.find(x => x.id === sectionId)?.subsections.find(x => x.id === subId);
+    return sub ? getCatName(sub, lang, 'sub') : subId;
+  };
 
   const displayName = lang === 'ka' ? product.nameGe : product.name;
 
@@ -53,7 +60,7 @@ export default function ProductDetail() {
           <span>/</span>
           <span>{section && tSection(section.id)}</span>
           <span>/</span>
-          <span>{subsection && tSub(subsection.id)}</span>
+          <span>{section && subsection && tSub(section.id, subsection.id)}</span>
           <span>/</span>
           <span className="breadcrumb-current">{displayName}</span>
         </nav>
