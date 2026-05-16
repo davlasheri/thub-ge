@@ -28,6 +28,7 @@ export interface CatalogSection {
   id: string;
   name: string;
   icon: string;
+  image: string;
   subsections: CatalogSubsection[];
 }
 
