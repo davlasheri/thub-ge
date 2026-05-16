@@ -1,8 +1,8 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { products, getProductById } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useVehicle } from '../context/VehicleContext';
 import { useLang } from '../context/LanguageContext';
+import { useProducts } from '../context/ProductsContext';
 import { TranslationKey } from '../data/translations';
 import { MODELS } from '../data/vehicles';
 import { CATALOG } from '../data/catalog';
@@ -14,7 +14,8 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const { vehicle } = useVehicle();
   const { t, lang } = useLang();
-  const product = getProductById(id ?? '');
+  const { products, getById } = useProducts();
+  const product = getById(id ?? '');
 
   if (!product) {
     return (

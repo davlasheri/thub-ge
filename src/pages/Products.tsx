@@ -3,8 +3,8 @@ import { Navigate, Link } from 'react-router-dom';
 import { useVehicle } from '../context/VehicleContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
+import { useProducts } from '../context/ProductsContext';
 import { TranslationKey } from '../data/translations';
-import { filterByVehicle } from '../data/products';
 import { MODELS } from '../data/vehicles';
 import { CATALOG } from '../data/catalog';
 import { Product } from '../types';
@@ -14,6 +14,7 @@ export default function Products() {
   const { vehicle } = useVehicle();
   const { addToCart } = useCart();
   const { t, tf, lang } = useLang();
+  const { filterByVehicle } = useProducts();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
   const [activeSectionId, setActiveSectionId] = useState('all');

@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { useVehicle } from '../context/VehicleContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
+import { useProducts } from '../context/ProductsContext';
 import { TranslationKey } from '../data/translations';
 import { CATALOG } from '../data/catalog';
 import { MODELS, getYearsForModel } from '../data/vehicles';
-import { products } from '../data/products';
 import { ModelId, Product } from '../types';
 import './Catalog.css';
 
@@ -20,6 +20,7 @@ export default function Catalog() {
   const { vehicle } = useVehicle();
   const { addToCart } = useCart();
   const { t, tf, lang } = useLang();
+  const { products } = useProducts();
 
   const [openModelId, setOpenModelId]     = useState<ModelId | null>(vehicle?.modelId ?? null);
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
