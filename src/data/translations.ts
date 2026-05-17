@@ -19,6 +19,14 @@ const T = {
     cart_checkout: 'Proceed to Checkout',
     cart_clear: 'Clear Cart',
 
+    // Checkout
+    checkout_phone: 'Phone Number',
+    checkout_phone_ph: '+995 5XX XXX XXX',
+    checkout_terms: 'I agree to the',
+    checkout_terms_link: 'terms and conditions',
+    checkout_download: 'Download Order PDF',
+    checkout_phone_err: 'Please enter a valid phone number',
+
     // Footer
     footer_tagline: 'Premium Tesla Parts & Accessories',
     footer_delivery: 'delivered across Georgia 🇬🇪',
@@ -221,6 +229,13 @@ const T = {
     cart_checkout: 'შეკვეთის გაფორმება',
     cart_clear: 'კალათის გასუფთავება',
 
+    checkout_phone: 'ტელეფონის ნომერი',
+    checkout_phone_ph: '+995 5XX XXX XXX',
+    checkout_terms: 'ვეთანხმები',
+    checkout_terms_link: 'წესებსა და პირობებს',
+    checkout_download: 'შეკვეთის PDF გადმოწერა',
+    checkout_phone_err: 'შეიყვანეთ სწორი ნომერი',
+
     footer_tagline: 'Tesla-ს პრემიუმ ნაწილები და აქსესუარები',
     footer_delivery: 'მიწოდება საქართველოში 🇬🇪',
     footer_shop: 'მაღაზია',
@@ -413,6 +428,13 @@ const T = {
     cart_total: 'Итого',
     cart_checkout: 'Оформить заказ',
     cart_clear: 'Очистить корзину',
+
+    checkout_phone: 'Номер телефона',
+    checkout_phone_ph: '+995 5XX XXX XXX',
+    checkout_terms: 'Я принимаю',
+    checkout_terms_link: 'условия использования',
+    checkout_download: 'Скачать PDF заказа',
+    checkout_phone_err: 'Введите корректный номер телефона',
 
     footer_tagline: 'Премиум запчасти и аксессуары Tesla',
     footer_delivery: 'доставка по всей Грузии 🇬🇪',
