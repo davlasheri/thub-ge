@@ -10,11 +10,13 @@ import ProductDetail from './pages/ProductDetail';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
+import ImageTool from './pages/ImageTool';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/admin" element={<Admin />} />
+      <Route path="/image-tool" element={<ImageTool />} />
       <Route path="*" element={
         <VehicleProvider>
           <Header />
