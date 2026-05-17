@@ -47,7 +47,19 @@ const T = {
     home_trust_support: 'Georgian Support',
     home_trust_returns: '30-Day Returns',
 
-    // Catalog page
+    // EPC / Catalog page
+    epc_title: 'Tesla EPC Catalogue',
+    epc_subtitle: 'Select your model, choose a generation, and browse all parts groups.',
+    epc_parts_label: 'PARTS CATALOG',
+    epc_view_btn: 'VIEW',
+    epc_select_title: 'SELECT CATALOG',
+    epc_all_models: 'All Models',
+    epc_search_ph: 'Search categories…',
+    epc_no_results: 'No categories match your search.',
+    epc_back_epc: 'Categories',
+    epc_no_stock: 'No parts in stock for this selection',
+    epc_no_stock_desc: 'We don\'t currently list parts for this category and model combination. Contact us — we can source it.',
+
     cat_sidebar_title: 'Parts Catalogue',
     cat_welcome_title: 'Select a category',
     cat_welcome_sub: 'Expand a model in the tree, then choose a parts category to browse compatible parts.',
@@ -235,6 +247,18 @@ const T = {
     home_trust_support: 'ქართული მხარდაჭერა',
     home_trust_returns: '30-დღიანი დაბრუნება',
 
+    epc_title: 'Tesla EPC კატალოგი',
+    epc_subtitle: 'აირჩიეთ მოდელი, შემდეგ წლების დიაპაზონი და დაათვალიერეთ ნაწილები.',
+    epc_parts_label: 'ნაწილების კატალოგი',
+    epc_view_btn: 'ნახვა',
+    epc_select_title: 'კატალოგის არჩევა',
+    epc_all_models: 'ყველა მოდელი',
+    epc_search_ph: 'კატეგორიების ძებნა…',
+    epc_no_results: 'ძებნა ვერ მოიძებნა.',
+    epc_back_epc: 'კატეგორიები',
+    epc_no_stock: 'ამ კატეგორიაში ნაწილები არ არის',
+    epc_no_stock_desc: 'ამ კომბინაციისთვის ნაწილები ჯერ არ გვაქვს. დაგვიკავშირდით — შევძენთ.',
+
     cat_sidebar_title: 'ნაწილთა კატალოგი',
     cat_welcome_title: 'აირჩიეთ კატეგორია',
     cat_welcome_sub: 'გახსენით მოდელი ხეში, შემდეგ აირჩიეთ ნაწილების კატეგორია.',
@@ -415,6 +439,18 @@ const T = {
     home_trust_delivery: 'Доставка 1–3 дня',
     home_trust_support: 'Поддержка на русском',
     home_trust_returns: 'Возврат 30 дней',
+
+    epc_title: 'Каталог Tesla EPC',
+    epc_subtitle: 'Выберите модель, поколение и просматривайте все группы запчастей.',
+    epc_parts_label: 'КАТАЛОГ ЗАПЧАСТЕЙ',
+    epc_view_btn: 'СМОТРЕТЬ',
+    epc_select_title: 'ВЫБОР КАТАЛОГА',
+    epc_all_models: 'Все модели',
+    epc_search_ph: 'Поиск по категориям…',
+    epc_no_results: 'Категории не найдены.',
+    epc_back_epc: 'Категории',
+    epc_no_stock: 'Нет запчастей в наличии',
+    epc_no_stock_desc: 'Запчасти для этой комбинации пока не добавлены. Свяжитесь с нами — мы найдём.',
 
     cat_sidebar_title: 'Каталог запчастей',
     cat_welcome_title: 'Выберите категорию',

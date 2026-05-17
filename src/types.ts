@@ -31,6 +31,7 @@ export interface CatalogSection {
   nameGe?: string;
   icon: string;
   image: string;
+  groupNumber?: number;
   subsections: CatalogSubsection[];
 }
 
