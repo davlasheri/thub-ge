@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { processImageFile } from '../utils/imageProcess';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
@@ -328,6 +329,7 @@ function ProductFormView({ form, onChange, onSave, onCancel, isEdit, catalog, mo
   catalog: CatalogSection[]; models: TeslaModel[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imgProcessing, setImgProcessing] = useState(false);
   const set = (key: keyof ProductForm, value: unknown) => onChange({ ...form, [key]: value });
 
   const currentSection = catalog.find(s => s.id === form.sectionId);
@@ -338,21 +340,17 @@ function ProductFormView({ form, onChange, onSave, onCancel, isEdit, catalog, mo
     onChange({ ...form, sectionId, subsectionId: sec?.subsections[0]?.id ?? '' });
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX = 800; const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
-        canvas.width = img.width * ratio; canvas.height = img.height * ratio;
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-        set('image', canvas.toDataURL('image/jpeg', 0.75));
-      };
-      img.src = ev.target?.result as string;
-    };
-    reader.readAsDataURL(file); e.target.value = '';
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setImgProcessing(true);
+    try {
+      const result = await processImageFile(file);
+      set('image', result.dataUrl);
+    } finally {
+      setImgProcessing(false);
+    }
   };
 
   const updateFits = (modelId: string, key: 'enabled' | 'from' | 'to', val: string | boolean) =>
@@ -381,18 +379,30 @@ function ProductFormView({ form, onChange, onSave, onCancel, isEdit, catalog, mo
           <div className="admin-card">
             <h3 className="admin-card-title">სურათი</h3>
             <div className="admin-img-preview">
-              {form.image ? <img src={form.image} alt="preview" className="admin-img-thumb" /> : <div className="admin-img-placeholder">📷</div>}
+              {imgProcessing
+                ? <div className="admin-img-processing"><div className="admin-img-spinner" /><span>დამუშავება…</span></div>
+                : form.image
+                  ? <img src={form.image} alt="preview" className="admin-img-thumb" />
+                  : <div className="admin-img-placeholder">📷</div>
+              }
             </div>
             <div className="admin-img-actions">
-              <input type="text" className="admin-input" placeholder="სურათის URL (https://...)"
+              <label className="admin-btn-ghost admin-img-upload-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                ფოტოს ატვირთვა / გადაღება
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
+                  style={{ display: 'none' }} onChange={handleFile} />
+              </label>
+              <p className="admin-img-process-note">
+                ↑ ავტო: 800×800 · მუქი ფონი · THub.ge ბეიჯი
+              </p>
+              <div className="admin-img-divider"><span>ან URL-ით</span></div>
+              <input type="text" className="admin-input" placeholder="https://images.unsplash.com/..."
                 value={form.image.startsWith('data:') ? '' : form.image}
                 onChange={e => set('image', e.target.value)} />
-              <span style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center' }}>ან</span>
-              <button className="admin-btn-ghost" onClick={() => fileInputRef.current?.click()}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                ატვირთე ფაილი
-              </button>
-              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
             </div>
           </div>
 

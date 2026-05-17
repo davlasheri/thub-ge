@@ -1,93 +1,11 @@
 import { useState, useCallback } from 'react';
+import { processImageFile } from '../utils/imageProcess';
 import './ImageTool.css';
-
-const W = 800;
-const H = 800;
-const BG = '#2B2B2C';
-const PAD = 80;
-const LOGO = 'THub.ge';
-const LOGO_RED = '#E3193A';
 
 interface ProcessedImg {
   id: string;
   name: string;
   blobUrl: string;
-}
-
-function drawRoundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number,
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arcTo(x + w, y, x + w, y + r, r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-  ctx.lineTo(x + r, y + h);
-  ctx.arcTo(x, y + h, x, y + h - r, r);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
-}
-
-function processFile(file: File): Promise<ProcessedImg> {
-  return new Promise((resolve, reject) => {
-    const srcUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      const ctx = canvas.getContext('2d')!;
-
-      // Anthracite background
-      ctx.fillStyle = BG;
-      ctx.fillRect(0, 0, W, H);
-
-      // Product image — centered with padding, maintain aspect ratio
-      const maxW = W - PAD * 2;
-      const maxH = H - PAD * 2;
-      const scale = Math.min(maxW / img.width, maxH / img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
-
-      // THub.ge badge — bottom-left
-      ctx.font = 'bold 15px Arial, Helvetica, sans-serif';
-      const tw = ctx.measureText(LOGO).width;
-      const px = 11;
-      const py = 7;
-      const bh = 15 + py * 2;
-      const bw = tw + px * 2;
-      const bx = 16;
-      const by = H - 16 - bh;
-
-      ctx.fillStyle = LOGO_RED;
-      drawRoundRect(ctx, bx, by, bw, bh, 5);
-      ctx.fill();
-
-      ctx.fillStyle = '#FFFFFF';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(LOGO, bx + px, by + bh / 2);
-
-      URL.revokeObjectURL(srcUrl);
-      canvas.toBlob(
-        blob => {
-          if (!blob) { reject(new Error('toBlob failed')); return; }
-          resolve({
-            id: Math.random().toString(36).slice(2),
-            name: file.name.replace(/\.[^.]+$/, '') + '-thub.jpg',
-            blobUrl: URL.createObjectURL(blob),
-          });
-        },
-        'image/jpeg',
-        0.93,
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(srcUrl); reject(new Error('Image load failed')); };
-    img.src = srcUrl;
-  });
 }
 
 export default function ImageTool() {
@@ -100,7 +18,10 @@ export default function ImageTool() {
     if (!arr.length) return;
     setProcessing(true);
     try {
-      const results = await Promise.all(arr.map(processFile));
+      const results = await Promise.all(arr.map(async f => {
+        const r = await processImageFile(f);
+        return { id: Math.random().toString(36).slice(2), name: r.fileName, blobUrl: r.blobUrl };
+      }));
       setImages(prev => [...results, ...prev]);
     } finally {
       setProcessing(false);
