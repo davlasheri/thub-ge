@@ -251,13 +251,37 @@
   text-decoration: underline;
 }
 
-.cart-download-btn {
-  width: 100%;
-  justify-content: center;
+.cart-action-btns {
+  display: flex;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
-.cart-download-btn:disabled {
+.cart-action-btn {
+  flex: 1;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 10px 10px;
+}
+
+.cart-action-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.btn-whatsapp {
+  background: #25D366;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.btn-whatsapp:hover:not(:disabled) {
+  background: #1ebe5d;
 }

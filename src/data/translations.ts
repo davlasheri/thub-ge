@@ -24,7 +24,8 @@ const T = {
     checkout_phone_ph: '+995 5XX XXX XXX',
     checkout_terms: 'I agree to the',
     checkout_terms_link: 'terms and conditions',
-    checkout_download: 'Download Order PDF',
+    checkout_download: 'Download PDF',
+    checkout_whatsapp: 'Send to WhatsApp',
     checkout_phone_err: 'Please enter a valid phone number',
 
     // Footer
@@ -233,7 +234,8 @@ const T = {
     checkout_phone_ph: '+995 5XX XXX XXX',
     checkout_terms: 'ვეთანხმები',
     checkout_terms_link: 'წესებსა და პირობებს',
-    checkout_download: 'შეკვეთის PDF გადმოწერა',
+    checkout_download: 'PDF გადმოწერა',
+    checkout_whatsapp: 'WhatsApp-ზე გაგზავნა',
     checkout_phone_err: 'შეიყვანეთ სწორი ნომერი',
 
     footer_tagline: 'Tesla-ს პრემიუმ ნაწილები და აქსესუარები',
@@ -433,7 +435,8 @@ const T = {
     checkout_phone_ph: '+995 5XX XXX XXX',
     checkout_terms: 'Я принимаю',
     checkout_terms_link: 'условия использования',
-    checkout_download: 'Скачать PDF заказа',
+    checkout_download: 'Скачать PDF',
+    checkout_whatsapp: 'Отправить в WhatsApp',
     checkout_phone_err: 'Введите корректный номер телефона',
 
     footer_tagline: 'Премиум запчасти и аксессуары Tesla',

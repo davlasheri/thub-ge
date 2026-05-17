@@ -1,11 +1,12 @@
 import jsPDF from 'jspdf';
 import { CartItem } from '../types';
 
-export function generateOrderPdf(
-  items: CartItem[],
-  phone: string,
-  totalPrice: number,
-): void {
+function makeOrderNum(): string {
+  const now = new Date();
+  return `ORD-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getTime()).slice(-4)}`;
+}
+
+function buildDoc(items: CartItem[], phone: string, totalPrice: number, orderNum: string): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const RED: [number, number, number] = [227, 25, 55];
@@ -15,7 +16,6 @@ export function generateOrderPdf(
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB'); // DD/MM/YYYY
-  const orderNum = `ORD-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getTime()).slice(-4)}`;
 
   // ── Header ────────────────────────────────────────────────────────────────
   doc.setFillColor(...RED);
@@ -155,5 +155,42 @@ export function generateOrderPdf(
     { align: 'center' },
   );
 
-  doc.save(`thub-order-${orderNum}.pdf`);
+  return doc;
+}
+
+export function generateOrderPdf(items: CartItem[], phone: string, totalPrice: number): void {
+  const orderNum = makeOrderNum();
+  buildDoc(items, phone, totalPrice, orderNum).save(`thub-order-${orderNum}.pdf`);
+}
+
+export function generateOrderPdfBlob(
+  items: CartItem[],
+  phone: string,
+  totalPrice: number,
+): { blob: Blob; orderNum: string } {
+  const orderNum = makeOrderNum();
+  return { blob: buildDoc(items, phone, totalPrice, orderNum).output('blob'), orderNum };
+}
+
+export function buildOrderSummary(
+  items: CartItem[],
+  phone: string,
+  totalPrice: number,
+  orderNum: string,
+): string {
+  const dateStr = new Date().toLocaleDateString('en-GB');
+  const lines = [
+    `🛒 THub.ge — New Order`,
+    `📋 ${orderNum}`,
+    `📅 ${dateStr}`,
+    `📞 ${phone}`,
+    ``,
+    ...items.map(
+      item =>
+        `• ${item.product.name} (${item.product.partNumber}) × ${item.quantity} — ${(item.product.price * item.quantity).toLocaleString()} GEL`,
+    ),
+    ``,
+    `💰 TOTAL: ${totalPrice.toLocaleString()} GEL`,
+  ];
+  return lines.join('\n');
 }
