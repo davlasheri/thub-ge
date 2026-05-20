@@ -7,6 +7,7 @@ import { SiteSettingsProvider } from './context/SiteSettingsContext';
 import { CatalogProvider } from './context/CatalogContext';
 import { ProductsProvider } from './context/ProductsContext';
 import { CartProvider } from './context/CartContext';
+import { CarsProvider } from './context/CarsContext';
 import './index.css';
 import App from './App';
 
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
             <CatalogProvider>
               <ProductsProvider>
                 <CartProvider>
-                  <App />
+                  <CarsProvider>
+                    <App />
+                  </CarsProvider>
                 </CartProvider>
               </ProductsProvider>
             </CatalogProvider>

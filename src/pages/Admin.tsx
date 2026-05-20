@@ -4,8 +4,9 @@ import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
 import { useSiteSettings, ContactSettings, HomeSettings } from '../context/SiteSettingsContext';
+import { useCars } from '../context/CarsContext';
 import { getCatName, slugify } from '../utils/catalog';
-import { TeslaModel, Product, CatalogSection, CatalogSubsection } from '../types';
+import { TeslaModel, Product, CatalogSection, CatalogSubsection, CarListing } from '../types';
 import './Admin.css';
 
 const ADMIN_PW_KEY = 'thub_admin_pw';
@@ -75,8 +76,47 @@ function formToProduct(f: ProductForm, id: string): Product {
   };
 }
 
+// ── Car form helpers ───────────────────────────────────────────────────────
+interface CarForm {
+  model: string; year: string; price: string; mileage: string;
+  exteriorColor: string; interiorColor: string;
+  condition: 'excellent' | 'good' | 'fair';
+  batteryRange: string; autopilot: boolean; fsd: boolean;
+  description: string; photos: string[]; available: boolean;
+}
+
+function emptyCarForm(): CarForm {
+  return {
+    model: 'Model 3', year: String(new Date().getFullYear()), price: '', mileage: '',
+    exteriorColor: '', interiorColor: '',
+    condition: 'excellent', batteryRange: '', autopilot: false, fsd: false,
+    description: '', photos: [], available: true,
+  };
+}
+
+function carToForm(c: CarListing): CarForm {
+  return {
+    model: c.model, year: String(c.year), price: String(c.price), mileage: String(c.mileage),
+    exteriorColor: c.exteriorColor, interiorColor: c.interiorColor,
+    condition: c.condition, batteryRange: String(c.batteryRange),
+    autopilot: c.autopilot, fsd: c.fsd, description: c.description,
+    photos: [...c.photos], available: c.available,
+  };
+}
+
+function formToCar(f: CarForm, id: string): CarListing {
+  return {
+    id, model: f.model.trim(), year: parseInt(f.year) || new Date().getFullYear(),
+    price: parseFloat(f.price) || 0, mileage: parseInt(f.mileage) || 0,
+    exteriorColor: f.exteriorColor.trim(), interiorColor: f.interiorColor.trim(),
+    condition: f.condition, batteryRange: parseInt(f.batteryRange) || 0,
+    autopilot: f.autopilot, fsd: f.fsd, description: f.description.trim(),
+    photos: f.photos, available: f.available,
+  };
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────
-type Tab  = 'products' | 'categories' | 'models' | 'home' | 'contact' | 'users';
+type Tab  = 'products' | 'categories' | 'models' | 'home' | 'contact' | 'users' | 'cars';
 type View = 'list' | 'product-form';
 
 export default function Admin() {
@@ -87,12 +127,18 @@ export default function Admin() {
   const { products, isAdminProduct, addProduct, updateProduct, deleteProduct } = useProducts();
   const { catalog } = useCatalog();
   const { models } = useModels();
+  const { cars, addCar, updateCar, deleteCar } = useCars();
 
   const [editProductId, setEditProductId] = useState<string | null>(null);
   const [productForm, setProductForm]     = useState<ProductForm>(() => emptyProductForm(catalog, models));
   const [productSearch, setProductSearch] = useState('');
   const [productSectionFilter, setProductSectionFilter] = useState('all');
   const [deleteProductTarget, setDeleteProductTarget]   = useState<string | null>(null);
+
+  const [carsView, setCarsView] = useState<'list' | 'form'>('list');
+  const [editCarId, setEditCarId] = useState<string | null>(null);
+  const [carForm, setCarForm] = useState<CarForm>(emptyCarForm());
+  const [deleteCarTarget, setDeleteCarTarget] = useState<string | null>(null);
 
   if (!authed) return <LoginScreen onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setAuthed(true); }} />;
 
@@ -144,6 +190,7 @@ export default function Admin() {
         <NavBtn active={tab === 'home'}       onClick={() => switchTab('home')}       icon={<IcoHome />}  label="მთავარი გვ." />
         <NavBtn active={tab === 'contact'}    onClick={() => switchTab('contact')}    icon={<IcoPhone />} label="საკონტაქტო" />
         <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="მომხ." />
+        <NavBtn active={tab === 'cars'}       onClick={() => switchTab('cars')}       icon={<IcoCar />}   label="ავტომობილები" count={cars.length} />
       </nav>
       <button className="admin-logout" onClick={() => { sessionStorage.removeItem(SESSION_KEY); setAuthed(false); }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -190,6 +237,26 @@ export default function Admin() {
         {tab === 'home'       && <HomeSettingsView />}
         {tab === 'contact'    && <ContactSettingsView />}
         {tab === 'users'      && <UsersView />}
+        {tab === 'cars' && carsView === 'list' && (
+          <CarsAdminList
+            cars={cars}
+            onAdd={() => { setEditCarId(null); setCarForm(emptyCarForm()); setCarsView('form'); }}
+            onEdit={c => { setEditCarId(c.id); setCarForm(carToForm(c)); setCarsView('form'); }}
+            onDelete={setDeleteCarTarget}
+          />
+        )}
+        {tab === 'cars' && carsView === 'form' && (
+          <CarsAdminForm
+            form={carForm} onChange={setCarForm} isEdit={!!editCarId}
+            onSave={() => {
+              if (!carForm.model.trim() || !carForm.price) { alert('შეავსეთ მოდელი და ფასი.'); return; }
+              if (editCarId) updateCar(formToCar(carForm, editCarId));
+              else addCar(formToCar(carForm, genId()));
+              setCarsView('list');
+            }}
+            onCancel={() => setCarsView('list')}
+          />
+        )}
       </main>
 
       {deleteProductTarget && (
@@ -197,6 +264,13 @@ export default function Admin() {
           title="წაიშალოს პროდუქტი?" body="ეს მოქმედება შეუქცევადია."
           onConfirm={() => { deleteProduct(deleteProductTarget); setDeleteProductTarget(null); }}
           onCancel={() => setDeleteProductTarget(null)}
+        />
+      )}
+      {deleteCarTarget && (
+        <ConfirmModal
+          title="წაიშალოს ავტომობილი?" body="ეს მოქმედება შეუქცევადია."
+          onConfirm={() => { deleteCar(deleteCarTarget); setDeleteCarTarget(null); }}
+          onCancel={() => setDeleteCarTarget(null)}
         />
       )}
     </div>
@@ -892,6 +966,245 @@ function UsersView() {
       </div>
     </>
   );
+}
+
+// ── Cars admin list ────────────────────────────────────────────────────────
+function CarsAdminList({ cars, onAdd, onEdit, onDelete }: {
+  cars: CarListing[];
+  onAdd: () => void; onEdit: (c: CarListing) => void; onDelete: (id: string) => void;
+}) {
+  return (
+    <>
+      <div className="admin-page-header">
+        <div>
+          <h1 className="admin-page-title">ავტომობილები</h1>
+          <p className="admin-page-sub">სულ: <strong>{cars.length}</strong></p>
+        </div>
+        <button className="admin-btn-primary" onClick={onAdd}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          ახალი ავტომობილი
+        </button>
+      </div>
+      {cars.length === 0
+        ? <div className="admin-empty"><div className="admin-empty-icon">🚗</div><h3>ავტომობილები არ არის</h3></div>
+        : <div className="admin-product-grid">
+            {cars.map(c => (
+              <div key={c.id} className="admin-product-card">
+                {c.photos[0]
+                  ? <img src={c.photos[0]} alt={c.model} className="admin-product-thumb" />
+                  : <div className="admin-product-thumb" style={{ background: '#222', display:'flex', alignItems:'center', justifyContent:'center', fontSize: 28 }}>🚗</div>
+                }
+                <div className="admin-product-info">
+                  <p className="admin-product-name">{c.year} Tesla {c.model}</p>
+                  <div className="admin-product-meta">
+                    <span className="admin-meta-tag">{c.mileage.toLocaleString()} კმ</span>
+                    <span className={`admin-meta-tag ${c.available ? 'tag-green' : 'tag-red'}`}>
+                      {c.available ? 'ხელმისაწვდომია' : 'გაყიდულია'}
+                    </span>
+                  </div>
+                </div>
+                <div className="admin-product-price">{c.price.toLocaleString()} ₾</div>
+                <div className="admin-product-actions">
+                  <button className="admin-btn-icon" onClick={() => onEdit(c)} title="რედაქტირება">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button className="admin-btn-icon admin-btn-icon-danger" onClick={() => onDelete(c.id)} title="წაშლა">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+      }
+    </>
+  );
+}
+
+// ── Cars admin form ────────────────────────────────────────────────────────
+function CarsAdminForm({ form, onChange, onSave, onCancel, isEdit }: {
+  form: CarForm; onChange: (f: CarForm) => void;
+  onSave: () => void; onCancel: () => void; isEdit: boolean;
+}) {
+  const set = <K extends keyof CarForm>(k: K, v: CarForm[K]) => onChange({ ...form, [k]: v });
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+
+  const handlePhotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    e.target.value = '';
+    setPhotoProcessing(true);
+    try {
+      const newPhotos: string[] = [];
+      for (const file of Array.from(files)) {
+        const dataUrl = await resizeCarPhoto(file);
+        newPhotos.push(dataUrl);
+      }
+      set('photos', [...form.photos, ...newPhotos]);
+    } finally {
+      setPhotoProcessing(false);
+    }
+  };
+
+  const TESLA_MODELS = ['Model S', 'Model 3', 'Model X', 'Model Y', 'Cybertruck'];
+
+  return (
+    <>
+      <div className="admin-page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="admin-btn-ghost admin-back-btn" onClick={onCancel}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <h1 className="admin-page-title">{isEdit ? 'ავტომობილის რედაქტირება' : 'ახალი ავტომობილი'}</h1>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="admin-btn-ghost" onClick={onCancel}>გაუქმება</button>
+          <button className="admin-btn-primary" onClick={onSave}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            შენახვა
+          </button>
+        </div>
+      </div>
+
+      <div className="admin-form-grid">
+        <div className="admin-form-col">
+          <div className="admin-card">
+            <h3 className="admin-card-title">ფოტოები</h3>
+            {form.photos.length > 0 && (
+              <div className="admin-car-photos-grid">
+                {form.photos.map((p, i) => (
+                  <div key={i} className="admin-car-photo-item">
+                    <img src={p} alt={`Photo ${i+1}`} />
+                    {i === 0 && <span className="admin-car-photo-main-badge">მთავარი</span>}
+                    <button className="admin-car-photo-remove" onClick={() => set('photos', form.photos.filter((_, j) => j !== i))}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="admin-btn-ghost admin-img-upload-label" style={{ marginTop: form.photos.length ? 10 : 0 }}>
+              {photoProcessing
+                ? <><div className="admin-img-spinner" style={{ width: 14, height: 14 }} /> კომპრესია…</>
+                : <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    ფოტოების ატვირთვა
+                  </>
+              }
+              <input type="file" accept="image/*" multiple capture="environment" style={{ display: 'none' }} onChange={handlePhotoFile} />
+            </label>
+          </div>
+
+          <div className="admin-card">
+            <h3 className="admin-card-title">სტატუსი</h3>
+            <label className="admin-toggle-row">
+              <span>ხელმისაწვდომია (არ არის გაყიდული)</span>
+              <button type="button" className={`admin-toggle ${form.available ? 'admin-toggle-on' : ''}`} onClick={() => set('available', !form.available)}>
+                <span className="admin-toggle-knob" />
+              </button>
+            </label>
+          </div>
+        </div>
+
+        <div className="admin-form-col">
+          <div className="admin-card">
+            <h3 className="admin-card-title">ძირითადი ინფო</h3>
+            <div className="admin-row-2">
+              <div className="admin-field">
+                <label className="admin-label">მოდელი *</label>
+                <select className="admin-input" value={form.model} onChange={e => set('model', e.target.value)}>
+                  {TESLA_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+                  <option value="other">სხვა</option>
+                </select>
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">წელი</label>
+                <input className="admin-input" type="number" min="2012" max="2030" value={form.year} onChange={e => set('year', e.target.value)} />
+              </div>
+            </div>
+            <div className="admin-row-2">
+              <div className="admin-field">
+                <label className="admin-label">ფასი (₾) *</label>
+                <input className="admin-input" type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} placeholder="85000" />
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">გარბენი (კმ)</label>
+                <input className="admin-input" type="number" min="0" value={form.mileage} onChange={e => set('mileage', e.target.value)} placeholder="45000" />
+              </div>
+            </div>
+            <div className="admin-row-2">
+              <div className="admin-field">
+                <label className="admin-label">მარაგი (კმ)</label>
+                <input className="admin-input" type="number" min="0" value={form.batteryRange} onChange={e => set('batteryRange', e.target.value)} placeholder="530" />
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">მდგომარეობა</label>
+                <select className="admin-input" value={form.condition} onChange={e => set('condition', e.target.value as CarForm['condition'])}>
+                  <option value="excellent">შესანიშნავი</option>
+                  <option value="good">კარგი</option>
+                  <option value="fair">დამაკმაყოფილებელი</option>
+                </select>
+              </div>
+            </div>
+            <div className="admin-row-2">
+              <div className="admin-field">
+                <label className="admin-label">გარე ფერი</label>
+                <input className="admin-input" value={form.exteriorColor} onChange={e => set('exteriorColor', e.target.value)} placeholder="Pearl White" />
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">შიდა ფერი</label>
+                <input className="admin-input" value={form.interiorColor} onChange={e => set('interiorColor', e.target.value)} placeholder="Black" />
+              </div>
+            </div>
+            <div className="admin-field">
+              <label className="admin-label">Autopilot</label>
+              <label className="admin-toggle-row" style={{ marginTop: 0 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>გააქტიურებულია</span>
+                <button type="button" className={`admin-toggle ${form.autopilot ? 'admin-toggle-on' : ''}`} onClick={() => set('autopilot', !form.autopilot)}>
+                  <span className="admin-toggle-knob" />
+                </button>
+              </label>
+            </div>
+            <div className="admin-field">
+              <label className="admin-label">FSD (Full Self-Driving)</label>
+              <label className="admin-toggle-row" style={{ marginTop: 0 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>გააქტიურებულია</span>
+                <button type="button" className={`admin-toggle ${form.fsd ? 'admin-toggle-on' : ''}`} onClick={() => set('fsd', !form.fsd)}>
+                  <span className="admin-toggle-knob" />
+                </button>
+              </label>
+            </div>
+          </div>
+          <div className="admin-card">
+            <h3 className="admin-card-title">აღწერა</h3>
+            <div className="admin-field">
+              <textarea className="admin-input" rows={5} value={form.description} onChange={e => set('description', e.target.value)} placeholder="ავტომობილის დეტალური აღწერა..." />
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+async function resizeCarPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1200;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.72));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load failed')); };
+    img.src = url;
+  });
 }
 
 // ── Shared confirm modal ───────────────────────────────────────────────────

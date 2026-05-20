@@ -1,0 +1,183 @@
+.car-detail-page {
+  min-height: 60vh;
+  padding-bottom: 80px;
+}
+
+.car-detail-container {
+  padding-top: 32px;
+}
+
+.car-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color var(--transition);
+}
+.car-detail-back:hover { color: var(--red); }
+
+.car-detail-notfound {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 20px; padding: 120px 40px; text-align: center;
+}
+
+/* ── Layout ── */
+.car-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 40px;
+  align-items: start;
+}
+
+/* ── Gallery ── */
+.car-gallery-main {
+  position: relative;
+  aspect-ratio: 16/10;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+}
+
+.car-gallery-main img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.car-gallery-sold {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 3px;
+}
+
+.car-gallery-thumbs {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.car-thumb {
+  width: 80px; height: 56px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: #1a1a1a;
+  flex-shrink: 0;
+  transition: border-color var(--transition);
+}
+.car-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.car-thumb-active { border-color: var(--red); }
+
+/* ── Info panel ── */
+.car-info { display: flex; flex-direction: column; gap: 20px; }
+
+.car-info-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.car-info-title { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
+
+.car-info-condition {
+  font-size: 12px; font-weight: 700;
+  padding: 4px 12px; border-radius: 12px;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.car-info-price {
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--red);
+  letter-spacing: -1px;
+}
+
+/* ── Specs card ── */
+.car-specs-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.car-specs-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.car-spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.car-spec-row:last-child { border-bottom: none; }
+.car-spec-label { color: var(--text-muted); }
+.car-spec-value { font-weight: 600; }
+
+/* ── Description ── */
+.car-description {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.car-description p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
+
+/* ── Contact box ── */
+.car-contact-box {
+  background: linear-gradient(135deg, rgba(227,25,55,0.08) 0%, transparent 100%);
+  border: 1px solid rgba(227,25,55,0.25);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.car-contact-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.car-contact-box p  { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
+.car-contact-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.car-contact-btn {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 700;
+  text-decoration: none;
+  transition: filter var(--transition);
+  min-width: 130px;
+}
+.car-contact-btn:hover { filter: brightness(1.1); }
+.car-contact-call { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.car-contact-wa   { background: #25D366; color: #fff; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .car-detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .car-info-title { font-size: 20px; }
+  .car-info-price { font-size: 28px; }
+  .car-contact-btn { min-width: 100px; }
+}

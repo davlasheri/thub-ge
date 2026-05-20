@@ -57,3 +57,20 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+export interface CarListing {
+  id: string;
+  model: string;           // 'Model S' | 'Model 3' | 'Model X' | 'Model Y' | 'Cybertruck' | string
+  year: number;
+  price: number;
+  mileage: number;         // km
+  exteriorColor: string;
+  interiorColor: string;
+  condition: 'excellent' | 'good' | 'fair';
+  batteryRange: number;    // km
+  autopilot: boolean;
+  fsd: boolean;
+  description: string;
+  photos: string[];        // data URLs or https URLs
+  available: boolean;
+}

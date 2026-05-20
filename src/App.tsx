@@ -11,6 +11,8 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
 import ImageTool from './pages/ImageTool';
+import Cars from './pages/Cars';
+import CarDetail from './pages/CarDetail';
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/cars" element={<Cars />} />
+            <Route path="/cars/:id" element={<CarDetail />} />
             <Route path="*" element={
               <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
                 <h2 style={{ fontSize: 48, fontWeight: 900 }}>404</h2>
