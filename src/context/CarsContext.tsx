@@ -72,7 +72,9 @@ function readStored(): CarListing[] {
   try {
     const stored = localStorage.getItem(CARS_KEY);
     if (!stored) return SEED_CARS;
-    return JSON.parse(stored);
+    const parsed: CarListing[] = JSON.parse(stored);
+    if (parsed.length === 0) return SEED_CARS;
+    return parsed;
   } catch { return SEED_CARS; }
 }
 
