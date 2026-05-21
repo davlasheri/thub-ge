@@ -7,6 +7,13 @@ import { useSiteSettings } from '../context/SiteSettingsContext';
 import { ModelId } from '../types';
 import './Home.css';
 
+const MODEL_PHOTOS: Record<string, string> = {
+  MS: 'https://images.unsplash.com/photo-1676856577533-1e8099932f7b?w=400&q=80',
+  M3: 'https://images.unsplash.com/photo-1638398417409-dd54452eccdf?w=400&q=80',
+  MY: 'https://images.unsplash.com/photo-1676754568744-7852efc67c40?w=400&q=80',
+  MX: 'https://images.unsplash.com/photo-1707002752329-5a4a889f7de9?w=400&q=80',
+};
+
 export default function Home() {
   const { setVehicle } = useVehicle();
   const { t, tf, lang } = useLang();
@@ -67,13 +74,15 @@ export default function Home() {
                   : {}}
                 onClick={() => handleModelSelect(m.id)}
               >
-                <div
-                  className="model-silhouette"
-                  style={{ color: selectedModel === m.id ? m.color : undefined }}
-                >
-                  {(m.id === 'M3' || m.id === 'MS') && <SilhouetteSedan tall={m.id === 'MS'} />}
-                  {(m.id === 'MY' || m.id === 'MX') && <SilhouetteSUV tall={m.id === 'MX'} />}
-                  {m.id !== 'M3' && m.id !== 'MS' && m.id !== 'MY' && m.id !== 'MX' && <SilhouetteSedan />}
+                <div className="model-silhouette">
+                  {MODEL_PHOTOS[m.id]
+                    ? <img src={MODEL_PHOTOS[m.id]} alt={m.name} className="model-photo" />
+                    : <div className="model-photo-fallback" style={{ color: selectedModel === m.id ? m.color : undefined }}>
+                        {(m.id === 'M3' || m.id === 'MS') && <SilhouetteSedan tall={m.id === 'MS'} />}
+                        {(m.id === 'MY' || m.id === 'MX') && <SilhouetteSUV tall={m.id === 'MX'} />}
+                        {m.id !== 'M3' && m.id !== 'MS' && m.id !== 'MY' && m.id !== 'MX' && <SilhouetteSedan />}
+                      </div>
+                  }
                 </div>
                 <span className="model-name">{m.name}</span>
                 <span className="model-years">{m.years.from}–{m.years.to}</span>
