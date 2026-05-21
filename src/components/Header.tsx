@@ -24,6 +24,7 @@ export default function Header() {
     { to: '/catalog', label: t('nav_catalogue') },
     { to: '/products', label: t('nav_all_parts') },
     { to: '/cars', label: t('nav_cars') },
+    { to: '/service', label: t('nav_service') },
     { to: '/about', label: t('nav_about') },
     { to: '/contact', label: t('nav_contact') },
   ];
