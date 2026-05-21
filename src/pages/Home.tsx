@@ -8,10 +8,10 @@ import { ModelId } from '../types';
 import './Home.css';
 
 const MODEL_PHOTOS: Record<string, string> = {
-  MS: 'https://images.unsplash.com/photo-1676856577533-1e8099932f7b?w=400&q=80',
-  M3: 'https://images.unsplash.com/photo-1638398417409-dd54452eccdf?w=400&q=80',
-  MY: 'https://images.unsplash.com/photo-1676754568744-7852efc67c40?w=400&q=80',
-  MX: 'https://images.unsplash.com/photo-1707002752329-5a4a889f7de9?w=400&q=80',
+  MS: 'https://images.unsplash.com/photo-1536883442700-ffaa4d76e372?w=400&q=85',
+  M3: 'https://images.unsplash.com/photo-1685270386994-ae66d13d021e?w=400&q=85',
+  MY: 'https://images.unsplash.com/photo-1669625408218-8b81bdc2930b?w=400&q=85',
+  MX: 'https://images.unsplash.com/photo-1707002752329-5a4a889f7de9?w=400&q=85',
 };
 
 export default function Home() {
