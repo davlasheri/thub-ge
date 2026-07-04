@@ -8,6 +8,7 @@ import { useCars } from '../context/CarsContext';
 import { getCatName, slugify } from '../utils/catalog';
 import { TeslaModel, Product, CatalogSection, CatalogSubsection, CarListing } from '../types';
 import EmployeesPanel from '../components/EmployeesPanel';
+import { suggestCategory, CategorySuggestion } from '../utils/partNumber';
 import { login as staffLogin, loadSession, saveSession, Session as StaffSession } from '../utils/staffApi';
 import './Admin.css';
 
@@ -246,6 +247,7 @@ export default function Admin() {
         )}
         {tab === 'products' && view === 'product-form' && (
           <ProductFormView
+            products={products}
             form={productForm} onChange={setProductForm}
             onSave={handleSaveProduct} onCancel={() => setView('list')}
             isEdit={!!editProductId} catalog={catalog} models={models}
@@ -435,7 +437,8 @@ function ProductRow({ product, catalog, isAdmin, onEdit, onDelete }: {
 }
 
 // ── Product form ───────────────────────────────────────────────────────────
-function ProductFormView({ form, onChange, onSave, onCancel, isEdit, catalog, models }: {
+function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, catalog, models }: {
+  products: Product[];
   form: ProductForm; onChange: (f: ProductForm) => void;
   onSave: () => void; onCancel: () => void; isEdit: boolean;
   catalog: CatalogSection[]; models: TeslaModel[];
@@ -443,6 +446,31 @@ function ProductFormView({ form, onChange, onSave, onCancel, isEdit, catalog, mo
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imgProcessing, setImgProcessing] = useState(false);
   const set = (key: keyof ProductForm, value: unknown) => onChange({ ...form, [key]: value });
+
+  const [pnSuggestion, setPnSuggestion] = useState<CategorySuggestion | null>(null);
+
+  const handlePartNumber = (value: string) => {
+    const sug = suggestCategory(value, products);
+    setPnSuggestion(sug);
+    // for NEW products apply the detected category automatically; when
+    // editing, only suggest (the category was chosen deliberately before)
+    if (sug && !isEdit) {
+      onChange({ ...form, partNumber: value, sectionId: sug.sectionId, subsectionId: sug.subsectionId });
+    } else {
+      onChange({ ...form, partNumber: value });
+    }
+  };
+
+  const applySuggestion = () => {
+    if (!pnSuggestion) return;
+    onChange({ ...form, sectionId: pnSuggestion.sectionId, subsectionId: pnSuggestion.subsectionId });
+  };
+
+  const suggestionLabel = (s: CategorySuggestion) => {
+    const sec = catalog.find(x => x.id === s.sectionId);
+    const sub = sec?.subsections.find(x => x.id === s.subsectionId);
+    return `${sec?.nameGe || sec?.name || s.sectionId} → ${sub?.nameGe || sub?.name || s.subsectionId}`;
+  };
 
   const currentSection = catalog.find(s => s.id === form.sectionId);
   const subsections    = currentSection?.subsections ?? [];
@@ -580,7 +608,16 @@ function ProductFormView({ form, onChange, onSave, onCancel, isEdit, catalog, mo
             <div className="admin-row-2">
               <div className="admin-field">
                 <label className="admin-label">ნაწილის ნომერი *</label>
-                <input className="admin-input" value={form.partNumber} onChange={e => set('partNumber', e.target.value)} placeholder="1494822-00-F" />
+                <input className="admin-input" value={form.partNumber} onChange={e => handlePartNumber(e.target.value)} placeholder="1494822-00-F" />
+                {pnSuggestion && (
+                  <p className={`admin-pn-hint ${pnSuggestion.confidence === 'high' ? 'admin-pn-hint-high' : ''}`}>
+                    🪄 {isEdit ? 'შესაძლო კატეგორია' : 'კატეგორია განისაზღვრა'}: <strong>{suggestionLabel(pnSuggestion)}</strong>
+                    <span className="admin-pn-hint-src">მსგავსი: #{pnSuggestion.matchedPartNumber} {pnSuggestion.matchedName}</span>
+                    {isEdit && (form.sectionId !== pnSuggestion.sectionId || form.subsectionId !== pnSuggestion.subsectionId) && (
+                      <button type="button" className="admin-pn-apply" onClick={applySuggestion}>გამოყენება</button>
+                    )}
+                  </p>
+                )}
               </div>
               <div className="admin-field">
                 <label className="admin-label">ფასი (₾) *</label>
