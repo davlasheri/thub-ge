@@ -138,6 +138,11 @@ input, select {
   text-transform: uppercase;
 }
 
+.badge-new-original { background: #1a3a1a; color: #4caf50; }
+.badge-used-original { background: #3a2f14; color: #eab308; }
+.badge-new-replica { background: #1a1a3a; color: #6b7fff; }
+.badge-used-replica { background: #2a2a2a; color: #a0a0a8; }
+/* legacy values kept for old saved products */
 .badge-new { background: #1a3a1a; color: #4caf50; }
 .badge-sale { background: #3a1a1a; color: var(--red); }
 .badge-popular { background: #1a1a3a; color: #6b7fff; }

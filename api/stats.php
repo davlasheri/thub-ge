@@ -42,6 +42,16 @@ $pay = $pdo->query(
    GROUP BY payment"
 )->fetchAll();
 
+// Per-employee breakdown for the requested window
+$byEmp = $pdo->prepare(
+  "SELECT e.display_name AS employee, COALESCE(SUM(s.total),0) AS revenue, COUNT(*) AS sales,
+          COALESCE(AVG(s.total),0) AS avgTicket
+   FROM sales s JOIN employees e ON e.id = s.employee_id
+   WHERE s.created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+   GROUP BY e.id, e.display_name ORDER BY revenue DESC"
+);
+$byEmp->execute([$days - 1]);
+
 ok([
   'daily' => array_map(fn($r) => [
     'day' => $r['day'], 'revenue' => (float)$r['revenue'], 'sales' => (int)$r['sales'],
@@ -54,4 +64,8 @@ ok([
   'payments' => array_map(fn($r) => [
     'payment' => $r['payment'], 'revenue' => (float)$r['revenue'], 'sales' => (int)$r['sales'],
   ], $pay),
+  'byEmployee' => array_map(fn($r) => [
+    'employee' => $r['employee'], 'revenue' => (float)$r['revenue'],
+    'sales' => (int)$r['sales'], 'avgTicket' => (float)$r['avgTicket'],
+  ], $byEmp->fetchAll()),
 ]);

@@ -3,6 +3,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { useVehicle } from '../context/VehicleContext';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
+import { itemStatusLabel } from '../utils/itemStatus';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
@@ -151,7 +152,7 @@ function ShopCard({ product, onAdd, modelColor, lang }: { product: Product; onAd
     <div className="product-card">
       <Link to={`/products/${product.id}`} className="product-card-img-wrap">
         <img src={product.image} alt={product.name} loading="lazy" />
-        {product.badge && <span className={`badge badge-${product.badge} product-badge`}>{product.badge}</span>}
+        {product.badge && <span className={`badge badge-${product.badge} product-badge`}>{itemStatusLabel(product.badge, lang)}</span>}
         {!product.inStock && <div className="out-of-stock-overlay">{t('prod_out_of_stock')}</div>}
       </Link>
       <div className="product-card-body">

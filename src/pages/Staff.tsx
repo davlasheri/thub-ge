@@ -5,9 +5,10 @@ import { useCatalog } from '../context/CatalogContext';
 import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import {
-  Session, Sale, Stats, SaleItemInput, Payment, EmployeeRecord,
+  Session, Sale, Stats, SaleItemInput, Payment, EmployeeRecord, CashReport,
   login, loadSession, saveSession, recordSale, getSales, getStats,
   listEmployees, createEmployee, updateEmployee,
+  getInventory, setInventoryQty, seedInventory, getCash, addCashMovement,
 } from '../utils/staffApi';
 import './Staff.css';
 
@@ -20,12 +21,23 @@ const GEL = (n: number | string) => `${(Number(n) || 0).toFixed(2)} ₾`;
 
 export default function Staff() {
   const [session, setSession] = useState<Session | null>(loadSession);
-  const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales' | 'employees'>('pos');
+  const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales' | 'inventory' | 'cash' | 'employees'>('pos');
 
-  const logout = () => { saveSession(null); setSession(null); };
+  // Admin staff login also unlocks the site admin panel (/admin)
+  const handleLogin = (s: Session) => {
+    saveSession(s);
+    if (s.employee.role === 'admin') sessionStorage.setItem('thub_admin_auth', '1');
+    setSession(s);
+  };
+
+  const logout = () => {
+    saveSession(null);
+    sessionStorage.removeItem('thub_admin_auth');
+    setSession(null);
+  };
 
   if (!session) {
-    return <StaffLogin onLogin={s => { saveSession(s); setSession(s); }} />;
+    return <StaffLogin onLogin={handleLogin} />;
   }
 
   const isAdmin = session.employee.role === 'admin';
@@ -33,12 +45,15 @@ export default function Staff() {
   return (
     <div className="staff-page">
       <header className="staff-header">
-        <Link to="/" className="staff-logo"><span className="logo-t">T</span>Hub<span className="staff-logo-ge">.ge</span> <span className="staff-logo-suffix">Staff</span></Link>
+        <Link to="/" className="staff-logo"><span className="logo-t">T</span>Hub<span className="staff-logo-ge">.ge</span> <span className="staff-logo-suffix">POS</span></Link>
         <nav className="staff-tabs">
-          <button className={tab === 'pos' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('pos')}>🧾 გაყიდვა (POS)</button>
+          <button className={tab === 'pos' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('pos')}>🧾 გაყიდვა</button>
           {isAdmin && <button className={tab === 'dashboard' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('dashboard')}>📊 სტატისტიკა</button>}
           <button className={tab === 'sales' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('sales')}>📋 ისტორია</button>
-          {isAdmin && <button className={tab === 'employees' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('employees')}>👥 თანამშრომლები</button>}
+          {isAdmin && <button className={tab === 'inventory' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('inventory')}>📦 მარაგი</button>}
+          {isAdmin && <button className={tab === 'cash' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('cash')}>💵 სალარო</button>}
+          {isAdmin && <button className={tab === 'employees' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('employees')}>👥 გუნდი</button>}
+          {isAdmin && <Link to="/admin" className="staff-tab staff-tab-link">⚙️ საიტის მართვა</Link>}
         </nav>
         <div className="staff-header-right">
           {session.local && <span className="staff-local-badge" title="მონაცემთა ბაზა არ არის მიერთებული — გაყიდვები ინახება მხოლოდ ამ ბრაუზერში">ლოკალური რეჟიმი</span>}
@@ -50,6 +65,8 @@ export default function Staff() {
       {tab === 'pos' && <PosView session={session} />}
       {tab === 'dashboard' && isAdmin && <DashboardView session={session} />}
       {tab === 'sales' && <SalesHistoryView session={session} />}
+      {tab === 'inventory' && isAdmin && <InventoryView session={session} />}
+      {tab === 'cash' && isAdmin && <CashView session={session} />}
       {tab === 'employees' && isAdmin && <EmployeesView session={session} />}
     </div>
   );
@@ -108,6 +125,17 @@ function PosView({ session }: { session: Session }) {
   const [err, setErr] = useState('');
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
+  const [inv, setInv] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    getInventory(session).then(setInv).catch(() => {});
+  }, [session]);
+
+  const StockChip = ({ id }: { id: string }) => {
+    const n = inv[id];
+    if (n === undefined) return null;
+    return <span className={`pos-stock ${n === 0 ? 'pos-stock-zero' : ''}`}>{n === 0 ? 'ამოიწურა' : `მარაგი: ${n}`}</span>;
+  };
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -174,6 +202,16 @@ function PosView({ session }: { session: Session }) {
         payment, customerPhone: phone.trim() || undefined, note: note.trim() || undefined,
       });
       setDone(res);
+      // reflect sold quantities in the visible stock immediately
+      setInv(prev => {
+        const next = { ...prev };
+        for (const l of ticket) {
+          if (l.productId !== 'custom' && next[l.productId] !== undefined) {
+            next[l.productId] = Math.max(0, next[l.productId] - l.qty);
+          }
+        }
+        return next;
+      });
       setTicket([]); setPhone(''); setNote(''); setPayment('cash');
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : 'შეცდომა');
@@ -236,6 +274,7 @@ function PosView({ session }: { session: Session }) {
               <button key={p.id} className="pos-result" onClick={() => add(p)}>
                 <img src={p.image} alt="" className="pos-result-img" />
                 <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                <StockChip id={p.id} />
                 <span className="pos-result-price">{GEL(p.price)}</span>
               </button>
             ))}
@@ -256,6 +295,7 @@ function PosView({ session }: { session: Session }) {
                 <button key={p.id} className="pos-result" onClick={() => add(p)}>
                   <img src={p.image} alt="" className="pos-result-img" />
                   <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                  <StockChip id={p.id} />
                   <span className="pos-result-price">{GEL(p.price)}</span>
                 </button>
               ))}
@@ -319,28 +359,35 @@ function PosView({ session }: { session: Session }) {
 }
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
+const PERIODS = [7, 14, 30, 90] as const;
+
 function DashboardView({ session }: { session: Session }) {
+  const [period, setPeriod] = useState<number>(14);
   const [stats, setStats] = useState<Stats | null>(null);
   const [err, setErr] = useState('');
   const [hover, setHover] = useState<number | null>(null);
 
   useEffect(() => {
-    getStats(session, 14).then(setStats).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
-  }, [session]);
+    setStats(null);
+    getStats(session, period).then(setStats).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+  }, [session, period]);
 
   if (err) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
   if (!stats) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
 
-  // fill missing days with zeros
+  // fill missing days with zeros for the selected window
   const byDay = new Map(stats.daily.map(d => [d.day, d]));
   const days: { day: string; revenue: number; sales: number }[] = [];
-  for (let i = 13; i >= 0; i--) {
+  for (let i = period - 1; i >= 0; i--) {
     const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     days.push(byDay.get(key) ?? { day: key, revenue: 0, sales: 0 });
   }
-  const max = Math.max(1, ...days.map(d => d.revenue));
-  const payTotal = Math.max(1, stats.payments.reduce((s, p) => s + p.revenue, 0));
+  const max = Math.max(1, ...days.map(d => Number(d.revenue)));
+  const payTotal = Math.max(1, stats.payments.reduce((s, p) => s + Number(p.revenue), 0));
+  const labelEvery = period > 40 ? 7 : period > 20 ? 2 : 1;
+  const periodRevenue = days.reduce((s, d) => s + Number(d.revenue), 0);
+  const periodSales = days.reduce((s, d) => s + d.sales, 0);
 
   const tiles = [
     { label: 'დღეს', agg: stats.today },
@@ -356,16 +403,24 @@ function DashboardView({ session }: { session: Session }) {
           <div key={t.label} className="dash-tile">
             <span className="dash-tile-label">{t.label}</span>
             <strong className="dash-tile-value">{GEL(t.agg.revenue)}</strong>
-            <span className="dash-tile-sub">{t.agg.sales} გაყიდვა</span>
+            <span className="dash-tile-sub">{t.agg.sales} გაყიდვა{t.agg.sales > 0 ? ` · საშ. ${GEL(Number(t.agg.revenue) / t.agg.sales)}` : ''}</span>
           </div>
         ))}
       </div>
 
       <div className="dash-panel">
-        <h3 className="dash-panel-title">შემოსავალი — ბოლო 14 დღე</h3>
+        <div className="dash-panel-head">
+          <h3 className="dash-panel-title">შემოსავალი — ბოლო {period} დღე ({GEL(periodRevenue)} · {periodSales} გაყიდვა)</h3>
+          <div className="dash-period">
+            {PERIODS.map(p => (
+              <button key={p} className={period === p ? 'dash-period-btn dash-period-active' : 'dash-period-btn'}
+                onClick={() => setPeriod(p)}>{p} დღე</button>
+            ))}
+          </div>
+        </div>
         <div className="dash-chart" onMouseLeave={() => setHover(null)}>
           {days.map((d, i) => {
-            const h = Math.round((d.revenue / max) * 100);
+            const h = Math.round((Number(d.revenue) / max) * 100);
             const date = new Date(d.day + 'T00:00:00');
             return (
               <div key={d.day} className="dash-bar-col"
@@ -377,13 +432,33 @@ function DashboardView({ session }: { session: Session }) {
                   </div>
                 )}
                 <div className="dash-bar-track">
-                  <div className={`dash-bar ${hover === i ? 'dash-bar-hover' : ''}`} style={{ height: `${Math.max(h, d.revenue > 0 ? 3 : 0)}%` }} />
+                  <div className={`dash-bar ${hover === i ? 'dash-bar-hover' : ''}`} style={{ height: `${Math.max(h, Number(d.revenue) > 0 ? 3 : 0)}%` }} />
                 </div>
-                <span className="dash-bar-label">{date.getDate()}</span>
+                <span className="dash-bar-label">{i % labelEvery === 0 ? date.getDate() : ''}</span>
               </div>
             );
           })}
         </div>
+      </div>
+
+      <div className="dash-panel">
+        <h3 className="dash-panel-title">თანამშრომლების მიხედვით — ბოლო {period} დღე</h3>
+        {stats.byEmployee.length === 0 && <p className="pos-empty">ჯერ არ არის გაყიდვები</p>}
+        {stats.byEmployee.length > 0 && (
+          <div className="dash-emp-table">
+            <div className="dash-emp-row dash-emp-head">
+              <span>თანამშრომელი</span><span>გაყიდვები</span><span>საშ. ჩეკი</span><span>შემოსავალი</span>
+            </div>
+            {stats.byEmployee.map(e => (
+              <div key={e.employee} className="dash-emp-row">
+                <span className="dash-emp-name">{e.employee}</span>
+                <span>{e.sales}</span>
+                <span>{GEL(e.avgTicket)}</span>
+                <strong>{GEL(e.revenue)}</strong>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="dash-two-col">
@@ -406,7 +481,7 @@ function DashboardView({ session }: { session: Session }) {
             <div key={p.payment} className="dash-pay-row">
               <span className="dash-pay-label">{PAYMENT_LABELS[p.payment]}</span>
               <div className="dash-pay-track">
-                <div className="dash-pay-fill" style={{ width: `${Math.round((p.revenue / payTotal) * 100)}%` }} />
+                <div className="dash-pay-fill" style={{ width: `${Math.round((Number(p.revenue) / payTotal) * 100)}%` }} />
               </div>
               <span className="dash-pay-val">{GEL(p.revenue)} · {p.sales}</span>
             </div>
@@ -416,6 +491,176 @@ function DashboardView({ session }: { session: Session }) {
     </div>
   );
 }
+
+// ── Inventory ──────────────────────────────────────────────────────────────
+function InventoryView({ session }: { session: Session }) {
+  const { products } = useProducts();
+  const [inv, setInv] = useState<Record<string, number> | null>(null);
+  const [err, setErr] = useState('');
+  const [filter, setFilter] = useState('');
+  const [savedId, setSavedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let map = await getInventory(session);
+        // first run: seed random 1-10 for every catalogue product
+        const missing = products.filter(p => map[p.id] === undefined);
+        if (missing.length > 0) {
+          await seedInventory(session, missing.map(p => ({
+            productId: p.id,
+            qty: 1 + Math.floor(Math.random() * 10),
+          })));
+          map = await getInventory(session);
+        }
+        setInv(map);
+      } catch (ex) {
+        setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      }
+    })();
+  }, [session, products]);
+
+  if (err) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
+  if (!inv) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
+
+  const q = filter.trim().toLowerCase();
+  const list = products.filter(p =>
+    !q || p.name.toLowerCase().includes(q) || p.nameGe.toLowerCase().includes(q) || p.partNumber.toLowerCase().includes(q)
+  );
+  const totalUnits = Object.values(inv).reduce((s, n) => s + n, 0);
+  const outOfStock = products.filter(p => (inv[p.id] ?? 0) === 0).length;
+
+  const save = async (productId: string, qty: number) => {
+    const clean = Math.max(0, Math.round(qty) || 0);
+    setInv(prev => ({ ...(prev ?? {}), [productId]: clean }));
+    try {
+      await setInventoryQty(session, productId, clean);
+      setSavedId(productId);
+      setTimeout(() => setSavedId(s => (s === productId ? null : s)), 1500);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    }
+  };
+
+  return (
+    <div className="staff-content">
+      <div className="dash-tiles inv-tiles">
+        <div className="dash-tile"><span className="dash-tile-label">პოზიციები</span><strong className="dash-tile-value">{products.length}</strong></div>
+        <div className="dash-tile"><span className="dash-tile-label">სულ ერთეული</span><strong className="dash-tile-value">{totalUnits}</strong></div>
+        <div className="dash-tile"><span className="dash-tile-label">ამოწურული</span><strong className="dash-tile-value">{outOfStock}</strong></div>
+      </div>
+
+      <input className="staff-input pos-search" placeholder="🔍 ფილტრი — სახელი ან პარტ-ნომერი…"
+        value={filter} onChange={e => setFilter(e.target.value)} />
+
+      <div className="inv-table">
+        {list.map(p => {
+          const qty = inv[p.id] ?? 0;
+          return (
+            <div key={p.id} className={`inv-row ${qty === 0 ? 'inv-row-zero' : ''}`}>
+              <img src={p.image} alt="" className="pos-result-img" />
+              <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+              <span className="inv-price">{GEL(p.price)}</span>
+              <div className="inv-qty-ctrl">
+                <button onClick={() => save(p.id, qty - 1)}>−</button>
+                <input className="staff-input inv-qty-input" inputMode="numeric" value={qty}
+                  onChange={e => save(p.id, parseInt(e.target.value) || 0)} />
+                <button onClick={() => save(p.id, qty + 1)}>+</button>
+              </div>
+              <span className={`inv-saved ${savedId === p.id ? 'inv-saved-show' : ''}`}>✓</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Cash movements ─────────────────────────────────────────────────────────
+function CashView({ session }: { session: Session }) {
+  const [days, setDays] = useState(30);
+  const [report, setReport] = useState<CashReport | null>(null);
+  const [err, setErr] = useState('');
+  const [mType, setMType] = useState<'in' | 'out'>('out');
+  const [mAmount, setMAmount] = useState('');
+  const [mReason, setMReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const reload = () =>
+    getCash(session, days).then(setReport).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+
+  useEffect(() => { setReport(null); reload(); }, [session, days]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      await addCashMovement(session, { type: mType, amount: parseFloat(mAmount), reason: mReason.trim() });
+      setMAmount(''); setMReason('');
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally { setBusy(false); }
+  };
+
+  if (err && !report) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
+  if (!report) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
+
+  const s = report.summary;
+
+  return (
+    <div className="staff-content">
+      <div className="dash-panel-head cash-head">
+        <h2 className="staff-section-title">სალარო — ფულადი მოძრაობა</h2>
+        <div className="dash-period">
+          {[7, 30, 90].map(p => (
+            <button key={p} className={days === p ? 'dash-period-btn dash-period-active' : 'dash-period-btn'}
+              onClick={() => setDays(p)}>{p} დღე</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="dash-tiles">
+        <div className="dash-tile"><span className="dash-tile-label">ნაღდი გაყიდვები</span><strong className="dash-tile-value">{GEL(s.cashSales)}</strong><span className="dash-tile-sub">{s.cashSalesCount} გაყიდვა</span></div>
+        <div className="dash-tile"><span className="dash-tile-label">შემოტანილი</span><strong className="dash-tile-value cash-in">+{GEL(s.manualIn)}</strong></div>
+        <div className="dash-tile"><span className="dash-tile-label">გატანილი / ხარჯი</span><strong className="dash-tile-value cash-out">−{GEL(s.manualOut)}</strong></div>
+        <div className="dash-tile"><span className="dash-tile-label">სალაროში (ნეტო)</span><strong className="dash-tile-value">{GEL(s.net)}</strong></div>
+      </div>
+
+      <div className="dash-panel">
+        <h3 className="dash-panel-title">ოპერაციის დამატება</h3>
+        <form className="cash-form" onSubmit={submit}>
+          <div className="pos-payment cash-type">
+            <button type="button" className={mType === 'in' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setMType('in')}>+ შემოტანა</button>
+            <button type="button" className={mType === 'out' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setMType('out')}>− გატანა / ხარჯი</button>
+          </div>
+          <input className="staff-input" placeholder="თანხა ₾" inputMode="decimal" value={mAmount} onChange={e => setMAmount(e.target.value)} />
+          <input className="staff-input" placeholder="მიზეზი (მაგ: ინკასაცია, კურიერი, ხურდა)" value={mReason} onChange={e => setMReason(e.target.value)} />
+          {err && <div className="staff-login-err">{err}</div>}
+          <button className="staff-btn-primary cash-submit" disabled={busy}>{busy ? 'ინახება…' : 'დამატება'}</button>
+        </form>
+      </div>
+
+      <div className="dash-panel">
+        <h3 className="dash-panel-title">ოპერაციები</h3>
+        {report.movements.length === 0 && <p className="pos-empty">ოპერაციები არ არის ამ პერიოდში</p>}
+        {report.movements.map(m => {
+          const dt = new Date(m.createdAt.includes('T') ? m.createdAt : m.createdAt.replace(' ', 'T'));
+          return (
+            <div key={m.id} className="cash-row">
+              <span className={`cash-badge ${m.type === 'in' ? 'cash-in' : 'cash-out'}`}>{m.type === 'in' ? '+' : '−'}{GEL(m.amount)}</span>
+              <span className="cash-reason">{m.reason || '—'}</span>
+              <span className="cash-meta">{m.employee}</span>
+              <span className="cash-meta">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 // ── Employees ──────────────────────────────────────────────────────────────
 const ROLE_LABELS: Record<'admin' | 'staff', string> = {

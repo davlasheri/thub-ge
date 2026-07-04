@@ -27,15 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $saleId = (int)$pdo->lastInsertId();
 
     $sti = $pdo->prepare('INSERT INTO sale_items (sale_id, product_id, product_name, part_number, qty, unit_price) VALUES (?,?,?,?,?,?)');
+    $inv = $pdo->prepare('UPDATE inventory SET qty = GREATEST(0, qty - ?) WHERE product_id = ?');
     foreach ($items as $it) {
+      $pid = substr((string)($it['productId'] ?? ''), 0, 64);
+      $qty = max(1, (int)($it['qty'] ?? 1));
       $sti->execute([
-        $saleId,
-        substr((string)($it['productId'] ?? ''), 0, 64),
+        $saleId, $pid,
         substr((string)($it['name'] ?? ''), 0, 255),
         substr((string)($it['partNumber'] ?? ''), 0, 64),
-        max(1, (int)($it['qty'] ?? 1)),
+        $qty,
         max(0, (float)($it['unitPrice'] ?? 0)),
       ]);
+      if ($pid !== '' && $pid !== 'custom') $inv->execute([$qty, $pid]);
     }
     $pdo->commit();
   } catch (Throwable $e) {

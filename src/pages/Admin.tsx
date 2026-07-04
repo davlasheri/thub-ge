@@ -27,7 +27,7 @@ interface ProductForm {
   name: string; nameGe: string; partNumber: string;
   sectionId: string; subsectionId: string;
   price: string; description: string; image: string;
-  inStock: boolean; badge: '' | 'new' | 'sale' | 'popular';
+  inStock: boolean; badge: '' | 'new-original' | 'used-original' | 'new-replica' | 'used-replica';
   rating: string; reviews: string;
   fits: FitsState;
 }
@@ -516,12 +516,13 @@ function ProductFormView({ form, onChange, onSave, onCancel, isEdit, catalog, mo
               </button>
             </label>
             <div className="admin-field" style={{ marginTop: 12 }}>
-              <label className="admin-label">ბეჯი</label>
+              <label className="admin-label">ნაწილის სტატუსი</label>
               <select className="admin-input" value={form.badge} onChange={e => set('badge', e.target.value)}>
                 <option value="">— არ არის —</option>
-                <option value="new">new</option>
-                <option value="sale">sale</option>
-                <option value="popular">popular</option>
+                <option value="new-original">ახალი ორიგინალი</option>
+                <option value="used-original">მეორადი ორიგინალი</option>
+                <option value="new-replica">ახალი რეპლიკა</option>
+                <option value="used-replica">მეორადი რეპლიკა</option>
               </select>
             </div>
           </div>

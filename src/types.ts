@@ -35,6 +35,8 @@ export interface CatalogSection {
   subsections: CatalogSubsection[];
 }
 
+export type ItemStatus = 'new-original' | 'used-original' | 'new-replica' | 'used-replica';
+
 export interface Product {
   id: string;
   partNumber: string;
@@ -48,7 +50,7 @@ export interface Product {
   description: string;
   fits: Partial<Record<ModelId, ModelYearRange>>;
   inStock: boolean;
-  badge?: 'new' | 'sale' | 'popular';
+  badge?: ItemStatus;
   rating: number;
   reviews: number;
 }

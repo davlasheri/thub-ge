@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useVehicle } from '../context/VehicleContext';
 import { useLang } from '../context/LanguageContext';
+import { itemStatusLabel } from '../utils/itemStatus';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
@@ -70,7 +71,7 @@ export default function ProductDetail() {
           <div className="detail-img-wrap">
             <img src={product.image} alt={product.name} />
             {product.badge && (
-              <span className={`badge badge-${product.badge} detail-badge`}>{product.badge}</span>
+              <span className={`badge badge-${product.badge} detail-badge`}>{itemStatusLabel(product.badge, lang)}</span>
             )}
           </div>
 

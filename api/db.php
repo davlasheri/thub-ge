@@ -62,11 +62,29 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS sale_items (
   FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+$pdo->exec("CREATE TABLE IF NOT EXISTS inventory (
+  product_id VARCHAR(64) PRIMARY KEY,
+  qty INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$pdo->exec("CREATE TABLE IF NOT EXISTS cash_movements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  employee_id INT NOT NULL,
+  type ENUM('in','out') NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  reason VARCHAR(255) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_cash_created (created_at),
+  FOREIGN KEY (employee_id) REFERENCES employees(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 // Seed a default admin the first time (change the password after first login!)
 $count = (int)$pdo->query('SELECT COUNT(*) c FROM employees')->fetch()['c'];
 if ($count === 0) {
   $st = $pdo->prepare('INSERT INTO employees (username, display_name, password_hash, role) VALUES (?,?,?,?)');
   $st->execute(['admin', 'Administrator', password_hash('thub2026', PASSWORD_DEFAULT), 'admin']);
+  $st->execute(['user1', 'გამყიდველი', password_hash('1234', PASSWORD_DEFAULT), 'staff']);
 }
 
 // ── Tokens: base64(username|expires|hmac) ──────────────────────────────────

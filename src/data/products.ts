@@ -22,7 +22,7 @@ export const products: Product[] = [
     price: 1850, currency: 'GEL', image: IMG.body,
     description: 'OEM-spec front bumper cover. Supplied primed, ready for paint. Includes all mounting clips.',
     fits: { M3: { from: 2017, to: 2022 }, MY: { from: 2020, to: 2023 } },
-    inStock: true, badge: 'popular', rating: 4.8, reviews: 67,
+    inStock: true, badge: 'new-original', rating: 4.8, reviews: 67,
   },
   {
     id: 'b-f02', partNumber: '1494822-00-G',
@@ -31,7 +31,7 @@ export const products: Product[] = [
     price: 1980, currency: 'GEL', image: IMG.body,
     description: 'Updated front bumper for Highland Model 3 facelift. Primed for paint.',
     fits: { M3: { from: 2023, to: 2024 } },
-    inStock: true, badge: 'new', rating: 4.9, reviews: 14,
+    inStock: true, badge: 'new-original', rating: 4.9, reviews: 14,
   },
   {
     id: 'b-f03', partNumber: '1059780-00-C',
@@ -89,7 +89,7 @@ export const products: Product[] = [
     price: 385, currency: 'GEL', image: IMG.body,
     description: 'Single door handle with button micro-switch. Primed for paint. Specify left/right in order notes.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.9, reviews: 201,
+    inStock: true, badge: 'new-original', rating: 4.9, reviews: 201,
   },
 
   // ── GROUP 11: CLOSURE COMPONENTS › SEALS ──────────────────────────────────
@@ -138,7 +138,7 @@ export const products: Product[] = [
     price: 275, currency: 'GEL', image: IMG.body,
     description: 'Gloss black painted mirror housing cap. Popular visual upgrade.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'sale', rating: 4.6, reviews: 112,
+    inStock: true, badge: 'new-replica', rating: 4.6, reviews: 112,
   },
 
   // ── GROUP 12: EXTERIOR FITTINGS › EXT TRIM ────────────────────────────────
@@ -149,7 +149,7 @@ export const products: Product[] = [
     price: 1290, currency: 'GEL', image: IMG.body,
     description: 'Real carbon fiber trunk spoiler. Reduces drag by ~12%. Pre-drilled mounting. Tape-on or bolt-on install.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.9, reviews: 124,
+    inStock: true, badge: 'new-original', rating: 4.9, reviews: 124,
   },
 
   // ── GROUP 12: EXTERIOR FITTINGS › BADGES ──────────────────────────────────
@@ -200,7 +200,7 @@ export const products: Product[] = [
     price: 145, currency: 'GEL', image: IMG.interior,
     description: 'Drop-in ABS organizer tray with alcantara-lined compartments. Perfect fit in Model 3/Y console bin.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.8, reviews: 445,
+    inStock: true, badge: 'new-original', rating: 4.8, reviews: 445,
   },
   {
     id: 'i-c02', partNumber: '1115595-00-B',
@@ -209,7 +209,7 @@ export const products: Product[] = [
     price: 380, currency: 'GEL', image: IMG.interior,
     description: '15W dual Qi wireless charger pad. Drop-in fit for Model 3/Y console. MagSafe-compatible.',
     fits: { M3: { from: 2021, to: 2024 }, MY: { from: 2021, to: 2024 } },
-    inStock: true, badge: 'new', rating: 4.7, reviews: 198,
+    inStock: true, badge: 'new-original', rating: 4.7, reviews: 198,
   },
   {
     id: 'i-c03', partNumber: '1079658-00-C',
@@ -240,7 +240,7 @@ export const products: Product[] = [
     price: 380, currency: 'GEL', image: IMG.mats,
     description: 'Custom-fit TPE all-weather mats for front, rear, and trunk. 1.5 cm raised lip, waterproof, odorless.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2016, to: 2024 }, MX: { from: 2016, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.9, reviews: 312,
+    inStock: true, badge: 'new-original', rating: 4.9, reviews: 312,
   },
   {
     id: 'i-f02', partNumber: '1550763-00-A',
@@ -258,7 +258,7 @@ export const products: Product[] = [
     price: 85, currency: 'GEL', image: IMG.cargo,
     description: 'Elastic cargo net prevents items from sliding. Hooks to trunk anchor points.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2016, to: 2024 } },
-    inStock: true, badge: 'sale', rating: 4.5, reviews: 178,
+    inStock: true, badge: 'new-replica', rating: 4.5, reviews: 178,
   },
   {
     id: 'i-f04', partNumber: '1551410-00-A',
@@ -278,7 +278,7 @@ export const products: Product[] = [
     price: 240, currency: 'GEL', image: IMG.interior,
     description: 'RGB LED ambient lighting with app control. Fits under dashboard and door panels. 16M colors.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'new', rating: 4.6, reviews: 97,
+    inStock: true, badge: 'new-original', rating: 4.6, reviews: 97,
   },
 
   // ── GROUP 16: HV BATTERY › BATTERY PROTECTION ─────────────────────────────
@@ -300,7 +300,7 @@ export const products: Product[] = [
     price: 890, currency: 'GEL', image: IMG.charging,
     description: 'Tesla Wall Connector Gen 3. Adds up to 75 km range/hr. Wi-Fi enabled. 7.3 m cable.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2012, to: 2024 }, MX: { from: 2015, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.9, reviews: 567,
+    inStock: true, badge: 'new-original', rating: 4.9, reviews: 567,
   },
   {
     id: 'chg-02', partNumber: '1457253-00-B',
@@ -338,7 +338,7 @@ export const products: Product[] = [
     price: 95, currency: 'GEL', image: IMG.filter,
     description: 'Replacement cabin air filter. Filters pollen, dust, bacteria. Replace every 2 years / 40,000 km.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.8, reviews: 512,
+    inStock: true, badge: 'new-original', rating: 4.8, reviews: 512,
   },
   {
     id: 'hv-02', partNumber: '1550628-00-A',
@@ -376,7 +376,7 @@ export const products: Product[] = [
     price: 485, currency: 'GEL', image: IMG.susp,
     description: 'Front wheel bearing and hub assembly. Resolves rumbling noises at speed. Plug-and-play.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2016, to: 2024 }, MX: { from: 2016, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.8, reviews: 103,
+    inStock: true, badge: 'new-original', rating: 4.8, reviews: 103,
   },
 
   // ── GROUP 19: SUSPENSION, STEERING & BRAKES › REAR SUSPENSION ─────────────
@@ -398,7 +398,7 @@ export const products: Product[] = [
     price: 420, currency: 'GEL', image: IMG.brakes,
     description: 'OEM-grade front brake pads. Higher thermal threshold, low-dust formula. Fits standard trims.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.8, reviews: 189,
+    inStock: true, badge: 'new-original', rating: 4.8, reviews: 189,
   },
   {
     id: 'c-b02', partNumber: '1044060-00-D',
@@ -436,7 +436,7 @@ export const products: Product[] = [
     price: 480, currency: 'GEL', image: IMG.wheels,
     description: 'OEM aero wheel covers. Snap-on fit, improves range by ~3%. Set of 4.',
     fits: { M3: { from: 2017, to: 2024 } },
-    inStock: true, badge: 'sale', rating: 4.6, reviews: 201,
+    inStock: true, badge: 'new-replica', rating: 4.6, reviews: 201,
   },
   {
     id: 'c-w02', partNumber: '1051000-00-B',
@@ -445,7 +445,7 @@ export const products: Product[] = [
     price: 3800, currency: 'GEL', image: IMG.wheels,
     description: 'Lightweight forged 21" alloy wheels. 15% lighter than OEM cast. Satin Black. Set of 4 with caps.',
     fits: { MS: { from: 2021, to: 2024 }, MX: { from: 2021, to: 2024 } },
-    inStock: true, badge: 'new', rating: 4.9, reviews: 34,
+    inStock: true, badge: 'new-original', rating: 4.9, reviews: 34,
   },
   {
     id: 'c-w03', partNumber: '1050001-00-A',
@@ -492,7 +492,7 @@ export const products: Product[] = [
     price: 750, currency: 'GEL', image: IMG.camera,
     description: '4K front + rear dashcam integrating with Sentry mode via USB. Built-in GPS and Wi-Fi.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2016, to: 2024 }, MX: { from: 2016, to: 2024 } },
-    inStock: true, badge: 'new', rating: 4.5, reviews: 67,
+    inStock: true, badge: 'new-original', rating: 4.5, reviews: 67,
   },
 
   // ── GROUP 21: INFOTAINMENT › DISPLAYS & AUDIO ─────────────────────────────
@@ -503,7 +503,7 @@ export const products: Product[] = [
     price: 125, currency: 'GEL', image: IMG.interior,
     description: 'Anti-glare matte tempered glass protector for the 15.4" center display. 9H hardness, oleophobic coating.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
-    inStock: true, badge: 'popular', rating: 4.8, reviews: 389,
+    inStock: true, badge: 'new-original', rating: 4.8, reviews: 389,
   },
   {
     id: 'el-d01', partNumber: '1550906-00-A',

@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { VehicleProvider } from './context/VehicleContext';
 import Header from './components/Header';
 import VehicleBar from './components/VehicleBar';
@@ -20,7 +20,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/admin" element={<Admin />} />
-      <Route path="/staff" element={<Staff />} />
+      <Route path="/pos" element={<Staff />} />
+      <Route path="/staff" element={<Navigate to="/pos" replace />} />
       <Route path="/image-tool" element={<ImageTool />} />
       <Route path="*" element={
         <VehicleProvider>

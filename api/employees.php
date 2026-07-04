@@ -25,7 +25,7 @@ if ($action === 'create') {
   $role = ($in['role'] ?? 'staff') === 'admin' ? 'admin' : 'staff';
 
   if (!preg_match('/^[a-z0-9._-]{3,32}$/', $username)) fail(400, 'მომხმარებელი: 3-32 სიმბოლო (a-z, 0-9, . _ -)');
-  if (strlen($password) < 6) fail(400, 'პაროლი მინიმუმ 6 სიმბოლო');
+  if (strlen($password) < 4) fail(400, "პაროლი მინიმუმ 4 სიმბოლო");
 
   $st = $pdo->prepare('SELECT id FROM employees WHERE username = ?');
   $st->execute([$username]);
@@ -60,7 +60,7 @@ if ($action === 'update') {
     $pdo->prepare('UPDATE employees SET active = ? WHERE id = ?')->execute([$active, $id]);
   }
   if (!empty($in['newPassword'])) {
-    if (strlen($in['newPassword']) < 6) fail(400, 'პაროლი მინიმუმ 6 სიმბოლო');
+    if (strlen($in['newPassword']) < 4) fail(400, 'პაროლი მინიმუმ 4 სიმბოლო');
     $pdo->prepare('UPDATE employees SET password_hash = ? WHERE id = ?')
         ->execute([password_hash($in['newPassword'], PASSWORD_DEFAULT), $id]);
   }

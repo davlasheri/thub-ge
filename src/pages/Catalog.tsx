@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
+import { itemStatusLabel } from '../utils/itemStatus';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
@@ -386,7 +387,7 @@ function EpcCard({ product, onAddToCart, accentColor, lang, t }: {
         <img src={product.image} alt={product.name} loading="lazy" />
         {!product.inStock && <div className="epc-card-oos">{t('prod_out_of_stock')}</div>}
         {product.badge && (
-          <span className={`badge badge-${product.badge} epc-card-badge`}>{product.badge}</span>
+          <span className={`badge badge-${product.badge} epc-card-badge`}>{itemStatusLabel(product.badge, lang)}</span>
         )}
       </Link>
       <div className="epc-card-body">

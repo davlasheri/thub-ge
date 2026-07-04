@@ -30,6 +30,21 @@ export interface Stats {
   today: Agg; week: Agg; month: Agg; all: Agg;
   topProducts: { name: string; partNumber: string; qty: number; revenue: number }[];
   payments: { payment: Payment; revenue: number; sales: number }[];
+  byEmployee: { employee: string; revenue: number; sales: number; avgTicket: number }[];
+}
+
+export interface CashMovement {
+  id: number;
+  type: 'in' | 'out';
+  amount: number;
+  reason: string;
+  createdAt: string;
+  employee: string;
+}
+
+export interface CashReport {
+  movements: CashMovement[];
+  summary: { cashSales: number; cashSalesCount: number; manualIn: number; manualOut: number; net: number };
 }
 
 export interface Employee { id: number; username: string; displayName: string; role: 'admin' | 'staff' }
@@ -49,6 +64,8 @@ const API = 'api';
 const LOCAL_SALES_KEY = 'thub_sales';
 const LOCAL_PW_KEY = 'thub_staff_pw';
 const LOCAL_EMP_KEY = 'thub_staff_employees';
+const LOCAL_INV_KEY = 'thub_inventory';
+const LOCAL_CASH_KEY = 'thub_cash';
 const SESSION_KEY = 'thub_staff_session';
 
 // ── session persistence ────────────────────────────────────────────────────
@@ -95,6 +112,13 @@ function readLocalEmployees(): LocalEmployee[] {
     list.unshift({
       id: 1, username: 'admin', displayName: 'Administrator', role: 'admin',
       active: true, password: localStorage.getItem(LOCAL_PW_KEY) || 'thub2026',
+    });
+  }
+  if (!list.some(e => e.username === 'user1')) {
+    list.push({
+      id: Math.max(...list.map(e => e.id)) + 1,
+      username: 'user1', displayName: 'გამყიდველი', role: 'staff',
+      active: true, password: '1234',
     });
   }
   return list;
@@ -153,7 +177,7 @@ export async function createEmployee(
 ): Promise<void> {
   const username = payload.username.trim().toLowerCase();
   if (!/^[a-z0-9._-]{3,32}$/.test(username)) throw new Error('მომხმარებელი: 3-32 სიმბოლო (a-z, 0-9, . _ -)');
-  if (payload.password.length < 6) throw new Error('პაროლი მინიმუმ 6 სიმბოლო');
+  if (payload.password.length < 4) throw new Error('პაროლი მინიმუმ 4 სიმბოლო');
   if (session.local) {
     const list = readLocalEmployees();
     if (list.some(e => e.username === username)) throw new Error('ასეთი მომხმარებელი უკვე არსებობს');
@@ -184,7 +208,7 @@ export async function updateEmployee(
     const isSelf = session.employee.id === payload.id || emp.username === session.employee.username;
     if (payload.role !== undefined && isSelf && payload.role !== 'admin') throw new Error('საკუთარი როლის დაქვეითება არ შეიძლება');
     if (payload.active !== undefined && isSelf && !payload.active) throw new Error('საკუთარი ანგარიშის გათიშვა არ შეიძლება');
-    if (payload.newPassword !== undefined && payload.newPassword.length < 6) throw new Error('პაროლი მინიმუმ 6 სიმბოლო');
+    if (payload.newPassword !== undefined && payload.newPassword.length < 4) throw new Error('პაროლი მინიმუმ 4 სიმბოლო');
     if (payload.displayName !== undefined) emp.displayName = payload.displayName.trim() || emp.username;
     if (payload.role !== undefined) emp.role = payload.role;
     if (payload.active !== undefined) emp.active = payload.active;
@@ -219,6 +243,14 @@ export async function recordSale(
       items: payload.items,
     };
     writeLocalSales([sale, ...sales]);
+    // decrement local inventory
+    const inv = readLocalInventory();
+    for (const it of payload.items) {
+      if (it.productId && it.productId !== 'custom' && inv[it.productId] !== undefined) {
+        inv[it.productId] = Math.max(0, inv[it.productId] - it.qty);
+      }
+    }
+    writeLocalInventory(inv);
     return { saleId: sale.id, total: sale.total };
   }
   const res = await post('sales.php', payload, session.token);
@@ -247,6 +279,101 @@ export async function getStats(session: Session, days = 14): Promise<Stats> {
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ ჩაიტვირთა');
   return data as Stats;
+}
+
+// ── inventory ──────────────────────────────────────────────────────────────
+function readLocalInventory(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem(LOCAL_INV_KEY) ?? '{}'); }
+  catch { return {}; }
+}
+function writeLocalInventory(inv: Record<string, number>) {
+  localStorage.setItem(LOCAL_INV_KEY, JSON.stringify(inv));
+}
+
+export async function getInventory(session: Session): Promise<Record<string, number>> {
+  if (session.local) return readLocalInventory();
+  const res = await fetch(`${API}/inventory.php`, {
+    headers: { Authorization: `Bearer ${session.token}` },
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'მარაგი ვერ ჩაიტვირთა');
+  return data.inventory;
+}
+
+export async function setInventoryQty(session: Session, productId: string, qty: number): Promise<void> {
+  if (session.local) {
+    const inv = readLocalInventory();
+    inv[productId] = Math.max(0, Math.round(qty));
+    writeLocalInventory(inv);
+    return;
+  }
+  const res = await post('inventory.php', { action: 'set', productId, qty }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+}
+
+export async function seedInventory(session: Session, items: { productId: string; qty: number }[]): Promise<void> {
+  if (session.local) {
+    const inv = readLocalInventory();
+    for (const it of items) if (inv[it.productId] === undefined) inv[it.productId] = it.qty;
+    writeLocalInventory(inv);
+    return;
+  }
+  const res = await post('inventory.php', { action: 'bulkSeed', items }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+}
+
+// ── cash movements ─────────────────────────────────────────────────────────
+function readLocalCash(): CashMovement[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_CASH_KEY) ?? '[]'); }
+  catch { return []; }
+}
+
+export async function getCash(session: Session, days = 30): Promise<CashReport> {
+  if (session.local) {
+    const from = new Date(); from.setHours(0, 0, 0, 0); from.setDate(from.getDate() - (days - 1));
+    const movements = readLocalCash().filter(m => new Date(m.createdAt) >= from);
+    let cashSales = 0, cashSalesCount = 0;
+    for (const s of readLocalSales()) {
+      if (s.payment === 'cash' && new Date(s.createdAt) >= from) { cashSales += s.total; cashSalesCount++; }
+    }
+    let manualIn = 0, manualOut = 0;
+    for (const m of movements) { if (m.type === 'in') manualIn += m.amount; else manualOut += m.amount; }
+    return {
+      movements,
+      summary: { cashSales, cashSalesCount, manualIn, manualOut, net: cashSales + manualIn - manualOut },
+    };
+  }
+  const res = await fetch(`${API}/cash.php?days=${days}`, {
+    headers: { Authorization: `Bearer ${session.token}` },
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ ჩაიტვირთა');
+  return data as CashReport;
+}
+
+export async function addCashMovement(
+  session: Session,
+  payload: { type: 'in' | 'out'; amount: number; reason: string },
+): Promise<void> {
+  if (!(payload.amount > 0)) throw new Error('თანხა უნდა იყოს 0-ზე მეტი');
+  if (session.local) {
+    const list = readLocalCash();
+    list.unshift({
+      id: (list[0]?.id ?? 0) + 1,
+      type: payload.type,
+      amount: Math.round(payload.amount * 100) / 100,
+      reason: payload.reason,
+      createdAt: new Date().toISOString(),
+      employee: session.employee.displayName,
+    });
+    localStorage.setItem(LOCAL_CASH_KEY, JSON.stringify(list));
+    return;
+  }
+  const res = await post('cash.php', payload, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
 }
 
 function dayKey(d: Date): string {
@@ -279,10 +406,17 @@ function computeLocalStats(sales: Sale[], days: number): Stats {
   }
 
   const monthFrom = startOf(29);
+  const windowFrom = startOf(days - 1);
   const top = new Map<string, { name: string; partNumber: string; qty: number; revenue: number }>();
   const pay = new Map<Payment, { revenue: number; sales: number }>();
+  const emp = new Map<string, { revenue: number; sales: number }>();
   for (const s of sales) {
     const t = new Date(s.createdAt);
+    if (t >= windowFrom) {
+      const ee = emp.get(s.employee) ?? { revenue: 0, sales: 0 };
+      ee.revenue += s.total; ee.sales++;
+      emp.set(s.employee, ee);
+    }
     if (t < monthFrom) continue;
     const p = pay.get(s.payment) ?? { revenue: 0, sales: 0 };
     p.revenue += s.total; p.sales++;
@@ -303,5 +437,8 @@ function computeLocalStats(sales: Sale[], days: number): Stats {
     all: { revenue: sales.reduce((s, x) => s + x.total, 0), sales: sales.length },
     topProducts: [...top.values()].sort((a, b) => b.revenue - a.revenue).slice(0, 8),
     payments: [...pay.entries()].map(([payment, v]) => ({ payment, ...v })),
+    byEmployee: [...emp.entries()]
+      .map(([employee, v]) => ({ employee, ...v, avgTicket: v.sales ? v.revenue / v.sales : 0 }))
+      .sort((a, b) => b.revenue - a.revenue),
   };
 }

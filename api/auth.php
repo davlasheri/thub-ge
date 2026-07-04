@@ -19,7 +19,7 @@ if (!$emp || !password_verify($password, $emp['password_hash'])) {
 
 // Optional password change: pass new_password along with valid credentials
 if (!empty($in['new_password'])) {
-  if (strlen($in['new_password']) < 6) fail(400, 'New password too short (min 6)');
+  if (strlen($in['new_password']) < 4) fail(400, 'New password too short (min 4)');
   $up = $pdo->prepare('UPDATE employees SET password_hash = ? WHERE id = ?');
   $up->execute([password_hash($in['new_password'], PASSWORD_DEFAULT), $emp['id']]);
 }

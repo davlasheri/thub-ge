@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { useCart } from '../context/CartContext';
+import { useLang } from '../context/LanguageContext';
+import { itemStatusLabel } from '../utils/itemStatus';
 import './ProductCard.css';
 
 interface Props {
@@ -9,6 +11,7 @@ interface Props {
 
 export default function ProductCard({ product }: Props) {
   const { addToCart } = useCart();
+  const { lang } = useLang();
 
   const stars = Array.from({ length: 5 }, (_, i) => (
     <span key={i} className={i < Math.floor(product.rating) ? 'star-filled' : 'star-empty'}>★</span>
@@ -20,7 +23,7 @@ export default function ProductCard({ product }: Props) {
         <img src={product.image} alt={product.name} loading="lazy" />
         {product.badge && (
           <span className={`badge badge-${product.badge} product-badge`}>
-            {product.badge}
+            {itemStatusLabel(product.badge, lang)}
           </span>
         )}
         {!product.inStock && (
