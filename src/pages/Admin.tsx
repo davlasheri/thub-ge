@@ -7,16 +7,11 @@ import { useSiteSettings, ContactSettings, HomeSettings } from '../context/SiteS
 import { useCars } from '../context/CarsContext';
 import { getCatName, slugify } from '../utils/catalog';
 import { TeslaModel, Product, CatalogSection, CatalogSubsection, CarListing } from '../types';
+import EmployeesPanel from '../components/EmployeesPanel';
+import { login as staffLogin, loadSession, saveSession, Session as StaffSession } from '../utils/staffApi';
 import './Admin.css';
 
-const ADMIN_PW_KEY = 'thub_admin_pw';
 const SESSION_KEY  = 'thub_admin_auth';
-const DEFAULT_PW   = 'thub2025';
-
-function getAdminPassword() {
-  return localStorage.getItem(ADMIN_PW_KEY) || DEFAULT_PW;
-}
-
 function genId() {
   return 'adm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
@@ -139,6 +134,7 @@ export default function Admin() {
   const [editCarId, setEditCarId] = useState<string | null>(null);
   const [carForm, setCarForm] = useState<CarForm>(emptyCarForm());
   const [deleteCarTarget, setDeleteCarTarget] = useState<string | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
 
   if (!authed) return <LoginScreen onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setAuthed(true); }} />;
 
@@ -170,7 +166,6 @@ export default function Admin() {
     return true;
   });
 
-  const [navOpen, setNavOpen] = useState(false);
   const switchTab = (t: Tab) => { setTab(t); setView('list'); setNavOpen(false); };
 
   const Sidebar = () => (
@@ -189,10 +184,10 @@ export default function Admin() {
         <NavBtn active={tab === 'models'}     onClick={() => switchTab('models')}     icon={<IcoCar />}   label="მოდელები"      count={models.length} />
         <NavBtn active={tab === 'home'}       onClick={() => switchTab('home')}       icon={<IcoHome />}  label="მთავარი გვ." />
         <NavBtn active={tab === 'contact'}    onClick={() => switchTab('contact')}    icon={<IcoPhone />} label="საკონტაქტო" />
-        <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="მომხ." />
+        <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="თანამშრომლები" />
         <NavBtn active={tab === 'cars'}       onClick={() => switchTab('cars')}       icon={<IcoCar />}   label="ავტომობილები" count={cars.length} />
       </nav>
-      <button className="admin-logout" onClick={() => { sessionStorage.removeItem(SESSION_KEY); setAuthed(false); }}>
+      <button className="admin-logout" onClick={() => { sessionStorage.removeItem(SESSION_KEY); saveSession(null); setAuthed(false); }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -236,7 +231,7 @@ export default function Admin() {
         {tab === 'models'     && <ModelsView />}
         {tab === 'home'       && <HomeSettingsView />}
         {tab === 'contact'    && <ContactSettingsView />}
-        {tab === 'users'      && <UsersView />}
+        {tab === 'users'      && <EmployeesTab />}
         {tab === 'cars' && carsView === 'list' && (
           <CarsAdminList
             cars={cars}
@@ -297,14 +292,28 @@ const IcoHome = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none
 const IcoPhone= () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 const IcoUser = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 
-// ── Login ──────────────────────────────────────────────────────────────────
+// ── Login (shared employee accounts — same as POS) ─────────────────────────
 function LoginScreen({ onLogin }: { onLogin: () => void }) {
+  const [username, setUsername] = useState('');
   const [pw, setPw] = useState('');
-  const [err, setErr] = useState(false);
-  const submit = (e: React.FormEvent) => {
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pw === getAdminPassword()) onLogin();
-    else { setErr(true); setPw(''); }
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      const s = await staffLogin(username.trim(), pw);
+      if (s.employee.role !== 'admin') {
+        setErr('წვდომა მხოლოდ ადმინისტრატორისთვის'); setBusy(false); return;
+      }
+      saveSession(s);
+      onLogin();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <div className="admin-login-page">
@@ -313,12 +322,17 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
           <span className="admin-logo-t">T</span>Hub <span className="admin-logo-admin">Admin</span>
         </div>
         <h2>ადმინ პანელი</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>შეიყვანეთ პაროლი</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>შედით თანამშრომლის ანგარიშით (ადმინის როლი)</p>
+        <input className={`admin-input ${err ? 'admin-input-error' : ''}`}
+          placeholder="მომხმარებელი" value={username} style={{ marginBottom: 10 }}
+          onChange={e => { setUsername(e.target.value); setErr(''); }} autoFocus autoComplete="username" />
         <input type="password" className={`admin-input ${err ? 'admin-input-error' : ''}`}
           placeholder="პაროლი" value={pw}
-          onChange={e => { setPw(e.target.value); setErr(false); }} autoFocus />
-        {err && <p className="admin-error">პაროლი არასწორია</p>}
-        <button type="submit" className="admin-btn-primary" style={{ width: '100%', marginTop: 16 }}>შესვლა</button>
+          onChange={e => { setPw(e.target.value); setErr(''); }} autoComplete="current-password" />
+        {err && <p className="admin-error">{err}</p>}
+        <button type="submit" className="admin-btn-primary" style={{ width: '100%', marginTop: 16 }} disabled={busy}>
+          {busy ? 'იტვირთება…' : 'შესვლა'}
+        </button>
       </form>
     </div>
   );
@@ -918,55 +932,20 @@ function ContactSettingsView() {
   );
 }
 
-// ── Users view ─────────────────────────────────────────────────────────────
-function UsersView() {
-  const [currentPw, setCurrentPw] = useState('');
-  const [newPw, setNewPw]         = useState('');
-  const [confirmPw, setConfirmPw] = useState('');
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  const changePassword = () => {
-    if (currentPw !== getAdminPassword()) { setMsg({ ok: false, text: 'მიმდინარე პაროლი არასწორია' }); return; }
-    if (newPw.length < 6)                 { setMsg({ ok: false, text: 'ახალი პაროლი მინ. 6 სიმბოლო' }); return; }
-    if (newPw !== confirmPw)              { setMsg({ ok: false, text: 'პაროლები არ ემთხვევა' }); return; }
-    localStorage.setItem(ADMIN_PW_KEY, newPw);
-    setCurrentPw(''); setNewPw(''); setConfirmPw('');
-    setMsg({ ok: true, text: 'პაროლი წარმატებით შეიცვალა' });
-    setTimeout(() => setMsg(null), 3000);
-  };
-
-  return (
-    <>
-      <div className="admin-page-header">
-        <div><h1 className="admin-page-title">მომხმარებლები</h1><p className="admin-page-sub">ადმინ წვდომის მართვა</p></div>
+// ── Employees tab (shared with POS) ────────────────────────────────────────
+function EmployeesTab() {
+  const session: StaffSession | null = loadSession();
+  if (!session || session.employee.role !== 'admin') {
+    return (
+      <div className="admin-card" style={{ maxWidth: 480 }}>
+        <h3 className="admin-card-title">თანამშრომლები</h3>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          სესია ვერ მოიძებნა — გამოდით და შედით ხელახლა ადმინის ანგარიშით.
+        </p>
       </div>
-      <div className="admin-settings-grid">
-        <div className="admin-card">
-          <h3 className="admin-card-title">ადმინ მომხმარებელი</h3>
-          <div className="admin-user-row">
-            <div className="admin-user-avatar">A</div>
-            <div>
-              <p style={{ fontWeight: 700, fontSize: 15 }}>Admin</p>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>სრული წვდომა · thub.ge/admin</p>
-            </div>
-            <span className="admin-meta-tag tag-green" style={{ marginLeft: 'auto' }}>აქტიური</span>
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 16, lineHeight: 1.6 }}>
-            ადმინ პანელი ხელმისაწვდომია <strong>/#/admin</strong> მისამართზე.<br />
-            სესია ინახება ბრაუზერის დახურვამდე.
-          </p>
-        </div>
-        <div className="admin-card">
-          <h3 className="admin-card-title">პაროლის შეცვლა</h3>
-          <div className="admin-field"><label className="admin-label">მიმდინარე პაროლი</label><input type="password" className="admin-input" value={currentPw} onChange={e => setCurrentPw(e.target.value)} /></div>
-          <div className="admin-field"><label className="admin-label">ახალი პაროლი (მინ. 6 სიმბ.)</label><input type="password" className="admin-input" value={newPw} onChange={e => setNewPw(e.target.value)} /></div>
-          <div className="admin-field"><label className="admin-label">გაიმეორეთ ახალი პაროლი</label><input type="password" className="admin-input" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} /></div>
-          {msg && <p style={{ fontSize: 13, color: msg.ok ? '#27ae60' : 'var(--red)', marginBottom: 12 }}>{msg.text}</p>}
-          <button className="admin-btn-primary" onClick={changePassword}>პაროლის შეცვლა</button>
-        </div>
-      </div>
-    </>
-  );
+    );
+  }
+  return <EmployeesPanel session={session} />;
 }
 
 // ── Cars admin list ────────────────────────────────────────────────────────

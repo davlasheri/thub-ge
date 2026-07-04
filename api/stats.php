@@ -30,7 +30,7 @@ $top = $pdo->query(
   "SELECT si.product_name AS name, si.part_number AS partNumber,
           SUM(si.qty) AS qty, SUM(si.qty * si.unit_price) AS revenue
    FROM sale_items si JOIN sales s ON s.id = si.sale_id
-   WHERE s.created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+   WHERE s.created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY) AND s.total >= 0
    GROUP BY si.product_name, si.part_number
    ORDER BY revenue DESC LIMIT 8"
 )->fetchAll();

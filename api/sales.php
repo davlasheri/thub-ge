@@ -8,6 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $items = $in['items'] ?? [];
   if (!is_array($items) || count($items) === 0) fail(400, 'No items');
   $payment = in_array($in['payment'] ?? '', ['cash','card','transfer'], true) ? $in['payment'] : 'cash';
+  // kind 'return': customer brings parts back — negative total, stock goes UP
+  $isReturn = ($in['kind'] ?? 'sale') === 'return';
 
   $total = 0;
   foreach ($items as $it) {
@@ -15,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $price = max(0, (float)($it['unitPrice'] ?? 0));
     $total += $qty * $price;
   }
+  if ($isReturn) $total = -$total;
 
   $pdo->beginTransaction();
   try {
@@ -27,18 +30,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $saleId = (int)$pdo->lastInsertId();
 
     $sti = $pdo->prepare('INSERT INTO sale_items (sale_id, product_id, product_name, part_number, qty, unit_price) VALUES (?,?,?,?,?,?)');
-    $inv = $pdo->prepare('UPDATE inventory SET qty = GREATEST(0, qty - ?) WHERE product_id = ?');
+    $invDown = $pdo->prepare('UPDATE inventory SET qty = GREATEST(0, qty - ?) WHERE product_id = ?');
+    $invUp   = $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
+                              ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty)');
+    $mv = $pdo->prepare('INSERT INTO stock_movements (employee_id, product_id, product_name, part_number, type, qty, note) VALUES (?,?,?,?,?,?,?)');
     foreach ($items as $it) {
       $pid = substr((string)($it['productId'] ?? ''), 0, 64);
+      $name = substr((string)($it['name'] ?? ''), 0, 255);
+      $pn = substr((string)($it['partNumber'] ?? ''), 0, 64);
       $qty = max(1, (int)($it['qty'] ?? 1));
-      $sti->execute([
-        $saleId, $pid,
-        substr((string)($it['name'] ?? ''), 0, 255),
-        substr((string)($it['partNumber'] ?? ''), 0, 64),
-        $qty,
-        max(0, (float)($it['unitPrice'] ?? 0)),
-      ]);
-      if ($pid !== '' && $pid !== 'custom') $inv->execute([$qty, $pid]);
+      $sti->execute([$saleId, $pid, $name, $pn, $qty, max(0, (float)($it['unitPrice'] ?? 0))]);
+      if ($pid !== '' && $pid !== 'custom') {
+        if ($isReturn) $invUp->execute([$pid, $qty]);
+        else           $invDown->execute([$qty, $pid]);
+        $mv->execute([
+          $emp['id'], $pid, $name, $pn,
+          $isReturn ? 'return' : 'sale',
+          $isReturn ? $qty : -$qty,
+          $isReturn ? substr(trim($in['note'] ?? ''), 0, 255) : "sale #$saleId",
+        ]);
+      }
     }
     $pdo->commit();
   } catch (Throwable $e) {

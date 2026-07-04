@@ -5,10 +5,9 @@ import { useCatalog } from '../context/CatalogContext';
 import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import {
-  Session, Sale, Stats, SaleItemInput, Payment, EmployeeRecord, CashReport,
-  login, loadSession, saveSession, recordSale, getSales, getStats,
-  listEmployees, createEmployee, updateEmployee,
-  getInventory, setInventoryQty, seedInventory, getCash, addCashMovement,
+  Session, Sale, Stats, SaleItemInput, Payment, CashReport, StockMovement,
+  login, loadSession, saveSession, recordSale, recordReturn, getSales, getStats,
+  getInventory, seedInventory, addStock, getStockMovements, getCash, addCashMovement,
 } from '../utils/staffApi';
 import './Staff.css';
 
@@ -21,7 +20,7 @@ const GEL = (n: number | string) => `${(Number(n) || 0).toFixed(2)} ₾`;
 
 export default function Staff() {
   const [session, setSession] = useState<Session | null>(loadSession);
-  const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales' | 'inventory' | 'cash' | 'employees'>('pos');
+  const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales' | 'inventory' | 'cash'>('pos');
 
   // Admin staff login also unlocks the site admin panel (/admin)
   const handleLogin = (s: Session) => {
@@ -52,7 +51,6 @@ export default function Staff() {
           <button className={tab === 'sales' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('sales')}>📋 ისტორია</button>
           {isAdmin && <button className={tab === 'inventory' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('inventory')}>📦 მარაგი</button>}
           {isAdmin && <button className={tab === 'cash' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('cash')}>💵 სალარო</button>}
-          {isAdmin && <button className={tab === 'employees' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('employees')}>👥 გუნდი</button>}
           {isAdmin && <Link to="/admin" className="staff-tab staff-tab-link">⚙️ საიტის მართვა</Link>}
         </nav>
         <div className="staff-header-right">
@@ -67,7 +65,6 @@ export default function Staff() {
       {tab === 'sales' && <SalesHistoryView session={session} />}
       {tab === 'inventory' && isAdmin && <InventoryView session={session} />}
       {tab === 'cash' && isAdmin && <CashView session={session} />}
-      {tab === 'employees' && isAdmin && <EmployeesView session={session} />}
     </div>
   );
 }
@@ -493,18 +490,37 @@ function DashboardView({ session }: { session: Session }) {
 }
 
 // ── Inventory ──────────────────────────────────────────────────────────────
+const STOCK_TYPE_LABELS: Record<string, string> = {
+  purchase: 'შესყიდვა', disassembly: 'ავტოს დაშლა', sale: 'გაყიდვა',
+  return: 'დაბრუნება', adjustment: 'კორექტირება',
+};
+
+interface IntakeLine { productId: string; name: string; partNumber?: string; qty: number }
+
 function InventoryView({ session }: { session: Session }) {
   const { products } = useProducts();
   const [inv, setInv] = useState<Record<string, number> | null>(null);
   const [err, setErr] = useState('');
+  const [view, setView] = useState<'stock' | 'intake' | 'report'>('stock');
   const [filter, setFilter] = useState('');
   const [savedId, setSavedId] = useState<string | null>(null);
+  // intake form
+  const [inType, setInType] = useState<'purchase' | 'disassembly' | 'adjustment'>('purchase');
+  const [inQuery, setInQuery] = useState('');
+  const [inLines, setInLines] = useState<IntakeLine[]>([]);
+  const [inNote, setInNote] = useState('');
+  const [inBusy, setInBusy] = useState(false);
+  const [inDone, setInDone] = useState('');
+  // report
+  const [repDays, setRepDays] = useState(30);
+  const [moves, setMoves] = useState<StockMovement[] | null>(null);
+
+  const reloadInv = () => getInventory(session).then(setInv).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
 
   useEffect(() => {
     (async () => {
       try {
         let map = await getInventory(session);
-        // first run: seed random 1-10 for every catalogue product
         const missing = products.filter(p => map[p.id] === undefined);
         if (missing.length > 0) {
           await seedInventory(session, missing.map(p => ({
@@ -520,7 +536,13 @@ function InventoryView({ session }: { session: Session }) {
     })();
   }, [session, products]);
 
-  if (err) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
+  useEffect(() => {
+    if (view !== 'report') return;
+    setMoves(null);
+    getStockMovements(session, repDays).then(setMoves).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+  }, [session, view, repDays]);
+
+  if (err && !inv) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
   if (!inv) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
 
   const q = filter.trim().toLowerCase();
@@ -530,16 +552,56 @@ function InventoryView({ session }: { session: Session }) {
   const totalUnits = Object.values(inv).reduce((s, n) => s + n, 0);
   const outOfStock = products.filter(p => (inv[p.id] ?? 0) === 0).length;
 
-  const save = async (productId: string, qty: number) => {
-    const clean = Math.max(0, Math.round(qty) || 0);
-    setInv(prev => ({ ...(prev ?? {}), [productId]: clean }));
+  // quick edit in the stock list — logged as adjustment so the report stays true
+  const adjustTo = async (p: { id: string; name: string; partNumber: string }, target: number) => {
+    const current = inv[p.id] ?? 0;
+    const clean = Math.max(0, Math.round(target) || 0);
+    const delta = clean - current;
+    if (delta === 0) return;
+    setInv(prev => ({ ...(prev ?? {}), [p.id]: clean }));
     try {
-      await setInventoryQty(session, productId, clean);
-      setSavedId(productId);
-      setTimeout(() => setSavedId(s => (s === productId ? null : s)), 1500);
+      await addStock(session, {
+        type: 'adjustment',
+        items: [{ productId: p.id, name: p.name, partNumber: p.partNumber, qty: delta }],
+        note: 'ხელით კორექტირება',
+      });
+      setSavedId(p.id);
+      setTimeout(() => setSavedId(s => (s === p.id ? null : s)), 1500);
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      reloadInv();
     }
+  };
+
+  // intake helpers
+  const inResults = inQuery.trim().length >= 2
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(inQuery.trim().toLowerCase()) ||
+        p.nameGe.toLowerCase().includes(inQuery.trim().toLowerCase()) ||
+        p.partNumber.toLowerCase().includes(inQuery.trim().toLowerCase())).slice(0, 6)
+    : [];
+
+  const addIntakeLine = (p: { id: string; name: string; partNumber: string }) => {
+    setInDone('');
+    setInLines(ls => {
+      const ex = ls.find(l => l.productId === p.id);
+      if (ex) return ls.map(l => l.productId === p.id ? { ...l, qty: l.qty + 1 } : l);
+      return [...ls, { productId: p.id, name: p.name, partNumber: p.partNumber, qty: 1 }];
+    });
+    setInQuery('');
+  };
+
+  const submitIntake = async () => {
+    if (inLines.length === 0 || inBusy) return;
+    setInBusy(true); setErr('');
+    try {
+      await addStock(session, { type: inType, items: inLines, note: inNote.trim() });
+      setInDone(`✅ მარაგი შეივსო — ${inLines.reduce((s, l) => s + l.qty, 0)} ერთეული`);
+      setInLines([]); setInNote('');
+      await reloadInv();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally { setInBusy(false); }
   };
 
   return (
@@ -550,31 +612,120 @@ function InventoryView({ session }: { session: Session }) {
         <div className="dash-tile"><span className="dash-tile-label">ამოწურული</span><strong className="dash-tile-value">{outOfStock}</strong></div>
       </div>
 
-      <input className="staff-input pos-search" placeholder="🔍 ფილტრი — სახელი ან პარტ-ნომერი…"
-        value={filter} onChange={e => setFilter(e.target.value)} />
-
-      <div className="inv-table">
-        {list.map(p => {
-          const qty = inv[p.id] ?? 0;
-          return (
-            <div key={p.id} className={`inv-row ${qty === 0 ? 'inv-row-zero' : ''}`}>
-              <img src={p.image} alt="" className="pos-result-img" />
-              <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
-              <span className="inv-price">{GEL(p.price)}</span>
-              <div className="inv-qty-ctrl">
-                <button onClick={() => save(p.id, qty - 1)}>−</button>
-                <input className="staff-input inv-qty-input" inputMode="numeric" value={qty}
-                  onChange={e => save(p.id, parseInt(e.target.value) || 0)} />
-                <button onClick={() => save(p.id, qty + 1)}>+</button>
-              </div>
-              <span className={`inv-saved ${savedId === p.id ? 'inv-saved-show' : ''}`}>✓</span>
-            </div>
-          );
-        })}
+      <div className="dash-period inv-subtabs">
+        <button className={view === 'stock' ? 'dash-period-btn dash-period-active' : 'dash-period-btn'} onClick={() => setView('stock')}>ნაშთები</button>
+        <button className={view === 'intake' ? 'dash-period-btn dash-period-active' : 'dash-period-btn'} onClick={() => setView('intake')}>+ მიღება</button>
+        <button className={view === 'report' ? 'dash-period-btn dash-period-active' : 'dash-period-btn'} onClick={() => setView('report')}>მოძრაობის რეპორტი</button>
       </div>
+
+      {err && <div className="staff-login-err emp-err">{err}</div>}
+
+      {view === 'stock' && (
+        <>
+          <input className="staff-input pos-search" placeholder="🔍 ფილტრი — სახელი ან პარტ-ნომერი…"
+            value={filter} onChange={e => setFilter(e.target.value)} />
+          <div className="inv-table">
+            {list.map(p => {
+              const qty = inv[p.id] ?? 0;
+              return (
+                <div key={p.id} className={`inv-row ${qty === 0 ? 'inv-row-zero' : ''}`}>
+                  <img src={p.image} alt="" className="pos-result-img" />
+                  <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                  <span className="inv-price">{GEL(p.price)}</span>
+                  <div className="inv-qty-ctrl">
+                    <button onClick={() => adjustTo(p, qty - 1)}>−</button>
+                    <input className="staff-input inv-qty-input" inputMode="numeric" defaultValue={qty} key={`${p.id}_${qty}`}
+                      onBlur={e => adjustTo(p, parseInt(e.target.value) || 0)} />
+                    <button onClick={() => adjustTo(p, qty + 1)}>+</button>
+                  </div>
+                  <span className={`inv-saved ${savedId === p.id ? 'inv-saved-show' : ''}`}>✓</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {view === 'intake' && (
+        <div className="dash-panel">
+          <h3 className="dash-panel-title">მარაგის მიღება</h3>
+          <div className="pos-payment intake-types">
+            <button className={inType === 'purchase' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setInType('purchase')}>🛒 შესყიდვა</button>
+            <button className={inType === 'disassembly' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setInType('disassembly')}>🚗 ავტოს დაშლა</button>
+            <button className={inType === 'adjustment' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setInType('adjustment')}>✏️ კორექტირება</button>
+          </div>
+          <input className="staff-input pos-search" placeholder="🔍 დაამატეთ ნაწილი — სახელი ან პარტ-ნომერი…"
+            value={inQuery} onChange={e => setInQuery(e.target.value)} />
+          {inResults.length > 0 && (
+            <div className="pos-results">
+              {inResults.map(p => (
+                <button key={p.id} className="pos-result" onClick={() => addIntakeLine(p)}>
+                  <img src={p.image} alt="" className="pos-result-img" />
+                  <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                  <span className="pos-stock">ნაშთი: {inv[p.id] ?? 0}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {inDone && <div className="pos-done" style={{ marginTop: 12 }}>{inDone}</div>}
+          {inLines.map(l => (
+            <div key={l.productId} className="pos-line">
+              <span className="pos-line-name">{l.name}{l.partNumber && <small>{l.partNumber}</small>}</span>
+              <div className="pos-line-qty">
+                <button onClick={() => setInLines(ls => l.qty <= 1 ? ls.filter(x => x.productId !== l.productId) : ls.map(x => x.productId === l.productId ? { ...x, qty: x.qty - 1 } : x))}>−</button>
+                <span>{l.qty}</span>
+                <button onClick={() => setInLines(ls => ls.map(x => x.productId === l.productId ? { ...x, qty: x.qty + 1 } : x))}>+</button>
+              </div>
+              <span />
+              <span className="pos-line-sum">+{l.qty} ც.</span>
+              <button className="pos-line-x" onClick={() => setInLines(ls => ls.filter(x => x.productId !== l.productId))}>✕</button>
+            </div>
+          ))}
+          {inLines.length > 0 && (
+            <>
+              <input className="staff-input" style={{ marginTop: 12 }} value={inNote} onChange={e => setInNote(e.target.value)}
+                placeholder={inType === 'disassembly' ? 'დონორი ავტო (მაგ: Model 3 2019, VIN…)' : 'შენიშვნა / მომწოდებელი (არასავალდ.)'} />
+              <button className="staff-btn-primary" style={{ marginTop: 10 }} disabled={inBusy} onClick={submitIntake}>
+                {inBusy ? 'ინახება…' : `✓ მიღება — ${inLines.reduce((s, l) => s + l.qty, 0)} ერთეული`}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {view === 'report' && (
+        <div className="dash-panel">
+          <div className="dash-panel-head">
+            <h3 className="dash-panel-title">მარაგის მოძრაობა</h3>
+            <div className="dash-period">
+              {[7, 30, 90].map(p => (
+                <button key={p} className={repDays === p ? 'dash-period-btn dash-period-active' : 'dash-period-btn'}
+                  onClick={() => setRepDays(p)}>{p} დღე</button>
+              ))}
+            </div>
+          </div>
+          {!moves && <p className="pos-empty">იტვირთება…</p>}
+          {moves && moves.length === 0 && <p className="pos-empty">მოძრაობა არ არის ამ პერიოდში</p>}
+          {moves && moves.map(m => {
+            const dt = new Date(m.createdAt.includes('T') ? m.createdAt : m.createdAt.replace(' ', 'T'));
+            const inbound = m.qty > 0;
+            return (
+              <div key={m.id} className="stock-row">
+                <span className={`stock-qty ${inbound ? 'cash-in' : 'cash-out'}`}>{inbound ? `+${m.qty}` : m.qty}</span>
+                <span className={`stock-type stock-type-${m.type}`}>{STOCK_TYPE_LABELS[m.type] ?? m.type}</span>
+                <span className="pos-result-name">{m.name}<small>{m.partNumber}</small></span>
+                <span className="cash-meta">{m.note || '—'}</span>
+                <span className="cash-meta">{m.employee}</span>
+                <span className="cash-meta">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
+
 
 // ── Cash movements ─────────────────────────────────────────────────────────
 function CashView({ session }: { session: Session }) {
@@ -662,161 +813,111 @@ function CashView({ session }: { session: Session }) {
 }
 
 
-// ── Employees ──────────────────────────────────────────────────────────────
-const ROLE_LABELS: Record<'admin' | 'staff', string> = {
-  admin: 'ადმინისტრატორი', staff: 'თანამშრომელი',
-};
-
-function EmployeesView({ session }: { session: Session }) {
-  const [employees, setEmployees] = useState<EmployeeRecord[] | null>(null);
-  const [err, setErr] = useState('');
-  const [msg, setMsg] = useState('');
-  // new employee form
-  const [nUser, setNUser] = useState('');
-  const [nName, setNName] = useState('');
-  const [nPass, setNPass] = useState('');
-  const [nRole, setNRole] = useState<'admin' | 'staff'>('staff');
-  const [busy, setBusy] = useState(false);
-
-  const reload = () =>
-    listEmployees(session).then(setEmployees).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
-
-  useEffect(() => { reload(); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const flash = (m: string) => { setMsg(m); setErr(''); setTimeout(() => setMsg(''), 3500); };
-  const oops = (ex: unknown) => { setErr(ex instanceof Error ? ex.message : 'შეცდომა'); setMsg(''); };
-
-  const addEmployee = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    try {
-      await createEmployee(session, { username: nUser, password: nPass, displayName: nName, role: nRole });
-      setNUser(''); setNName(''); setNPass(''); setNRole('staff');
-      flash('თანამშრომელი დაემატა ✓');
-      await reload();
-    } catch (ex) { oops(ex); } finally { setBusy(false); }
-  };
-
-  const patch = async (payload: Parameters<typeof updateEmployee>[1], okMsg: string) => {
-    try {
-      await updateEmployee(session, payload);
-      flash(okMsg);
-      await reload();
-    } catch (ex) { oops(ex); }
-  };
-
-  const resetPassword = (emp: EmployeeRecord) => {
-    const pw = window.prompt(`ახალი პაროლი — ${emp.username} (მინ. 6 სიმბოლო):`);
-    if (pw === null) return;
-    patch({ id: emp.id, newPassword: pw }, 'პაროლი შეიცვალა ✓');
-  };
-
-  const rename = (emp: EmployeeRecord) => {
-    const name = window.prompt(`სახელი — ${emp.username}:`, emp.displayName);
-    if (name === null) return;
-    patch({ id: emp.id, displayName: name }, 'შენახულია ✓');
-  };
-
-  if (err && !employees) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
-  if (!employees) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
-
-  const isSelf = (e: EmployeeRecord) =>
-    e.id === session.employee.id || e.username === session.employee.username;
-
-  return (
-    <div className="staff-content">
-      <h2 className="staff-section-title">თანამშრომლები და როლები</h2>
-      <p className="emp-roles-hint">
-        <strong>ადმინისტრატორი</strong> — POS, ისტორია, სტატისტიკა, თანამშრომლების მართვა ·{' '}
-        <strong>თანამშრომელი</strong> — მხოლოდ POS და ისტორია
-      </p>
-
-      {msg && <div className="pos-done">{msg}</div>}
-      {err && <div className="staff-login-err emp-err">{err}</div>}
-
-      <div className="emp-table">
-        <div className="emp-row emp-row-head">
-          <span>მომხმარებელი</span><span>სახელი</span><span>როლი</span><span>სტატუსი</span><span></span>
-        </div>
-        {employees.map(emp => (
-          <div key={emp.id} className={`emp-row ${!emp.active ? 'emp-row-inactive' : ''}`}>
-            <span className="emp-username">{emp.username}{isSelf(emp) && <small> (თქვენ)</small>}</span>
-            <button className="emp-name-btn" onClick={() => rename(emp)} title="სახელის შეცვლა">{emp.displayName} ✎</button>
-            <select
-              className="emp-role-select"
-              value={emp.role}
-              disabled={isSelf(emp)}
-              onChange={e => patch({ id: emp.id, role: e.target.value as 'admin' | 'staff' }, 'როლი შეიცვალა ✓')}
-            >
-              <option value="staff">{ROLE_LABELS.staff}</option>
-              <option value="admin">{ROLE_LABELS.admin}</option>
-            </select>
-            <button
-              className={`emp-status-btn ${emp.active ? 'emp-status-on' : 'emp-status-off'}`}
-              disabled={isSelf(emp)}
-              onClick={() => patch({ id: emp.id, active: !emp.active }, emp.active ? 'ანგარიში გაითიშა' : 'ანგარიში ჩაირთო ✓')}
-            >
-              {emp.active ? 'აქტიური' : 'გათიშული'}
-            </button>
-            <button className="staff-btn-secondary emp-pw-btn" onClick={() => resetPassword(emp)}>პაროლი</button>
-          </div>
-        ))}
-      </div>
-
-      <h3 className="staff-section-title emp-add-title">ახალი თანამშრომელი</h3>
-      <form className="emp-add-form" onSubmit={addEmployee}>
-        <input className="staff-input" placeholder="მომხმარებელი (ლათინურად)" value={nUser} onChange={e => setNUser(e.target.value)} />
-        <input className="staff-input" placeholder="სახელი გვარი" value={nName} onChange={e => setNName(e.target.value)} />
-        <input className="staff-input" type="password" placeholder="პაროლი (მინ. 6)" value={nPass} onChange={e => setNPass(e.target.value)} autoComplete="new-password" />
-        <select className="emp-role-select" value={nRole} onChange={e => setNRole(e.target.value as 'admin' | 'staff')}>
-          <option value="staff">{ROLE_LABELS.staff}</option>
-          <option value="admin">{ROLE_LABELS.admin}</option>
-        </select>
-        <button className="staff-btn-primary emp-add-btn" disabled={busy}>{busy ? 'ინახება…' : '+ დამატება'}</button>
-      </form>
-    </div>
-  );
-}
-
 // ── Sales history ──────────────────────────────────────────────────────────
 function SalesHistoryView({ session }: { session: Session }) {
   const [sales, setSales] = useState<Sale[] | null>(null);
   const [err, setErr] = useState('');
   const [open, setOpen] = useState<number | null>(null);
+  const [returning, setReturning] = useState<number | null>(null);
+  const [retQty, setRetQty] = useState<Record<string, number>>({});
+  const [retReason, setRetReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
 
-  useEffect(() => {
+  const reload = () =>
     getSales(session, 100).then(setSales).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
-  }, [session]);
 
-  if (err) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
+  useEffect(() => { reload(); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (err && !sales) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
   if (!sales) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
+
+  const startReturn = (s: Sale) => {
+    setReturning(s.id);
+    setRetReason('');
+    const q: Record<string, number> = {};
+    s.items.forEach((it, i) => { q[`${i}`] = Number(it.qty); });
+    setRetQty(q);
+  };
+
+  const submitReturn = async (s: Sale) => {
+    if (busy) return;
+    const items = s.items
+      .map((it, i) => ({ ...it, qty: retQty[`${i}`] ?? 0 }))
+      .filter(it => it.qty > 0)
+      .map(it => ({ productId: it.productId, name: it.name, partNumber: it.partNumber, qty: Number(it.qty), unitPrice: Number(it.unitPrice) }));
+    if (items.length === 0) { setErr('აირჩიეთ დასაბრუნებელი რაოდენობა'); return; }
+    setBusy(true); setErr('');
+    try {
+      await recordReturn(session, {
+        items,
+        payment: s.payment,
+        note: `დაბრუნება #${s.id}${retReason.trim() ? ' — ' + retReason.trim() : ''}`,
+      });
+      setReturning(null); setOpen(null);
+      setMsg('✅ დაბრუნება გაფორმდა — თანხა გამოაკლდა, ნაწილები დაბრუნდა მარაგში');
+      setTimeout(() => setMsg(''), 4000);
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally { setBusy(false); }
+  };
 
   return (
     <div className="staff-content">
       <h2 className="staff-section-title">ბოლო გაყიდვები</h2>
+      {msg && <div className="pos-done">{msg}</div>}
+      {err && <div className="staff-login-err emp-err">{err}</div>}
       {sales.length === 0 && <p className="pos-empty">ჯერ არ არის გაყიდვები</p>}
       {sales.map(s => {
         const dt = new Date(s.createdAt.includes('T') ? s.createdAt : s.createdAt.replace(' ', 'T'));
+        const isReturn = Number(s.total) < 0;
         return (
           <div key={s.id} className="hist-row-wrap">
-            <button className="hist-row" onClick={() => setOpen(open === s.id ? null : s.id)}>
+            <button className="hist-row" onClick={() => { setOpen(open === s.id ? null : s.id); setReturning(null); }}>
               <span className="hist-id">#{s.id}</span>
               <span className="hist-date">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
-              <span className="hist-emp">{s.employee}</span>
+              <span className="hist-emp">{s.employee}{isReturn && <span className="hist-return-chip">↩ დაბრუნება</span>}</span>
               <span className="hist-pay">{PAYMENT_LABELS[s.payment]}</span>
-              <span className="hist-total">{GEL(s.total)}</span>
+              <span className={`hist-total ${isReturn ? 'hist-total-neg' : ''}`}>{GEL(s.total)}</span>
             </button>
             {open === s.id && (
               <div className="hist-detail">
                 {s.items.map((it, i) => (
                   <div key={i} className="hist-item">
                     <span>{it.name}{it.partNumber ? ` (${it.partNumber})` : ''}</span>
-                    <span>{it.qty} × {GEL(it.unitPrice)}</span>
+                    <span>{Number(it.qty)} × {GEL(it.unitPrice)}</span>
                   </div>
                 ))}
                 {s.customerPhone && <div className="hist-meta">📞 {s.customerPhone}</div>}
                 {s.note && <div className="hist-meta">📝 {s.note}</div>}
+
+                {!isReturn && returning !== s.id && (
+                  <button className="staff-btn-secondary hist-return-btn" onClick={() => startReturn(s)}>↩ დაბრუნების გაფორმება</button>
+                )}
+                {returning === s.id && (
+                  <div className="hist-return-form">
+                    <p className="hist-return-title">რა ბრუნდება?</p>
+                    {s.items.map((it, i) => (
+                      <div key={i} className="hist-return-line">
+                        <span className="pos-result-name">{it.name}<small>{it.partNumber}</small></span>
+                        <div className="pos-line-qty">
+                          <button onClick={() => setRetQty(q => ({ ...q, [`${i}`]: Math.max(0, (q[`${i}`] ?? 0) - 1) }))}>−</button>
+                          <span>{retQty[`${i}`] ?? 0}</span>
+                          <button onClick={() => setRetQty(q => ({ ...q, [`${i}`]: Math.min(Number(it.qty), (q[`${i}`] ?? 0) + 1) }))}>+</button>
+                        </div>
+                        <span className="cash-meta">მაქს. {Number(it.qty)}</span>
+                      </div>
+                    ))}
+                    <input className="staff-input" placeholder="მიზეზი (არასავალდ.)" value={retReason} onChange={e => setRetReason(e.target.value)} />
+                    <div className="hist-return-actions">
+                      <button className="staff-btn-primary" disabled={busy} onClick={() => submitReturn(s)}>
+                        {busy ? 'ინახება…' : 'დაბრუნების დადასტურება'}
+                      </button>
+                      <button className="staff-btn-secondary" onClick={() => setReturning(null)}>გაუქმება</button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

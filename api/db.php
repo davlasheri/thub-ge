@@ -68,6 +68,21 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS inventory (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+$pdo->exec("CREATE TABLE IF NOT EXISTS stock_movements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  employee_id INT NOT NULL,
+  product_id VARCHAR(64) NOT NULL,
+  product_name VARCHAR(255) NOT NULL,
+  part_number VARCHAR(64) DEFAULT '',
+  type ENUM('purchase','disassembly','sale','return','adjustment') NOT NULL,
+  qty INT NOT NULL,
+  note VARCHAR(255) DEFAULT '',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_stock_created (created_at),
+  INDEX idx_stock_product (product_id),
+  FOREIGN KEY (employee_id) REFERENCES employees(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 $pdo->exec("CREATE TABLE IF NOT EXISTS cash_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   employee_id INT NOT NULL,

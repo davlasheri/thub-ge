@@ -33,6 +33,20 @@ export interface Stats {
   byEmployee: { employee: string; revenue: number; sales: number; avgTicket: number }[];
 }
 
+export type StockMoveType = 'purchase' | 'disassembly' | 'sale' | 'return' | 'adjustment';
+
+export interface StockMovement {
+  id: number;
+  productId: string;
+  name: string;
+  partNumber: string;
+  type: StockMoveType;
+  qty: number;             // signed: + in, − out
+  note: string;
+  createdAt: string;
+  employee: string;
+}
+
 export interface CashMovement {
   id: number;
   type: 'in' | 'out';
@@ -66,6 +80,7 @@ const LOCAL_PW_KEY = 'thub_staff_pw';
 const LOCAL_EMP_KEY = 'thub_staff_employees';
 const LOCAL_INV_KEY = 'thub_inventory';
 const LOCAL_CASH_KEY = 'thub_cash';
+const LOCAL_STOCK_KEY = 'thub_stock_moves';
 const SESSION_KEY = 'thub_staff_session';
 
 // ── session persistence ────────────────────────────────────────────────────
@@ -224,12 +239,34 @@ export async function updateEmployee(
   if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
 }
 
-// ── record sale ────────────────────────────────────────────────────────────
-export async function recordSale(
+// ── record sale / return ───────────────────────────────────────────────────
+function logLocalStockMoves(
+  session: Session,
+  items: { productId: string; name: string; partNumber?: string; qty: number }[],
+  type: StockMoveType,
+  note: string,
+) {
+  let list: StockMovement[] = [];
+  try { list = JSON.parse(localStorage.getItem(LOCAL_STOCK_KEY) ?? '[]'); } catch { list = []; }
+  let nextId = (list[0]?.id ?? 0) + 1;
+  const now = new Date().toISOString();
+  for (const it of items) {
+    if (!it.productId || it.productId === 'custom') continue;
+    list.unshift({
+      id: nextId++, productId: it.productId, name: it.name, partNumber: it.partNumber ?? '',
+      type, qty: it.qty, note, createdAt: now, employee: session.employee.displayName,
+    });
+  }
+  localStorage.setItem(LOCAL_STOCK_KEY, JSON.stringify(list));
+}
+
+async function saveSaleLike(
   session: Session,
   payload: { items: SaleItemInput[]; payment: Payment; customerPhone?: string; note?: string },
+  isReturn: boolean,
 ): Promise<{ saleId: number; total: number }> {
-  const total = payload.items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  let total = payload.items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  if (isReturn) total = -total;
   if (session.local) {
     const sales = readLocalSales();
     const sale: Sale = {
@@ -243,20 +280,78 @@ export async function recordSale(
       items: payload.items,
     };
     writeLocalSales([sale, ...sales]);
-    // decrement local inventory
     const inv = readLocalInventory();
     for (const it of payload.items) {
-      if (it.productId && it.productId !== 'custom' && inv[it.productId] !== undefined) {
-        inv[it.productId] = Math.max(0, inv[it.productId] - it.qty);
-      }
+      if (!it.productId || it.productId === 'custom') continue;
+      if (isReturn) inv[it.productId] = (inv[it.productId] ?? 0) + it.qty;
+      else if (inv[it.productId] !== undefined) inv[it.productId] = Math.max(0, inv[it.productId] - it.qty);
     }
     writeLocalInventory(inv);
+    logLocalStockMoves(
+      session,
+      payload.items.map(it => ({ ...it, qty: isReturn ? it.qty : -it.qty })),
+      isReturn ? 'return' : 'sale',
+      isReturn ? (payload.note ?? '') : `sale #${sale.id}`,
+    );
     return { saleId: sale.id, total: sale.total };
   }
-  const res = await post('sales.php', payload, session.token);
+  const res = await post('sales.php', isReturn ? { ...payload, kind: 'return' } : payload, session.token);
   const data = await res.json().catch(() => null);
-  if (!res.ok || !data?.ok) throw new Error(data?.error || 'გაყიდვის შენახვა ვერ მოხერხდა');
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'შენახვა ვერ მოხერხდა');
   return { saleId: data.saleId, total: data.total };
+}
+
+export async function recordSale(
+  session: Session,
+  payload: { items: SaleItemInput[]; payment: Payment; customerPhone?: string; note?: string },
+): Promise<{ saleId: number; total: number }> {
+  return saveSaleLike(session, payload, false);
+}
+
+export async function recordReturn(
+  session: Session,
+  payload: { items: SaleItemInput[]; payment: Payment; note?: string },
+): Promise<{ saleId: number; total: number }> {
+  return saveSaleLike(session, payload, true);
+}
+
+// ── stock intake & movement report ─────────────────────────────────────────
+export async function addStock(
+  session: Session,
+  payload: {
+    type: 'purchase' | 'disassembly' | 'adjustment';
+    items: { productId: string; name: string; partNumber?: string; qty: number }[];
+    note?: string;
+  },
+): Promise<void> {
+  if (session.local) {
+    const inv = readLocalInventory();
+    for (const it of payload.items) {
+      if (!it.productId || it.qty === 0) continue;
+      inv[it.productId] = Math.max(0, (inv[it.productId] ?? 0) + it.qty);
+    }
+    writeLocalInventory(inv);
+    logLocalStockMoves(session, payload.items, payload.type, payload.note ?? '');
+    return;
+  }
+  const res = await post('stock.php', payload, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+}
+
+export async function getStockMovements(session: Session, days = 30): Promise<StockMovement[]> {
+  if (session.local) {
+    let list: StockMovement[] = [];
+    try { list = JSON.parse(localStorage.getItem(LOCAL_STOCK_KEY) ?? '[]'); } catch { list = []; }
+    const from = new Date(); from.setHours(0, 0, 0, 0); from.setDate(from.getDate() - (days - 1));
+    return list.filter(m => new Date(m.createdAt) >= from);
+  }
+  const res = await fetch(`${API}/stock.php?days=${days}`, {
+    headers: { Authorization: `Bearer ${session.token}` },
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ ჩაიტვირთა');
+  return data.movements;
 }
 
 // ── list sales ─────────────────────────────────────────────────────────────
