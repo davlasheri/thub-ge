@@ -19,10 +19,35 @@
   --radius-sm: 8px;
   --shadow: 0 4px 24px rgba(0,0,0,0.4);
   --transition: 0.2s ease;
+  --header-bg: rgba(10, 10, 10, 0.92);
+  --hover-border: #555;
+}
+
+:root[data-theme='light'] {
+  --bg: #f4f4f6;
+  --bg2: #ffffff;
+  --bg3: #eeeef1;
+  --surface: #e7e7ec;
+  --border: #dcdce2;
+  --text: #17171c;
+  --text-muted: #63636e;
+  --text-dim: #9a9aa4;
+  --shadow: 0 4px 24px rgba(0,0,0,0.1);
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --hover-border: #b5b5c0;
 }
 
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+body {
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 body {

@@ -88,13 +88,17 @@
 }
 
 .model-card:hover {
-  border-color: #555;
+  border-color: var(--hover-border);
   transform: translateY(-2px);
 }
 
 .model-card-active {
   background: rgba(255, 255, 255, 0.04);
   transform: translateY(-2px);
+}
+
+:root[data-theme='light'] .model-card-active {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .model-silhouette {
@@ -197,7 +201,7 @@
 }
 
 .year-btn:hover {
-  border-color: #666;
+  border-color: var(--hover-border);
   transform: translateY(-1px);
 }
 
@@ -227,6 +231,10 @@
 .find-parts-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+:root[data-theme='light'] .find-parts-btn:disabled {
+  background: #9a9aa4;
 }
 
 .home-banner {

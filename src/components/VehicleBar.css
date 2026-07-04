@@ -61,7 +61,7 @@
 
 .vehicle-bar-change:hover {
   color: var(--text);
-  border-color: #555;
+  border-color: var(--hover-border);
   background: var(--surface);
 }
 

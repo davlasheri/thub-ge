@@ -2,7 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 10, 10, 0.92);
+  background: var(--header-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -101,6 +101,20 @@
 }
 
 .cart-btn:hover {
+  background: var(--surface);
+}
+
+.theme-btn {
+  background: none;
+  color: var(--text);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  display: flex;
+  align-items: center;
+}
+
+.theme-btn:hover {
   background: var(--surface);
 }
 
