@@ -18,10 +18,9 @@ export default function Footer() {
         <div className="footer-links">
           <div className="footer-col">
             <h4>{t('footer_shop')}</h4>
-            <Link to="/products">{t('footer_all_products')}</Link>
-            <Link to="/products?category=exterior">{t('footer_exterior_lnk')}</Link>
-            <Link to="/products?category=interior">{t('footer_interior_lnk')}</Link>
-            <Link to="/products?category=charging">{t('footer_charging_lnk')}</Link>
+            <Link to="/catalog">{t('nav_catalogue')}</Link>
+            <Link to="/cars">{t('nav_cars')}</Link>
+            <Link to="/service">{t('nav_service')}</Link>
           </div>
           <div className="footer-col">
             <h4>{t('footer_company')}</h4>
