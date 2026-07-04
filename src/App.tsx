@@ -14,11 +14,13 @@ import ImageTool from './pages/ImageTool';
 import Cars from './pages/Cars';
 import CarDetail from './pages/CarDetail';
 import Service from './pages/Service';
+import Staff from './pages/Staff';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/admin" element={<Admin />} />
+      <Route path="/staff" element={<Staff />} />
       <Route path="/image-tool" element={<ImageTool />} />
       <Route path="*" element={
         <VehicleProvider>
