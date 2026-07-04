@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
+import { useCatalog } from '../context/CatalogContext';
+import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import {
-  Session, Sale, Stats, SaleItemInput, Payment,
+  Session, Sale, Stats, SaleItemInput, Payment, EmployeeRecord,
   login, loadSession, saveSession, recordSale, getSales, getStats,
+  listEmployees, createEmployee, updateEmployee,
 } from '../utils/staffApi';
 import './Staff.css';
 
@@ -16,7 +19,7 @@ const GEL = (n: number) => `${n.toFixed(2)} ₾`;
 
 export default function Staff() {
   const [session, setSession] = useState<Session | null>(loadSession);
-  const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales'>('pos');
+  const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales' | 'employees'>('pos');
 
   const logout = () => { saveSession(null); setSession(null); };
 
@@ -24,14 +27,17 @@ export default function Staff() {
     return <StaffLogin onLogin={s => { saveSession(s); setSession(s); }} />;
   }
 
+  const isAdmin = session.employee.role === 'admin';
+
   return (
     <div className="staff-page">
       <header className="staff-header">
         <Link to="/" className="staff-logo"><span className="logo-t">T</span>Hub<span className="staff-logo-ge">.ge</span> <span className="staff-logo-suffix">Staff</span></Link>
         <nav className="staff-tabs">
           <button className={tab === 'pos' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('pos')}>🧾 გაყიდვა (POS)</button>
-          <button className={tab === 'dashboard' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('dashboard')}>📊 სტატისტიკა</button>
+          {isAdmin && <button className={tab === 'dashboard' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('dashboard')}>📊 სტატისტიკა</button>}
           <button className={tab === 'sales' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('sales')}>📋 ისტორია</button>
+          {isAdmin && <button className={tab === 'employees' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('employees')}>👥 თანამშრომლები</button>}
         </nav>
         <div className="staff-header-right">
           {session.local && <span className="staff-local-badge" title="მონაცემთა ბაზა არ არის მიერთებული — გაყიდვები ინახება მხოლოდ ამ ბრაუზერში">ლოკალური რეჟიმი</span>}
@@ -41,8 +47,9 @@ export default function Staff() {
       </header>
 
       {tab === 'pos' && <PosView session={session} />}
-      {tab === 'dashboard' && <DashboardView session={session} />}
+      {tab === 'dashboard' && isAdmin && <DashboardView session={session} />}
       {tab === 'sales' && <SalesHistoryView session={session} />}
+      {tab === 'employees' && isAdmin && <EmployeesView session={session} />}
     </div>
   );
 }
@@ -87,7 +94,10 @@ interface TicketLine extends SaleItemInput { key: string }
 
 function PosView({ session }: { session: Session }) {
   const { products } = useProducts();
+  const { catalog } = useCatalog();
   const [query, setQuery] = useState('');
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [activeSub, setActiveSub] = useState<{ sectionId: string; subId: string } | null>(null);
   const [ticket, setTicket] = useState<TicketLine[]>([]);
   const [payment, setPayment] = useState<Payment>('cash');
   const [phone, setPhone] = useState('');
@@ -107,6 +117,27 @@ function PosView({ session }: { session: Session }) {
       p.partNumber.toLowerCase().includes(q)
     ).slice(0, 8);
   }, [query, products]);
+
+  // product counts per subsection, for the catalogue tree
+  const countBySub = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of products) {
+      const k = `${p.sectionId}|${p.subsectionId}`;
+      m.set(k, (m.get(k) ?? 0) + 1);
+    }
+    return m;
+  }, [products]);
+
+  const sectionCount = (sectionId: string) => {
+    let n = 0;
+    for (const [k, v] of countBySub) if (k.startsWith(sectionId + '|')) n += v;
+    return n;
+  };
+
+  const subProducts = useMemo(() => {
+    if (!activeSub) return [];
+    return products.filter(p => p.sectionId === activeSub.sectionId && p.subsectionId === activeSub.subId);
+  }, [activeSub, products]);
 
   const add = (p: Product) => {
     setDone(null);
@@ -174,6 +205,55 @@ function PosView({ session }: { session: Session }) {
           <input className="staff-input pos-custom-price" placeholder="ფასი ₾" inputMode="decimal" value={customPrice} onChange={e => setCustomPrice(e.target.value)} />
           <button className="staff-btn-secondary" onClick={addCustom}>+ დამატება</button>
         </div>
+
+        {/* ── Catalogue tree ── */}
+        <h2 className="staff-section-title pos-tree-title">კატალოგი</h2>
+        <div className="pos-tree">
+          {catalog.map(sec => {
+            const total = sectionCount(sec.id);
+            const isOpen = openSection === sec.id;
+            return (
+              <div key={sec.id} className="pos-tree-section">
+                <button className={`pos-tree-sec-btn ${isOpen ? 'pos-tree-sec-open' : ''}`}
+                  onClick={() => { setOpenSection(isOpen ? null : sec.id); }}>
+                  <span className="pos-tree-caret">{isOpen ? '▾' : '▸'}</span>
+                  {sec.groupNumber != null && <span className="pos-tree-num">{sec.groupNumber}</span>}
+                  <span className="pos-tree-sec-name">{getCatName(sec, 'ka', 'section')}</span>
+                  <span className={`pos-tree-count ${total === 0 ? 'pos-tree-count-zero' : ''}`}>{total}</span>
+                </button>
+                {isOpen && (
+                  <div className="pos-tree-subs">
+                    {sec.subsections.map(sub => {
+                      const n = countBySub.get(`${sec.id}|${sub.id}`) ?? 0;
+                      const isActive = activeSub?.sectionId === sec.id && activeSub?.subId === sub.id;
+                      return (
+                        <button key={sub.id}
+                          className={`pos-tree-sub-btn ${isActive ? 'pos-tree-sub-active' : ''}`}
+                          onClick={() => setActiveSub(isActive ? null : { sectionId: sec.id, subId: sub.id })}>
+                          <span className="pos-tree-sub-name">{getCatName(sub, 'ka', 'sub')}</span>
+                          <span className={`pos-tree-count ${n === 0 ? 'pos-tree-count-zero' : ''}`}>{n}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {activeSub && (
+          <div className="pos-tree-products">
+            {subProducts.length === 0 && <p className="pos-empty">ამ სექციაში პროდუქტები არ არის</p>}
+            {subProducts.map(p => (
+              <button key={p.id} className="pos-result" onClick={() => add(p)}>
+                <img src={p.image} alt="" className="pos-result-img" />
+                <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                <span className="pos-result-price">{GEL(p.price)}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="pos-right">
@@ -314,6 +394,123 @@ function DashboardView({ session }: { session: Session }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Employees ──────────────────────────────────────────────────────────────
+const ROLE_LABELS: Record<'admin' | 'staff', string> = {
+  admin: 'ადმინისტრატორი', staff: 'თანამშრომელი',
+};
+
+function EmployeesView({ session }: { session: Session }) {
+  const [employees, setEmployees] = useState<EmployeeRecord[] | null>(null);
+  const [err, setErr] = useState('');
+  const [msg, setMsg] = useState('');
+  // new employee form
+  const [nUser, setNUser] = useState('');
+  const [nName, setNName] = useState('');
+  const [nPass, setNPass] = useState('');
+  const [nRole, setNRole] = useState<'admin' | 'staff'>('staff');
+  const [busy, setBusy] = useState(false);
+
+  const reload = () =>
+    listEmployees(session).then(setEmployees).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+
+  useEffect(() => { reload(); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const flash = (m: string) => { setMsg(m); setErr(''); setTimeout(() => setMsg(''), 3500); };
+  const oops = (ex: unknown) => { setErr(ex instanceof Error ? ex.message : 'შეცდომა'); setMsg(''); };
+
+  const addEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    try {
+      await createEmployee(session, { username: nUser, password: nPass, displayName: nName, role: nRole });
+      setNUser(''); setNName(''); setNPass(''); setNRole('staff');
+      flash('თანამშრომელი დაემატა ✓');
+      await reload();
+    } catch (ex) { oops(ex); } finally { setBusy(false); }
+  };
+
+  const patch = async (payload: Parameters<typeof updateEmployee>[1], okMsg: string) => {
+    try {
+      await updateEmployee(session, payload);
+      flash(okMsg);
+      await reload();
+    } catch (ex) { oops(ex); }
+  };
+
+  const resetPassword = (emp: EmployeeRecord) => {
+    const pw = window.prompt(`ახალი პაროლი — ${emp.username} (მინ. 6 სიმბოლო):`);
+    if (pw === null) return;
+    patch({ id: emp.id, newPassword: pw }, 'პაროლი შეიცვალა ✓');
+  };
+
+  const rename = (emp: EmployeeRecord) => {
+    const name = window.prompt(`სახელი — ${emp.username}:`, emp.displayName);
+    if (name === null) return;
+    patch({ id: emp.id, displayName: name }, 'შენახულია ✓');
+  };
+
+  if (err && !employees) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
+  if (!employees) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
+
+  const isSelf = (e: EmployeeRecord) =>
+    e.id === session.employee.id || e.username === session.employee.username;
+
+  return (
+    <div className="staff-content">
+      <h2 className="staff-section-title">თანამშრომლები და როლები</h2>
+      <p className="emp-roles-hint">
+        <strong>ადმინისტრატორი</strong> — POS, ისტორია, სტატისტიკა, თანამშრომლების მართვა ·{' '}
+        <strong>თანამშრომელი</strong> — მხოლოდ POS და ისტორია
+      </p>
+
+      {msg && <div className="pos-done">{msg}</div>}
+      {err && <div className="staff-login-err emp-err">{err}</div>}
+
+      <div className="emp-table">
+        <div className="emp-row emp-row-head">
+          <span>მომხმარებელი</span><span>სახელი</span><span>როლი</span><span>სტატუსი</span><span></span>
+        </div>
+        {employees.map(emp => (
+          <div key={emp.id} className={`emp-row ${!emp.active ? 'emp-row-inactive' : ''}`}>
+            <span className="emp-username">{emp.username}{isSelf(emp) && <small> (თქვენ)</small>}</span>
+            <button className="emp-name-btn" onClick={() => rename(emp)} title="სახელის შეცვლა">{emp.displayName} ✎</button>
+            <select
+              className="emp-role-select"
+              value={emp.role}
+              disabled={isSelf(emp)}
+              onChange={e => patch({ id: emp.id, role: e.target.value as 'admin' | 'staff' }, 'როლი შეიცვალა ✓')}
+            >
+              <option value="staff">{ROLE_LABELS.staff}</option>
+              <option value="admin">{ROLE_LABELS.admin}</option>
+            </select>
+            <button
+              className={`emp-status-btn ${emp.active ? 'emp-status-on' : 'emp-status-off'}`}
+              disabled={isSelf(emp)}
+              onClick={() => patch({ id: emp.id, active: !emp.active }, emp.active ? 'ანგარიში გაითიშა' : 'ანგარიში ჩაირთო ✓')}
+            >
+              {emp.active ? 'აქტიური' : 'გათიშული'}
+            </button>
+            <button className="staff-btn-secondary emp-pw-btn" onClick={() => resetPassword(emp)}>პაროლი</button>
+          </div>
+        ))}
+      </div>
+
+      <h3 className="staff-section-title emp-add-title">ახალი თანამშრომელი</h3>
+      <form className="emp-add-form" onSubmit={addEmployee}>
+        <input className="staff-input" placeholder="მომხმარებელი (ლათინურად)" value={nUser} onChange={e => setNUser(e.target.value)} />
+        <input className="staff-input" placeholder="სახელი გვარი" value={nName} onChange={e => setNName(e.target.value)} />
+        <input className="staff-input" type="password" placeholder="პაროლი (მინ. 6)" value={nPass} onChange={e => setNPass(e.target.value)} autoComplete="new-password" />
+        <select className="emp-role-select" value={nRole} onChange={e => setNRole(e.target.value as 'admin' | 'staff')}>
+          <option value="staff">{ROLE_LABELS.staff}</option>
+          <option value="admin">{ROLE_LABELS.admin}</option>
+        </select>
+        <button className="staff-btn-primary emp-add-btn" disabled={busy}>{busy ? 'ინახება…' : '+ დამატება'}</button>
+      </form>
     </div>
   );
 }

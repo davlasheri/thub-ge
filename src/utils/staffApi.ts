@@ -36,9 +36,19 @@ export interface Employee { id: number; username: string; displayName: string; r
 
 export interface Session { token: string; employee: Employee; local: boolean }
 
+export interface EmployeeRecord {
+  id: number;
+  username: string;
+  displayName: string;
+  role: 'admin' | 'staff';
+  active: boolean;
+  createdAt?: string;
+}
+
 const API = 'api';
 const LOCAL_SALES_KEY = 'thub_sales';
 const LOCAL_PW_KEY = 'thub_staff_pw';
+const LOCAL_EMP_KEY = 'thub_staff_employees';
 const SESSION_KEY = 'thub_staff_session';
 
 // ── session persistence ────────────────────────────────────────────────────
@@ -74,6 +84,25 @@ function writeLocalSales(sales: Sale[]) {
   localStorage.setItem(LOCAL_SALES_KEY, JSON.stringify(sales));
 }
 
+// Local-mode employees carry a plain password field (browser-only demo data).
+type LocalEmployee = EmployeeRecord & { password: string };
+
+function readLocalEmployees(): LocalEmployee[] {
+  let list: LocalEmployee[] = [];
+  try { list = JSON.parse(localStorage.getItem(LOCAL_EMP_KEY) ?? '[]'); }
+  catch { list = []; }
+  if (!list.some(e => e.username === 'admin')) {
+    list.unshift({
+      id: 1, username: 'admin', displayName: 'Administrator', role: 'admin',
+      active: true, password: localStorage.getItem(LOCAL_PW_KEY) || 'thub2026',
+    });
+  }
+  return list;
+}
+function writeLocalEmployees(list: LocalEmployee[]) {
+  localStorage.setItem(LOCAL_EMP_KEY, JSON.stringify(list));
+}
+
 // ── login ──────────────────────────────────────────────────────────────────
 // Remote first; if the API is absent/unconfigured (404/503/network), local mode.
 export async function login(username: string, password: string): Promise<Session> {
@@ -91,16 +120,84 @@ export async function login(username: string, password: string): Promise<Session
     if (!apiMissing && e instanceof Error && e.message !== 'Failed to fetch') throw e;
     apiMissing = true;
   }
-  // local mode
-  const storedPw = localStorage.getItem(LOCAL_PW_KEY) || 'thub2026';
-  if (username === 'admin' && password === storedPw) {
+  // local mode: check against browser-stored employee list
+  const emp = readLocalEmployees().find(
+    e => e.username === username.toLowerCase() && e.active && e.password === password,
+  );
+  if (emp) {
     return {
       token: 'local',
-      employee: { id: 0, username: 'admin', displayName: 'Administrator', role: 'admin' },
+      employee: { id: emp.id, username: emp.username, displayName: emp.displayName, role: emp.role },
       local: true,
     };
   }
   throw new Error('არასწორი მომხმარებელი ან პაროლი');
+}
+
+// ── employees (admin only) ─────────────────────────────────────────────────
+export async function listEmployees(session: Session): Promise<EmployeeRecord[]> {
+  if (session.local) {
+    return readLocalEmployees().map(({ password: _pw, ...e }) => e);
+  }
+  const res = await fetch(`${API}/employees.php`, {
+    headers: { Authorization: `Bearer ${session.token}` },
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ ჩაიტვირთა');
+  return data.employees;
+}
+
+export async function createEmployee(
+  session: Session,
+  payload: { username: string; password: string; displayName: string; role: 'admin' | 'staff' },
+): Promise<void> {
+  const username = payload.username.trim().toLowerCase();
+  if (!/^[a-z0-9._-]{3,32}$/.test(username)) throw new Error('მომხმარებელი: 3-32 სიმბოლო (a-z, 0-9, . _ -)');
+  if (payload.password.length < 6) throw new Error('პაროლი მინიმუმ 6 სიმბოლო');
+  if (session.local) {
+    const list = readLocalEmployees();
+    if (list.some(e => e.username === username)) throw new Error('ასეთი მომხმარებელი უკვე არსებობს');
+    list.push({
+      id: Math.max(...list.map(e => e.id)) + 1,
+      username,
+      displayName: payload.displayName.trim() || username,
+      role: payload.role,
+      active: true,
+      password: payload.password,
+    });
+    writeLocalEmployees(list);
+    return;
+  }
+  const res = await post('employees.php', { action: 'create', ...payload, username }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეიქმნა');
+}
+
+export async function updateEmployee(
+  session: Session,
+  payload: { id: number; displayName?: string; role?: 'admin' | 'staff'; active?: boolean; newPassword?: string },
+): Promise<void> {
+  if (session.local) {
+    const list = readLocalEmployees();
+    const emp = list.find(e => e.id === payload.id);
+    if (!emp) throw new Error('თანამშრომელი ვერ მოიძებნა');
+    const isSelf = session.employee.id === payload.id || emp.username === session.employee.username;
+    if (payload.role !== undefined && isSelf && payload.role !== 'admin') throw new Error('საკუთარი როლის დაქვეითება არ შეიძლება');
+    if (payload.active !== undefined && isSelf && !payload.active) throw new Error('საკუთარი ანგარიშის გათიშვა არ შეიძლება');
+    if (payload.newPassword !== undefined && payload.newPassword.length < 6) throw new Error('პაროლი მინიმუმ 6 სიმბოლო');
+    if (payload.displayName !== undefined) emp.displayName = payload.displayName.trim() || emp.username;
+    if (payload.role !== undefined) emp.role = payload.role;
+    if (payload.active !== undefined) emp.active = payload.active;
+    if (payload.newPassword) {
+      emp.password = payload.newPassword;
+      if (emp.username === 'admin') localStorage.setItem(LOCAL_PW_KEY, payload.newPassword);
+    }
+    writeLocalEmployees(list);
+    return;
+  }
+  const res = await post('employees.php', { action: 'update', ...payload }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
 }
 
 // ── record sale ────────────────────────────────────────────────────────────

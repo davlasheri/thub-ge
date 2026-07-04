@@ -1,7 +1,8 @@
 <?php
 require __DIR__ . '/db.php';
 
-check_token(bearer_token(), $CFG, $pdo);
+$me = check_token(bearer_token(), $CFG, $pdo);
+if ($me['role'] !== 'admin') fail(403, 'სტატისტიკა ხელმისაწვდომია მხოლოდ ადმინისტრატორისთვის');
 
 $days = min(90, max(7, (int)($_GET['days'] ?? 14)));
 

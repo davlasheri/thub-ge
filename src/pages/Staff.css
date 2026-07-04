@@ -162,6 +162,107 @@
 
 .pos-complete { margin-top: 4px; }
 
+/* ── POS catalogue tree ── */
+.pos-tree-title { margin-top: 24px; }
+
+.pos-tree {
+  border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  background: var(--bg2);
+}
+
+.pos-tree-section { border-bottom: 1px solid var(--border); }
+.pos-tree-section:last-child { border-bottom: none; }
+
+.pos-tree-sec-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; padding: 10px 12px; text-align: left;
+  font-size: 13px; font-weight: 700; color: var(--text);
+}
+.pos-tree-sec-btn:hover { background: var(--surface); }
+.pos-tree-sec-open { background: var(--surface); }
+
+.pos-tree-caret { color: var(--text-dim); font-size: 11px; width: 12px; flex-shrink: 0; }
+.pos-tree-num {
+  font-size: 10px; font-weight: 800; color: var(--red);
+  border: 1px solid rgba(227,25,55,0.35); border-radius: 5px;
+  padding: 1px 5px; flex-shrink: 0; min-width: 24px; text-align: center;
+}
+.pos-tree-sec-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pos-tree-count {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  background: var(--bg3); border-radius: 10px; padding: 1px 8px; flex-shrink: 0;
+}
+.pos-tree-count-zero { opacity: 0.4; }
+
+.pos-tree-subs { padding: 2px 0 6px; }
+.pos-tree-sub-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; padding: 7px 12px 7px 40px; text-align: left;
+  font-size: 13px; font-weight: 500; color: var(--text-muted);
+}
+.pos-tree-sub-btn:hover { color: var(--text); background: var(--surface); }
+.pos-tree-sub-active { color: var(--text); background: rgba(227,25,55,0.08); }
+.pos-tree-sub-active .pos-tree-sub-name { font-weight: 700; }
+.pos-tree-sub-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pos-tree-products {
+  margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+
+/* ── Employees ── */
+.emp-roles-hint { font-size: 13px; color: var(--text-muted); margin: -6px 0 16px; line-height: 1.6; }
+.emp-roles-hint strong { color: var(--text); }
+
+.emp-err { margin-bottom: 12px; }
+
+.emp-table {
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg2);
+}
+.emp-row {
+  display: grid; grid-template-columns: 1.1fr 1.4fr 150px 110px auto;
+  gap: 12px; align-items: center; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.emp-row:last-child { border-bottom: none; }
+.emp-row-head {
+  background: var(--bg3); font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-muted); padding: 8px 14px;
+}
+.emp-row-inactive { opacity: 0.55; }
+
+.emp-username { font-weight: 700; color: var(--text); }
+.emp-username small { color: var(--text-dim); font-weight: 500; }
+
+.emp-name-btn {
+  background: none; color: var(--text-muted); text-align: left; font-size: 13px; padding: 4px 0;
+}
+.emp-name-btn:hover { color: var(--text); }
+
+.emp-role-select {
+  background: var(--bg3); border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--text); font-size: 13px; font-weight: 600; padding: 7px 8px; outline: none;
+}
+.emp-role-select:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.emp-status-btn { font-size: 12px; font-weight: 700; border-radius: 20px; padding: 5px 12px; }
+.emp-status-on { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.4); }
+.emp-status-off { background: rgba(234,179,8,0.1); color: #eab308; border: 1px solid rgba(234,179,8,0.4); }
+.emp-status-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.emp-pw-btn { padding: 7px 12px; }
+
+.emp-add-title { margin-top: 28px; }
+.emp-add-form { display: grid; grid-template-columns: 1fr 1fr 1fr 160px auto; gap: 10px; align-items: center; }
+.emp-add-btn { width: auto; padding: 11px 20px; }
+
+@media (max-width: 860px) {
+  .emp-row { grid-template-columns: 1fr 1fr; }
+  .emp-row-head { display: none; }
+  .emp-add-form { grid-template-columns: 1fr; }
+  .emp-add-btn { width: 100%; }
+}
+
 /* ── Dashboard ── */
 .dash-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
 .dash-tile {
