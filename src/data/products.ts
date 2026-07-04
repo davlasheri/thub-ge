@@ -296,7 +296,7 @@ export const products: Product[] = [
   {
     id: 'chg-01', partNumber: '1457252-00-E',
     name: 'Wall Connector Gen 3 (11.5 kW)', nameGe: 'კედლის კონექტორი Gen 3',
-    sectionId: 'electrical', subsectionId: 'charging',
+    sectionId: 'ext-charging', subsectionId: 'charging',
     price: 890, currency: 'GEL', image: IMG.charging,
     description: 'Tesla Wall Connector Gen 3. Adds up to 75 km range/hr. Wi-Fi enabled. 7.3 m cable.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2012, to: 2024 }, MX: { from: 2015, to: 2024 } },
@@ -305,7 +305,7 @@ export const products: Product[] = [
   {
     id: 'chg-02', partNumber: '1457253-00-B',
     name: 'Mobile Connector Gen 2', nameGe: 'მობილური კონექტორი Gen 2',
-    sectionId: 'electrical', subsectionId: 'charging',
+    sectionId: 'ext-charging', subsectionId: 'charging',
     price: 420, currency: 'GEL', image: IMG.charging,
     description: 'Portable Tesla Mobile Connector with 7.3 m cable. Up to 12A on a standard outlet.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2012, to: 2024 }, MX: { from: 2015, to: 2024 } },
@@ -314,7 +314,7 @@ export const products: Product[] = [
   {
     id: 'chg-03', partNumber: '1462857-00-A',
     name: 'EU Schuko Adapter', nameGe: 'EU შუკო ადაპტერი',
-    sectionId: 'electrical', subsectionId: 'charging',
+    sectionId: 'ext-charging', subsectionId: 'charging',
     price: 145, currency: 'GEL', image: IMG.charging,
     description: 'EU Type F (Schuko) adapter for the Tesla Mobile Connector. Up to 8A / 1.8 kW.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2012, to: 2024 }, MX: { from: 2015, to: 2024 } },
@@ -323,7 +323,7 @@ export const products: Product[] = [
   {
     id: 'chg-04', partNumber: '1462858-00-A',
     name: 'Type 2 (IEC 62196) Adapter', nameGe: 'Type 2 ადაპტერი',
-    sectionId: 'electrical', subsectionId: 'charging',
+    sectionId: 'ext-charging', subsectionId: 'charging',
     price: 320, currency: 'GEL', image: IMG.charging,
     description: 'Type 2 adapter for public AC stations. Charges up to 16A.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2012, to: 2024 }, MX: { from: 2015, to: 2024 } },
@@ -363,7 +363,7 @@ export const products: Product[] = [
   {
     id: 'c-s01', partNumber: '1044089-00-C',
     name: 'Front Sway Bar End Links', nameGe: 'საბალანსო ბარის ბმები',
-    sectionId: 'susp-brakes', subsectionId: 'front-susp',
+    sectionId: 'suspension', subsectionId: 'front-susp',
     price: 285, currency: 'GEL', image: IMG.susp,
     description: 'Upgraded polyurethane sway bar end links. Eliminates clunking, improves cornering.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
@@ -372,7 +372,7 @@ export const products: Product[] = [
   {
     id: 'c-s02', partNumber: '1044091-00-B',
     name: 'Front Wheel Bearing Hub', nameGe: 'წინა თვლის საკისარი',
-    sectionId: 'susp-brakes', subsectionId: 'front-susp',
+    sectionId: 'suspension', subsectionId: 'front-susp',
     price: 485, currency: 'GEL', image: IMG.susp,
     description: 'Front wheel bearing and hub assembly. Resolves rumbling noises at speed. Plug-and-play.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2016, to: 2024 }, MX: { from: 2016, to: 2024 } },
@@ -383,7 +383,7 @@ export const products: Product[] = [
   {
     id: 'c-s03', partNumber: '1044095-00-A',
     name: 'Rear Shock Mount', nameGe: 'უკანა ამორტიზატორის სადგამი',
-    sectionId: 'susp-brakes', subsectionId: 'rear-susp',
+    sectionId: 'suspension', subsectionId: 'rear-susp',
     price: 320, currency: 'GEL', image: IMG.susp,
     description: 'Rear shock absorber upper mount. Resolves clunking over bumps. Includes bump stop.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
@@ -394,7 +394,7 @@ export const products: Product[] = [
   {
     id: 'c-b01', partNumber: '1044059-00-D',
     name: 'Front Brake Pads', nameGe: 'წინა სამუხრუჭე ბალიშები',
-    sectionId: 'susp-brakes', subsectionId: 'brakes',
+    sectionId: 'brakes-sys', subsectionId: 'brakes',
     price: 420, currency: 'GEL', image: IMG.brakes,
     description: 'OEM-grade front brake pads. Higher thermal threshold, low-dust formula. Fits standard trims.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
@@ -403,7 +403,7 @@ export const products: Product[] = [
   {
     id: 'c-b02', partNumber: '1044060-00-D',
     name: 'Rear Brake Pads', nameGe: 'უკანა სამუხრუჭე ბალიშები',
-    sectionId: 'susp-brakes', subsectionId: 'brakes',
+    sectionId: 'brakes-sys', subsectionId: 'brakes',
     price: 380, currency: 'GEL', image: IMG.brakes,
     description: 'OEM-spec rear brake pads. Compatible with the integrated electric parking brake motor.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2016, to: 2024 }, MX: { from: 2016, to: 2024 } },
@@ -412,7 +412,7 @@ export const products: Product[] = [
   {
     id: 'c-b03', partNumber: '1044061-00-B',
     name: 'Performance Front Brake Pads', nameGe: 'სპორტ-სამუხრუჭე (წინა)',
-    sectionId: 'susp-brakes', subsectionId: 'brakes',
+    sectionId: 'brakes-sys', subsectionId: 'brakes',
     price: 620, currency: 'GEL', image: IMG.brakes,
     description: 'Track-grade front pads for Performance models. Excellent fade resistance up to 650°C.',
     fits: { M3: { from: 2018, to: 2024 }, MY: { from: 2021, to: 2024 }, MS: { from: 2021, to: 2024 } },
@@ -421,7 +421,7 @@ export const products: Product[] = [
   {
     id: 'c-b04', partNumber: '6012034-00-A',
     name: 'Front Brake Rotor', nameGe: 'წინა სამუხრუჭე დისკი',
-    sectionId: 'susp-brakes', subsectionId: 'brakes',
+    sectionId: 'brakes-sys', subsectionId: 'brakes',
     price: 540, currency: 'GEL', image: IMG.brakes,
     description: 'Slotted and cross-drilled front rotor. 320 mm diameter for standard M3/MY. Sold individually.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 } },
@@ -432,7 +432,7 @@ export const products: Product[] = [
   {
     id: 'c-w01', partNumber: '1050000-00-E',
     name: 'Aero Wheel Cover Set 18" (4 pcs)', nameGe: 'აერო საფარი 18" (4 ც.)',
-    sectionId: 'susp-brakes', subsectionId: 'wheels',
+    sectionId: 'wheels-tires', subsectionId: 'wheels',
     price: 480, currency: 'GEL', image: IMG.wheels,
     description: 'OEM aero wheel covers. Snap-on fit, improves range by ~3%. Set of 4.',
     fits: { M3: { from: 2017, to: 2024 } },
@@ -441,7 +441,7 @@ export const products: Product[] = [
   {
     id: 'c-w02', partNumber: '1051000-00-B',
     name: 'Forged 21" Sport Wheels (Set of 4)', nameGe: 'ნაჭედი 21" დისკები',
-    sectionId: 'susp-brakes', subsectionId: 'wheels',
+    sectionId: 'wheels-tires', subsectionId: 'wheels',
     price: 3800, currency: 'GEL', image: IMG.wheels,
     description: 'Lightweight forged 21" alloy wheels. 15% lighter than OEM cast. Satin Black. Set of 4 with caps.',
     fits: { MS: { from: 2021, to: 2024 }, MX: { from: 2021, to: 2024 } },
@@ -450,7 +450,7 @@ export const products: Product[] = [
   {
     id: 'c-w03', partNumber: '1050001-00-A',
     name: 'Wheel Center Cap Set (4 pcs)', nameGe: 'ცენტრალური სახელგები',
-    sectionId: 'susp-brakes', subsectionId: 'wheels',
+    sectionId: 'wheels-tires', subsectionId: 'wheels',
     price: 95, currency: 'GEL', image: IMG.wheels,
     description: 'OEM Tesla "T" center cap set for 18"–21" wheels.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2012, to: 2024 }, MX: { from: 2015, to: 2024 } },
@@ -459,7 +459,7 @@ export const products: Product[] = [
   {
     id: 'c-w04', partNumber: '1034602-00-B',
     name: 'Lug Nut Set M14×1.5 (20 pcs)', nameGe: 'თვლის თხილები M14 (20 ც.)',
-    sectionId: 'susp-brakes', subsectionId: 'wheels',
+    sectionId: 'wheels-tires', subsectionId: 'wheels',
     price: 145, currency: 'GEL', image: IMG.wheels,
     description: 'Black anodized M14×1.5 lug nuts. Set of 20 with socket adapter. Torque to 175 Nm.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2012, to: 2024 }, MX: { from: 2015, to: 2024 } },
@@ -519,7 +519,7 @@ export const products: Product[] = [
   {
     id: 'pt-02', partNumber: '1044322-00-A',
     name: 'Drive Unit Mount Bush Set', nameGe: 'ძრავის სადგამის ბუქსები',
-    sectionId: 'drivetrain', subsectionId: 'drive-units',
+    sectionId: 'front-drive', subsectionId: 'drive-units',
     price: 245, currency: 'GEL', image: IMG.susp,
     description: 'Polyurethane drive unit mounting bushings. Eliminates drivetrain clunk, reduces NVH.',
     fits: { M3: { from: 2017, to: 2024 }, MY: { from: 2020, to: 2024 }, MS: { from: 2021, to: 2024 } },
