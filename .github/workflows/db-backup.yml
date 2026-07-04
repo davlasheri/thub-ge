@@ -1,0 +1,27 @@
+name: Daily database backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # every night 02:00 UTC (06:00 Tbilisi)
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger server-side backup
+        env:
+          BACKUP_USER: ${{ secrets.BACKUP_USER }}
+          BACKUP_PASS: ${{ secrets.BACKUP_PASS }}
+        run: |
+          if [ -z "$BACKUP_USER" ] || [ -z "$BACKUP_PASS" ]; then
+            echo "::error::Set BACKUP_USER and BACKUP_PASS repository secrets (an admin POS account)."
+            exit 1
+          fi
+          TOKEN=$(curl -sf -X POST https://thub.ge/api/auth.php \
+            -H 'Content-Type: application/json' \
+            -d "{\"username\":\"$BACKUP_USER\",\"password\":\"$BACKUP_PASS\"}" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
+          RESULT=$(curl -sf -X POST "https://thub.ge/api/backup.php" -H "Authorization: Bearer $TOKEN")
+          echo "Backup result: $RESULT"
+          echo "$RESULT" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok"), d'

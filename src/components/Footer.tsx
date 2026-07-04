@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../context/LanguageContext';
+import { APP_VERSION, CHANGELOG } from '../data/changelog';
 import './Footer.css';
 
 export default function Footer() {
   const { t } = useLang();
+  const [versionsOpen, setVersionsOpen] = useState(false);
 
   return (
     <footer className="footer">
@@ -39,8 +42,39 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <div className="container">
+        <div className="container footer-bottom-inner">
           <p>© {new Date().getFullYear()} THub.ge — {t('footer_rights')}</p>
+
+          <div className="footer-version-wrap">
+            {versionsOpen && (
+              <div className="footer-versions" onMouseLeave={() => setVersionsOpen(false)}>
+                <p className="footer-versions-title">ვერსიების ისტორია</p>
+                <div className="footer-versions-list">
+                  {CHANGELOG.map((entry, i) => (
+                    <div key={entry.version} className="footer-version-entry">
+                      <div className="footer-version-node">
+                        <span className={`footer-version-dot ${i === 0 ? 'footer-version-dot-current' : ''}`} />
+                        {i < CHANGELOG.length - 1 && <span className="footer-version-line" />}
+                      </div>
+                      <div className="footer-version-body">
+                        <p className="footer-version-head">
+                          <strong>v{entry.version}</strong>
+                          <span>{entry.date}</span>
+                          {i === 0 && <span className="footer-version-current">მიმდინარე</span>}
+                        </p>
+                        <ul>
+                          {entry.changes.map((c, j) => <li key={j}>{c}</li>)}
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button className="footer-version-btn" onClick={() => setVersionsOpen(o => !o)}>
+              v{APP_VERSION}
+            </button>
+          </div>
         </div>
       </div>
     </footer>

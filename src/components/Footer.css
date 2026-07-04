@@ -79,3 +79,77 @@
     gap: 24px;
   }
 }
+
+/* ── Version history ── */
+.footer-bottom-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.footer-version-wrap { position: relative; }
+
+.footer-version-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.footer-version-btn:hover { color: var(--text); border-color: var(--hover-border); }
+
+.footer-versions {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: min(340px, 86vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  z-index: 60;
+  text-align: left;
+}
+
+.footer-versions-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+.footer-version-entry { display: flex; gap: 12px; }
+
+.footer-version-node { display: flex; flex-direction: column; align-items: center; }
+.footer-version-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--text-dim); margin-top: 4px; flex-shrink: 0;
+}
+.footer-version-dot-current { background: var(--red); }
+.footer-version-line { flex: 1; width: 2px; background: var(--border); margin: 4px 0; }
+
+.footer-version-body { padding-bottom: 14px; }
+.footer-version-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; margin: 0 0 6px;
+}
+.footer-version-head strong { color: var(--text); }
+.footer-version-head span { color: var(--text-dim); font-size: 11px; }
+.footer-version-current {
+  color: var(--red) !important;
+  border: 1px solid rgba(227,25,55,0.4);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-weight: 700;
+}
+.footer-version-body ul { margin: 0; padding-left: 16px; }
+.footer-version-body li { font-size: 12px; color: var(--text-muted); line-height: 1.7; }

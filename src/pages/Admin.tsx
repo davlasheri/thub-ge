@@ -168,6 +168,23 @@ export default function Admin() {
 
   const switchTab = (t: Tab) => { setTab(t); setView('list'); setNavOpen(false); };
 
+  const downloadBackup = async () => {
+    const s = loadSession();
+    if (!s || s.local) { alert('ბექაფი მუშაობს მხოლოდ მონაცემთა ბაზასთან — გახსენით საიტი thub.ge-ზე'); return; }
+    try {
+      const res = await fetch('api/backup.php?mode=download', { headers: { Authorization: `Bearer ${s.token}` } });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `thub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      alert('ბექაფის ჩამოტვირთვა ვერ მოხერხდა');
+    }
+  };
+
   const Sidebar = () => (
     <aside className={`admin-sidebar ${navOpen ? 'admin-sidebar-open' : ''}`}>
       <div className="admin-sidebar-top">
@@ -187,6 +204,13 @@ export default function Admin() {
         <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="თანამშრომლები" />
         <NavBtn active={tab === 'cars'}       onClick={() => switchTab('cars')}       icon={<IcoCar />}   label="ავტომობილები" count={cars.length} />
       </nav>
+      <button className="admin-logout" style={{ marginBottom: 8 }} onClick={downloadBackup}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        ბაზის ბექაფი
+      </button>
       <button className="admin-logout" onClick={() => { sessionStorage.removeItem(SESSION_KEY); saveSession(null); setAuthed(false); }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
