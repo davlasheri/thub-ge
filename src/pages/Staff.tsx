@@ -15,7 +15,8 @@ const PAYMENT_LABELS: Record<Payment, string> = {
   cash: 'ნაღდი', card: 'ბარათი', transfer: 'გადარიცხვა',
 };
 
-const GEL = (n: number) => `${n.toFixed(2)} ₾`;
+// MySQL DECIMAL values can arrive as strings — always coerce before toFixed
+const GEL = (n: number | string) => `${(Number(n) || 0).toFixed(2)} ₾`;
 
 export default function Staff() {
   const [session, setSession] = useState<Session | null>(loadSession);
@@ -181,33 +182,14 @@ function PosView({ session }: { session: Session }) {
     }
   };
 
+  const activeSection = activeSub ? catalog.find(s => s.id === activeSub.sectionId) : null;
+  const activeSubDef = activeSection?.subsections.find(s => s.id === activeSub?.subId);
+
   return (
     <div className="staff-content pos-layout">
-      <section className="pos-left">
-        <h2 className="staff-section-title">პროდუქტის დამატება</h2>
-        <input className="staff-input pos-search" placeholder="🔍 მოძებნეთ სახელით ან პარტ-ნომრით…"
-          value={query} onChange={e => setQuery(e.target.value)} />
-        {results.length > 0 && (
-          <div className="pos-results">
-            {results.map(p => (
-              <button key={p.id} className="pos-result" onClick={() => add(p)}>
-                <img src={p.image} alt="" className="pos-result-img" />
-                <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
-                <span className="pos-result-price">{GEL(p.price)}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="pos-custom">
-          <span className="pos-custom-label">სხვა პოზიცია:</span>
-          <input className="staff-input" placeholder="დასახელება" value={customName} onChange={e => setCustomName(e.target.value)} />
-          <input className="staff-input pos-custom-price" placeholder="ფასი ₾" inputMode="decimal" value={customPrice} onChange={e => setCustomPrice(e.target.value)} />
-          <button className="staff-btn-secondary" onClick={addCustom}>+ დამატება</button>
-        </div>
-
-        {/* ── Catalogue tree ── */}
-        <h2 className="staff-section-title pos-tree-title">კატალოგი</h2>
+      {/* ── Column 1: catalogue tree ── */}
+      <section className="pos-col-tree">
+        <h2 className="staff-section-title">კატალოგი</h2>
         <div className="pos-tree">
           {catalog.map(sec => {
             const total = sectionCount(sec.id);
@@ -241,11 +223,16 @@ function PosView({ session }: { session: Session }) {
             );
           })}
         </div>
+      </section>
 
-        {activeSub && (
-          <div className="pos-tree-products">
-            {subProducts.length === 0 && <p className="pos-empty">ამ სექციაში პროდუქტები არ არის</p>}
-            {subProducts.map(p => (
+      {/* ── Column 2: search + selected category products ── */}
+      <section className="pos-col-products">
+        <h2 className="staff-section-title">პროდუქტის დამატება</h2>
+        <input className="staff-input pos-search" placeholder="🔍 მოძებნეთ სახელით ან პარტ-ნომრით…"
+          value={query} onChange={e => setQuery(e.target.value)} />
+        {results.length > 0 && (
+          <div className="pos-results">
+            {results.map(p => (
               <button key={p.id} className="pos-result" onClick={() => add(p)}>
                 <img src={p.image} alt="" className="pos-result-img" />
                 <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
@@ -254,6 +241,38 @@ function PosView({ session }: { session: Session }) {
             ))}
           </div>
         )}
+
+        {activeSub && (
+          <>
+            <div className="pos-breadcrumb">
+              {activeSection?.groupNumber != null && <span className="pos-tree-num">{activeSection.groupNumber}</span>}
+              <span>{activeSection ? getCatName(activeSection, 'ka', 'section') : ''}</span>
+              <span className="pos-breadcrumb-sep">›</span>
+              <strong>{activeSubDef ? getCatName(activeSubDef, 'ka', 'sub') : ''}</strong>
+            </div>
+            <div className="pos-tree-products">
+              {subProducts.length === 0 && <p className="pos-empty">ამ სექციაში პროდუქტები არ არის</p>}
+              {subProducts.map(p => (
+                <button key={p.id} className="pos-result" onClick={() => add(p)}>
+                  <img src={p.image} alt="" className="pos-result-img" />
+                  <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                  <span className="pos-result-price">{GEL(p.price)}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {!activeSub && results.length === 0 && (
+          <p className="pos-empty pos-hint">← აირჩიეთ კატეგორია კატალოგიდან ან მოძებნეთ ზემოთ</p>
+        )}
+
+        <div className="pos-custom">
+          <span className="pos-custom-label">სხვა პოზიცია:</span>
+          <input className="staff-input" placeholder="დასახელება" value={customName} onChange={e => setCustomName(e.target.value)} />
+          <input className="staff-input pos-custom-price" placeholder="ფასი ₾" inputMode="decimal" value={customPrice} onChange={e => setCustomPrice(e.target.value)} />
+          <button className="staff-btn-secondary" onClick={addCustom}>+ დამატება</button>
+        </div>
       </section>
 
       <section className="pos-right">

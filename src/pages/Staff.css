@@ -96,7 +96,33 @@
 }
 
 /* ── POS ── */
-.pos-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.pos-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 22px;
+  align-items: start;
+  max-width: 1320px;
+}
+
+.pos-col-tree {
+  position: sticky;
+  top: 76px;
+}
+
+.pos-col-tree .pos-tree {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+.pos-breadcrumb {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 14px; padding: 2px 2px 10px;
+  font-size: 13px; color: var(--text-muted);
+}
+.pos-breadcrumb strong { color: var(--text); }
+.pos-breadcrumb-sep { color: var(--text-dim); }
+
+.pos-hint { margin-top: 16px; }
 
 .pos-search { font-size: 15px; padding: 13px 14px; }
 
@@ -116,7 +142,8 @@
 .pos-result-price { font-size: 13px; font-weight: 700; color: var(--text); }
 
 .pos-custom {
-  margin-top: 18px; display: grid; grid-template-columns: auto 1fr 90px auto; gap: 8px; align-items: center;
+  margin-top: 20px; display: grid; grid-template-columns: auto 1fr 90px auto; gap: 8px; align-items: center;
+  border-top: 1px solid var(--border); padding-top: 16px;
 }
 .pos-custom-label { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
 
@@ -163,8 +190,6 @@
 .pos-complete { margin-top: 4px; }
 
 /* ── POS catalogue tree ── */
-.pos-tree-title { margin-top: 24px; }
-
 .pos-tree {
   border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
   background: var(--bg2);
@@ -346,8 +371,16 @@
 .hist-meta { font-size: 12px; color: var(--text-dim); padding-top: 4px; }
 
 /* ── Responsive ── */
+@media (max-width: 1150px) {
+  .pos-layout { grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+}
+
 @media (max-width: 860px) {
   .pos-layout { grid-template-columns: 1fr; }
+  .pos-col-tree { position: static; order: 3; }
+  .pos-col-tree .pos-tree { max-height: none; }
+  .pos-col-products { order: 1; }
+  .pos-right { order: 2; }
   .dash-tiles { grid-template-columns: repeat(2, 1fr); }
   .dash-two-col { grid-template-columns: 1fr; }
   .staff-header { height: auto; padding: 10px 14px; }

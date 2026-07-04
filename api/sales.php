@@ -64,10 +64,15 @@ if ($rows) {
                         FROM sale_items WHERE sale_id IN ($ph)");
   $sti->execute($ids);
   $byId = [];
-  foreach ($sti->fetchAll() as $it) $byId[$it['sale_id']][] = $it;
+  foreach ($sti->fetchAll() as $it) {
+    $it['qty'] = (int)$it['qty'];
+    $it['unitPrice'] = (float)$it['unitPrice'];
+    $byId[$it['sale_id']][] = $it;
+  }
   foreach ($rows as &$r) {
     $r['items'] = $byId[$r['id']] ?? [];
     $r['total'] = (float)$r['total'];
+    $r['id'] = (int)$r['id'];
   }
 }
 ok(['sales' => $rows]);
