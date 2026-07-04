@@ -10,8 +10,10 @@ import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import './Products.css';
+import { usePageMeta } from '../utils/seo';
 
 export default function Products() {
+  usePageMeta('ნაწილები', 'Tesla-ს ნაწილების სრული სია თქვენი მოდელისთვის — ფასები, მარაგი, მიწოდება.');
   const { vehicle } = useVehicle();
   const { addToCart } = useCart();
   const { t, tf, lang } = useLang();

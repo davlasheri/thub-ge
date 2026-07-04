@@ -6,6 +6,7 @@ import { useModels } from '../context/ModelsContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { ModelId } from '../types';
 import './Home.css';
+import { usePageMeta } from '../utils/seo';
 
 const MODEL_PHOTOS: Record<string, string> = {
   MS: 'https://images.unsplash.com/photo-1536883442700-ffaa4d76e372?w=400&q=85',
@@ -15,6 +16,7 @@ const MODEL_PHOTOS: Record<string, string> = {
 };
 
 export default function Home() {
+  usePageMeta('Tesla-ს ნაწილები საქართველოში', 'ორიგინალი და ანალოგი Tesla ნაწილები Model S, 3, X, Y-სთვის. აირჩიეთ მოდელი და იპოვეთ თავსებადი ნაწილები. მიწოდება მთელ საქართველოში.');
   const { setVehicle } = useVehicle();
   const { t, tf, lang } = useLang();
   const { models, getYearsForModel } = useModels();

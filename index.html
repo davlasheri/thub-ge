@@ -1,19 +1,53 @@
 <!doctype html>
-<html lang="en">
+<html lang="ka">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <meta name="theme-color" content="#0d0d0d" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="THub.ge — Premium Tesla Parts & Accessories in Georgia" />
-    <title>THub.ge — Tesla Parts Store</title>
+    <meta name="description" content="THub.ge — Tesla-ს ნაწილები და აქსესუარები საქართველოში. ორიგინალი და ანალოგი ნაწილები Model S, 3, X, Y-სთვის, სერვისი და მიწოდება. Tesla parts & accessories in Georgia." />
+    <meta name="keywords" content="Tesla ნაწილები, Tesla parts Georgia, Tesla Tbilisi, ტესლას ნაწილები, Tesla სერვისი, Model 3 parts, Model Y ნაწილები" />
+    <title>THub.ge — Tesla-ს ნაწილები საქართველოში | Tesla Parts Georgia</title>
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="THub.ge" />
+    <meta property="og:title" content="THub.ge — Tesla-ს ნაწილები საქართველოში" />
+    <meta property="og:description" content="ორიგინალი და ანალოგი Tesla ნაწილები Model S, 3, X, Y-სთვის. სერვისი, მიწოდება, ავტომობილები." />
+    <meta property="og:url" content="https://thub.ge/" />
+    <meta property="og:image" content="https://thub.ge/pwa-512x512.png" />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Structured data for Google -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "AutoPartsStore",
+      "name": "THub.ge",
+      "url": "https://thub.ge/",
+      "logo": "https://thub.ge/pwa-512x512.png",
+      "telephone": "+995 599 286 244",
+      "email": "info@thub.ge",
+      "address": { "@type": "PostalAddress", "addressLocality": "Tbilisi", "addressCountry": "GE" },
+      "description": "Tesla parts, accessories and service in Georgia"
+    }
+    </script>
+
     <script>
       try {
         if (localStorage.getItem('thub_theme') === 'light') {
           document.documentElement.dataset.theme = 'light';
         }
       } catch (e) {}
+      // Legacy #/ links (old bookmarks, indexed URLs) → real paths
+      (function () {
+        var h = location.hash;
+        if (h && h.indexOf('#/') === 0) {
+          var base = '%BASE_URL%'.replace(/\/$/, '');
+          history.replaceState(null, '', base + h.slice(1) + location.search);
+        }
+      })();
     </script>
   </head>
   <body>

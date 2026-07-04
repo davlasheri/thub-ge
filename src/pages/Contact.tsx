@@ -1,8 +1,10 @@
 import { useLang } from '../context/LanguageContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import './Contact.css';
+import { usePageMeta } from '../utils/seo';
 
 export default function Contact() {
+  usePageMeta('კონტაქტი', 'დაგვიკავშირდით: +995 599 286 244, info@thub.ge — Tesla ნაწილები და სერვისი თბილისში.');
   const { t } = useLang();
   const { settings } = useSiteSettings();
   const c = settings.contact;

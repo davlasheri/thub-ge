@@ -5,6 +5,7 @@ import { useLang } from '../context/LanguageContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { TranslationKey } from '../data/translations';
 import { CarListing } from '../types';
+import { usePageMeta } from '../utils/seo';
 import './CarDetail.css';
 
 type TFn = (k: TranslationKey) => string;
@@ -21,6 +22,7 @@ export default function CarDetail() {
   const [photoIdx, setPhotoIdx] = useState(0);
 
   const car = id ? getById(id) : undefined;
+  usePageMeta(car ? `Tesla ${car.model} ${car.year} იყიდება` : 'ავტომობილი', car?.description);
 
   if (!car) {
     return (

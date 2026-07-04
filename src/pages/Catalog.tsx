@@ -11,6 +11,7 @@ import { TeslaModel, CatalogSection, Product } from '../types';
 import { Generation, getGenerations } from '../data/generations';
 import { TranslationKey } from '../data/translations';
 import './Catalog.css';
+import { usePageMeta } from '../utils/seo';
 
 type TFn = (k: TranslationKey) => string;
 
@@ -50,6 +51,7 @@ function ModelSilhouette({ modelId, tall }: { modelId: string; tall?: boolean })
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Catalog() {
+  usePageMeta('კატალოგი — Tesla EPC ჯგუფები', 'Tesla-ს ნაწილების კატალოგი ოფიციალური ჯგუფებით: ძარა, სავარძლები, ბატარეა, სამუხრუჭე სისტემა და სხვა.');
   const { addToCart } = useCart();
   const { t, lang } = useLang();
   const { products } = useProducts();

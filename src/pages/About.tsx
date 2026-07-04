@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useLang } from '../context/LanguageContext';
 import './About.css';
+import { usePageMeta } from '../utils/seo';
 
 export default function About() {
+  usePageMeta('ჩვენ შესახებ', 'THub.ge — Tesla-ს ნაწილებისა და სერვისის ცენტრი საქართველოში 2019 წლიდან.');
   const { t } = useLang();
 
   return (

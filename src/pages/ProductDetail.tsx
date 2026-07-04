@@ -7,6 +7,7 @@ import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
+import { usePageMeta } from '../utils/seo';
 import './ProductDetail.css';
 
 export default function ProductDetail() {
@@ -19,6 +20,7 @@ export default function ProductDetail() {
   const { catalog } = useCatalog();
   const { models } = useModels();
   const product = getById(id ?? '');
+  usePageMeta(product ? `${product.name} — #${product.partNumber}` : 'ნაწილი', product?.description);
 
   if (!product) {
     return (

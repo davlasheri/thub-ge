@@ -6,6 +6,7 @@ import { useSiteSettings } from '../context/SiteSettingsContext';
 import { CarListing } from '../types';
 import { TranslationKey } from '../data/translations';
 import './Cars.css';
+import { usePageMeta } from '../utils/seo';
 
 type TFn = (k: TranslationKey) => string;
 
@@ -72,6 +73,7 @@ function CarCard({ car, t, phone, waNumber }: { car: CarListing; t: TFn; phone: 
 }
 
 export default function Cars() {
+  usePageMeta('Tesla ავტომობილები იყიდება', 'შეარჩიეთ Tesla Model S, 3, X ან Y საქართველოში — შემოწმებული ავტომობილები THub.ge-სგან.');
   const { cars } = useCars();
   const { t } = useLang();
   const { settings } = useSiteSettings();

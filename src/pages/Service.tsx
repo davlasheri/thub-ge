@@ -3,6 +3,7 @@ import { useLang } from '../context/LanguageContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { TranslationKey } from '../data/translations';
 import './Service.css';
+import { usePageMeta } from '../utils/seo';
 
 type TFn = (k: TranslationKey) => string;
 
@@ -75,6 +76,7 @@ function FeatureCard({ icon, titleKey, textKey, accent, t }: {
 }
 
 export default function Service() {
+  usePageMeta('Tesla სერვის ცენტრი თბილისში', 'პრემიუმ Tesla სერვისი: ყველა ნაწილი, ყველა პროგრამული უზრუნველყოფა, ვიდეო-მეთვალყურეობა. მოიყვანეთ ავტომობილი — წაიყვანეთ გამართული.');
   const { t } = useLang();
   const { settings } = useSiteSettings();
   const phone = settings.contact.phone || '+995 599 286 244';

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /pos
+Disallow: /staff
+Disallow: /image-tool
+Disallow: /api/
+
+Sitemap: https://thub.ge/sitemap.xml
