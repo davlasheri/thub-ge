@@ -1,16 +1,18 @@
 import { Product } from '../types';
 
+import { partArt } from '../utils/partArt';
+
 const IMG = {
-  body:     'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?w=600&q=80',
-  interior: 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=80',
-  brakes:   'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&q=80',
-  wheels:   'https://images.unsplash.com/photo-1558618047-3c8c76ca2d04?w=600&q=80',
-  charging: 'https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=600&q=80',
-  cargo:    'https://images.unsplash.com/photo-1547038577-da80abbc4f19?w=600&q=80',
-  camera:   'https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=600&q=80',
-  susp:     'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=600&q=80',
-  filter:   'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&q=80',
-  mats:     'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
+  body:     partArt('body'),
+  interior: partArt('interior'),
+  brakes:   partArt('brakes'),
+  wheels:   partArt('wheels'),
+  charging: partArt('charging'),
+  cargo:    partArt('cargo'),
+  camera:   partArt('camera'),
+  susp:     partArt('susp'),
+  filter:   partArt('filter'),
+  mats:     partArt('mats'),
 };
 
 export const products: Product[] = [

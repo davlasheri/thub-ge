@@ -48,107 +48,106 @@ export default function TeslaExploded({ onZoneClick, onZoneHover }: Props) {
   };
 
   return (
-    <svg className="tesla-exploded" viewBox="0 0 900 400" fill="none" aria-label="Tesla parts diagram">
+    <svg className="tesla-exploded" viewBox="0 0 900 400" fill="none" aria-label="Tesla Roadster parts diagram">
 
       {/* ground */}
       <line className="tx-ground" x1="40" y1="342" x2="860" y2="342" />
 
-      {/* ── rear bumper ── */}
+      {/* ── rear bumper + diffuser ── */}
       <g {...zoneProps('rearBumper', -170, -30, 0.15)}>
-        <rect className="tz-hit" x="50" y="225" width="75" height="95" />
-        <path d="M 118 232 C 84 238 62 252 58 274 C 55 292 58 304 64 312 L 118 312 L 118 232 Z" />
-        <path d="M 66 288 L 96 288" strokeLinecap="round" />
-        {/* tail light */}
-        <path d="M 64 246 L 108 240 L 108 252 L 66 258 Z" className="tx-lamp" />
+        <rect className="tz-hit" x="58" y="230" width="80" height="90" />
+        <path d="M 132 240 C 104 244 84 252 74 264 C 66 274 64 292 70 306 L 96 316 L 132 316 L 132 240 Z" />
+        <path d="M 78 296 L 112 300" strokeLinecap="round" />
+        {/* tail light strip */}
+        <path d="M 74 252 L 128 246 L 128 256 L 76 262 Z" className="tx-lamp" />
       </g>
 
-      {/* ── trunk / rear deck ── */}
+      {/* ── rear deck / ducktail ── */}
       <g {...zoneProps('trunk', -130, -130, 0.3)}>
-        <rect className="tz-hit" x="115" y="180" width="175" height="55" />
-        <path d="M 118 232 L 150 226 C 200 216 240 204 286 190 L 286 232 L 118 232 Z" />
-        <path d="M 152 226 C 196 217 236 206 280 193" strokeDasharray="5 6" />
+        <rect className="tz-hit" x="128" y="192" width="180" height="52" />
+        <path d="M 132 240 L 148 236 C 160 220 190 206 236 200 L 306 196 L 306 240 L 132 240 Z" />
+        <path d="M 134 236 L 152 230" strokeLinecap="round" />
+        <path d="M 168 218 C 200 208 250 202 300 199" strokeDasharray="5 6" />
       </g>
 
-      {/* ── glass roof ── */}
+      {/* ── glass roof (low arch) ── */}
       <g {...zoneProps('roof', 0, -180, 0.55)}>
-        <rect className="tz-hit" x="285" y="118" width="315" height="60" />
-        <path d="M 286 190 C 340 148 400 126 468 126 C 520 126 560 140 596 164 L 560 170 C 520 148 480 140 452 140 C 400 140 350 158 310 190 Z" className="tx-glass" />
+        <rect className="tz-hit" x="300" y="150" width="240" height="52" />
+        <path d="M 306 196 C 336 168 380 152 428 152 C 468 152 502 164 528 186 L 496 190 C 470 172 444 164 420 164 C 380 164 344 178 322 196 Z" className="tx-glass" />
       </g>
 
-      {/* ── doors + windows ── */}
+      {/* ── door + window (single long door) ── */}
       <g {...zoneProps('doors', -60, 150, 0.45)}>
-        <path d="M 286 190 L 286 312 L 596 312 L 596 232 L 560 170 L 310 190 Z" opacity="0.001" fill="#fff" stroke="none" />
-        <path d="M 306 196 L 306 306" />
-        <path d="M 448 148 L 448 306" />
-        <path d="M 560 172 L 572 306" />
-        {/* window outlines */}
-        <path d="M 316 192 C 352 162 400 148 440 146 L 440 188 Z M 456 147 C 496 148 528 158 552 172 L 456 188 Z" className="tx-glass" />
-        {/* handles */}
-        <rect x="352" y="212" width="34" height="6" rx="3" />
-        <rect x="472" y="212" width="34" height="6" rx="3" />
+        <path d="M 306 196 L 306 316 L 560 316 L 560 236 L 528 186 L 322 196 Z" opacity="0.001" fill="#fff" stroke="none" />
+        <path d="M 330 200 L 330 312" />
+        <path d="M 500 190 L 516 312" />
+        {/* window */}
+        <path d="M 340 196 C 362 176 392 166 420 166 L 424 190 Z M 438 166 C 462 168 482 176 496 188 L 440 190 Z" className="tx-glass" />
+        {/* handle */}
+        <rect x="396" y="216" width="32" height="6" rx="3" />
       </g>
 
-      {/* ── seats (visible through glass) ── */}
+      {/* ── seats ── */}
       <g {...zoneProps('seats', 0, -100, 0.7)}>
-        <rect className="tz-hit" x="345" y="155" width="160" height="62" />
-        <path d="M 356 200 C 350 176 352 166 358 160 C 364 166 366 178 364 198 L 380 200 C 384 206 380 212 372 212 L 360 212 Z" />
-        <path d="M 470 200 C 464 178 466 168 472 162 C 478 168 480 180 478 198 L 494 200 C 498 206 494 212 486 212 L 474 212 Z" />
+        <rect className="tz-hit" x="352" y="168" width="130" height="52" />
+        <path d="M 386 208 C 380 188 382 178 388 172 C 394 178 396 190 394 206 L 410 208 C 414 214 410 220 402 220 L 390 220 Z" />
+        <path d="M 452 208 C 446 188 448 178 454 172 C 460 178 462 190 460 206 L 476 208 C 480 214 476 220 468 220 L 456 220 Z" />
       </g>
 
-      {/* ── hood / frunk ── */}
+      {/* ── clamshell hood (long low nose) ── */}
       <g {...zoneProps('hood', 140, -140, 0.4)}>
-        <rect className="tz-hit" x="595" y="158" width="180" height="76" />
-        <path d="M 596 164 L 640 196 C 690 204 740 216 776 228 L 596 232 Z" />
-        <path d="M 620 200 C 668 206 720 218 762 228" strokeDasharray="5 6" />
+        <rect className="tz-hit" x="530" y="182" width="240" height="60" />
+        <path d="M 528 186 L 588 216 C 654 224 716 234 764 244 L 560 240 Z" />
+        <path d="M 600 220 C 656 226 712 236 754 244" strokeDasharray="5 6" />
       </g>
 
       {/* ── mirror ── */}
       <g {...zoneProps('mirror', 70, -80, 0.85)}>
-        <rect className="tz-hit" x="583" y="168" width="38" height="28" />
-        <path d="M 590 180 L 606 176 C 614 176 616 184 610 188 L 596 190 Z" />
+        <rect className="tz-hit" x="516" y="176" width="38" height="28" />
+        <path d="M 524 192 L 540 187 C 548 186 550 194 544 198 L 530 200 Z" />
       </g>
 
-      {/* ── front bumper + nose ── */}
+      {/* ── front bumper / splitter ── */}
       <g {...zoneProps('frontBumper', 200, -20, 0.2)}>
-        <rect className="tz-hit" x="772" y="225" width="80" height="92" />
-        <path d="M 776 228 C 812 236 836 248 842 266 C 846 282 842 300 834 312 L 776 312 L 776 228 Z" />
-        <path d="M 800 292 L 834 292" strokeLinecap="round" />
+        <rect className="tz-hit" x="760" y="238" width="92" height="82" />
+        <path d="M 764 244 C 800 250 828 258 842 270 C 852 280 852 296 844 308 L 800 316 L 764 316 L 764 244 Z" />
+        <path d="M 806 300 L 844 296" strokeLinecap="round" />
       </g>
 
-      {/* ── headlight ── */}
+      {/* ── headlight slit ── */}
       <g {...zoneProps('lights', 120, -60, 0.95)}>
-        <rect className="tz-hit" x="778" y="228" width="64" height="40" />
-        <path d="M 788 234 L 836 252 L 828 262 L 782 246 Z" className="tx-lamp" />
+        <rect className="tz-hit" x="770" y="240" width="76" height="34" />
+        <path d="M 778 250 L 838 266 L 832 274 L 774 260 Z" className="tx-lamp" />
       </g>
 
       {/* ── battery (underfloor) ── */}
       <g {...zoneProps('battery', 0, 160, 0.8)}>
-        <rect className="tz-hit" x="295" y="310" width="300" height="30" />
-        <rect x="300" y="316" width="290" height="20" rx="6" className="tx-batt" />
-        <path d="M 336 316 V 336 M 372 316 V 336 M 408 316 V 336 M 444 316 V 336 M 480 316 V 336 M 516 316 V 336 M 552 316 V 336" opacity="0.6" />
-        <path d="M 435 320 L 447 326 L 441 326 L 451 332" className="tx-bolt" strokeLinecap="round" />
+        <rect className="tz-hit" x="315" y="312" width="270" height="30" />
+        <rect x="320" y="318" width="260" height="18" rx="6" className="tx-batt" />
+        <path d="M 354 318 V 336 M 388 318 V 336 M 422 318 V 336 M 456 318 V 336 M 490 318 V 336 M 524 318 V 336 M 552 318 V 336" opacity="0.6" />
+        <path d="M 442 322 L 454 328 L 448 328 L 458 333" className="tx-bolt" strokeLinecap="round" />
       </g>
 
-      {/* ── sill connecting wheels ── */}
+      {/* ── sill segments ── */}
       <g className="tz tz-static" style={{ '--dx': '0px', '--dy': '40px', '--d': '0.6s' } as React.CSSProperties}>
-        <path d="M 286 312 L 596 312" />
-        <path d="M 118 312 L 172 312 M 710 312 L 776 312" />
+        <path d="M 306 316 L 560 316" />
+        <path d="M 132 316 L 186 316 M 706 316 L 764 316" />
       </g>
 
-      {/* ── wheels ── */}
+      {/* ── wheels (large, low body) ── */}
       <g {...zoneProps('wheels', -80, 200, 1.0)}>
-        <rect className="tz-hit" x="183" y="242" width="116" height="116" />
-        <circle cx="241" cy="300" r="56" className="tx-tyre" />
-        <circle cx="241" cy="300" r="34" />
-        <circle cx="241" cy="300" r="6" />
-        <path d="M 241 268 L 241 292 M 241 308 L 241 332 M 209 300 L 233 300 M 249 300 L 273 300 M 219 278 L 236 295 M 246 305 L 263 322 M 263 278 L 246 295 M 236 305 L 219 322" opacity="0.7" />
+        <rect className="tz-hit" x="188" y="240" width="120" height="120" />
+        <circle cx="248" cy="300" r="58" className="tx-tyre" />
+        <circle cx="248" cy="300" r="36" />
+        <circle cx="248" cy="300" r="6" />
+        <path d="M 248 266 L 248 292 M 248 308 L 248 334 M 214 300 L 240 300 M 256 300 L 282 300 M 225 277 L 243 295 M 253 305 L 271 323 M 271 277 L 253 295 M 243 305 L 225 323" opacity="0.7" />
       </g>
       <g {...zoneProps('wheels', 80, 200, 1.1)}>
-        <rect className="tz-hit" x="595" y="242" width="116" height="116" />
-        <circle cx="653" cy="300" r="56" className="tx-tyre" />
-        <circle cx="653" cy="300" r="34" />
-        <circle cx="653" cy="300" r="6" />
-        <path d="M 653 268 L 653 292 M 653 308 L 653 332 M 621 300 L 645 300 M 661 300 L 685 300 M 631 278 L 648 295 M 658 305 L 675 322 M 675 278 L 658 295 M 648 305 L 631 322" opacity="0.7" />
+        <rect className="tz-hit" x="592" y="240" width="120" height="120" />
+        <circle cx="652" cy="300" r="58" className="tx-tyre" />
+        <circle cx="652" cy="300" r="36" />
+        <circle cx="652" cy="300" r="6" />
+        <path d="M 652 266 L 652 292 M 652 308 L 652 334 M 618 300 L 644 300 M 660 300 L 686 300 M 629 277 L 647 295 M 657 305 L 675 323 M 675 277 L 657 295 M 647 305 L 629 323" opacity="0.7" />
       </g>
 
     </svg>

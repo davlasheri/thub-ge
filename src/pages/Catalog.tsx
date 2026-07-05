@@ -10,6 +10,8 @@ import { getCatName } from '../utils/catalog';
 import { TeslaModel, CatalogSection, Product } from '../types';
 import { Generation, getGenerations } from '../data/generations';
 import { TranslationKey } from '../data/translations';
+import ModelBlueprint from '../components/ModelBlueprint';
+import { sectionArt } from '../utils/partArt';
 import './Catalog.css';
 import { usePageMeta } from '../utils/seo';
 
@@ -18,35 +20,8 @@ type TFn = (k: TranslationKey) => string;
 type EpcView = 'models' | 'groups' | 'parts';
 
 // ── Silhouettes ───────────────────────────────────────────────────────────────
-function SilhouetteSedan({ tall }: { tall?: boolean }) {
-  return (
-    <svg viewBox="0 0 120 52" fill="currentColor" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
-      <path d={tall
-        ? 'M8 34 C8 34 18 18 35 16 L52 13 L68 13 L85 16 C102 18 112 34 112 34 L112 38 L100 38 C100 35 97 32 93 32 C89 32 86 35 86 38 L34 38 C34 35 31 32 27 32 C23 32 20 35 20 38 L8 38 Z'
-        : 'M8 36 C8 36 20 22 36 20 L50 16 L70 16 L84 20 C100 22 112 36 112 36 L112 39 L100 39 C100 36 97 33 93 33 C89 33 86 36 86 39 L34 39 C34 36 31 33 27 33 C23 33 20 36 20 39 L8 39 Z'}
-      />
-      <circle cx="27" cy="39" r="6" /><circle cx="93" cy="39" r="6" />
-      <circle cx="27" cy="39" r="2.5" fill="var(--bg2)" />
-      <circle cx="93" cy="39" r="2.5" fill="var(--bg2)" />
-    </svg>
-  );
-}
-function SilhouetteSUV({ tall }: { tall?: boolean }) {
-  return (
-    <svg viewBox="0 0 120 52" fill="currentColor" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
-      <path d={tall
-        ? 'M8 34 C8 34 15 14 30 12 L45 10 L75 10 L90 12 C105 14 112 34 112 34 L112 38 L100 38 C100 35 97 32 93 32 C89 32 86 35 86 38 L34 38 C34 35 31 32 27 32 C23 32 20 35 20 38 L8 38 Z'
-        : 'M8 35 C8 35 16 16 30 14 L44 11 L76 11 L90 14 C104 16 112 35 112 35 L112 39 L100 39 C100 36 97 33 93 33 C89 33 86 36 86 39 L34 39 C34 36 31 33 27 33 C23 33 20 36 20 39 L8 39 Z'}
-      />
-      <circle cx="27" cy="39" r="6" /><circle cx="93" cy="39" r="6" />
-      <circle cx="27" cy="39" r="2.5" fill="var(--bg2)" />
-      <circle cx="93" cy="39" r="2.5" fill="var(--bg2)" />
-    </svg>
-  );
-}
-function ModelSilhouette({ modelId, tall }: { modelId: string; tall?: boolean }) {
-  const isSUV = modelId === 'MY' || modelId === 'MX';
-  return isSUV ? <SilhouetteSUV tall={tall} /> : <SilhouetteSedan tall={tall} />;
+function ModelSilhouette({ modelId }: { modelId: string; tall?: boolean }) {
+  return <ModelBlueprint modelId={modelId} />;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -352,7 +327,7 @@ function GroupCard({
   return (
     <div className="epc-group-card">
       <div className="epc-group-img-wrap">
-        <img src={section.image} alt={tSection(section)} loading="lazy" />
+        <img src={sectionArt(section.id)} alt={tSection(section)} loading="lazy" />
         {section.groupNumber && (
           <span className="epc-group-num-badge">{section.groupNumber}</span>
         )}
