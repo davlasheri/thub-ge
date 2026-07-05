@@ -1,4 +1,9 @@
 .tesla-exploded {
+  /* blueprint ink colors — overridden for light theme below */
+  --bp-stroke: #6b7585;
+  --bp-glass: #4c5a70;
+  --bp-lamp: #8f9aad;
+  --bp-ground: #333a45;
   width: 100%;
   max-width: 860px;
   height: auto;
@@ -11,7 +16,7 @@
 .tesla-exploded rect,
 .tesla-exploded circle,
 .tesla-exploded line {
-  stroke: #6b7585;
+  stroke: var(--bp-stroke);
   stroke-width: 2;
   fill: none;
   vector-effect: non-scaling-stroke;
@@ -19,12 +24,12 @@
 }
 
 .tx-ground {
-  stroke: #333a45 !important;
+  stroke: var(--bp-ground) !important;
   stroke-dasharray: 3 9;
 }
 
-.tx-glass { stroke: #4c5a70; }
-.tx-lamp { stroke: #8f9aad; }
+.tx-glass { stroke: var(--bp-glass); }
+.tx-lamp { stroke: var(--bp-lamp); }
 .tx-tyre { stroke-width: 4; }
 .tx-batt { stroke: #b34; }
 .tx-bolt { stroke: #e31937; stroke-width: 2.5; }
@@ -67,4 +72,13 @@
   opacity: 0.001;
   stroke: none !important;
   pointer-events: all;
+}
+
+
+/* light theme: ink on paper */
+:root[data-theme='light'] .tesla-exploded {
+  --bp-stroke: #44599f;
+  --bp-glass: #7d8fc4;
+  --bp-lamp: #2f4287;
+  --bp-ground: #a9b4cf;
 }
