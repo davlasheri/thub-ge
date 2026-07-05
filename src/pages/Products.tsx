@@ -144,10 +144,6 @@ export default function Products() {
 function ShopCard({ product, onAdd, modelColor, lang }: { product: Product; onAdd: () => void; modelColor?: string; lang: string }) {
   const { t } = useLang();
 
-  const stars = Array.from({ length: 5 }, (_, i) => (
-    <span key={i} style={{ color: i < Math.floor(product.rating) ? '#f5a623' : 'var(--border)' }}>★</span>
-  ));
-
   const displayName = lang === 'ka' ? product.nameGe : product.name;
 
   return (
@@ -162,10 +158,6 @@ function ShopCard({ product, onAdd, modelColor, lang }: { product: Product; onAd
         <Link to={`/products/${product.id}`}>
           <h3 className="product-name">{displayName}</h3>
         </Link>
-        <div className="product-rating">
-          <div className="stars" style={{ fontSize: 12 }}>{stars}</div>
-          <span className="rating-count">({product.reviews})</span>
-        </div>
         <div className="product-footer">
           <span className="product-price">{product.price.toLocaleString()} ₾</span>
           <button

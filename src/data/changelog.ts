@@ -1,7 +1,7 @@
 // Site version and change history.
 // Bump APP_VERSION and add an entry at the TOP for every released change.
 
-export const APP_VERSION = '1.6';
+export const APP_VERSION = '1.7';
 
 export interface ChangelogEntry {
   version: string;
@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.7',
+    date: '2026-07-04',
+    changes: [
+      'პროდუქტების სია: კატეგორიების სვეტი, თავსებადი მოდელების ჩვენება',
+      'რეიტინგი მოიხსნა',
+    ],
+  },
   {
     version: '1.6',
     date: '2026-07-04',

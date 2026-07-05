@@ -13,10 +13,6 @@ export default function ProductCard({ product }: Props) {
   const { addToCart } = useCart();
   const { lang } = useLang();
 
-  const stars = Array.from({ length: 5 }, (_, i) => (
-    <span key={i} className={i < Math.floor(product.rating) ? 'star-filled' : 'star-empty'}>★</span>
-  ));
-
   return (
     <div className="product-card">
       <Link to={`/products/${product.id}`} className="product-card-img-wrap">
@@ -41,11 +37,6 @@ export default function ProductCard({ product }: Props) {
         <Link to={`/products/${product.id}`}>
           <h3 className="product-name">{product.name}</h3>
         </Link>
-
-        <div className="product-rating">
-          <div className="stars">{stars}</div>
-          <span className="rating-count">({product.reviews})</span>
-        </div>
 
         <div className="product-footer">
           <span className="product-price">{product.price.toLocaleString()} ₾</span>

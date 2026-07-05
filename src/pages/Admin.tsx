@@ -238,6 +238,8 @@ export default function Admin() {
         </div>
         {tab === 'products' && view === 'list' && (
           <ProductsList
+            allProducts={products}
+            models={models}
             products={displayedProducts} allCount={products.length}
             search={productSearch} sectionFilter={productSectionFilter}
             catalog={catalog} isAdmin={isAdminProduct}
@@ -365,8 +367,8 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 }
 
 // ── Products list ──────────────────────────────────────────────────────────
-function ProductsList({ products, allCount, search, sectionFilter, catalog, isAdmin, onSearch, onSectionFilter, onAdd, onEdit, onDelete }: {
-  products: Product[]; allCount: number; search: string; sectionFilter: string;
+function ProductsList({ products, allProducts, models, allCount, search, sectionFilter, catalog, isAdmin, onSearch, onSectionFilter, onAdd, onEdit, onDelete }: {
+  products: Product[]; allProducts: Product[]; models: TeslaModel[]; allCount: number; search: string; sectionFilter: string;
   catalog: CatalogSection[]; isAdmin: (id: string) => boolean;
   onSearch: (s: string) => void; onSectionFilter: (s: string) => void;
   onAdd: () => void; onEdit: (p: Product) => void; onDelete: (id: string) => void;
@@ -386,28 +388,54 @@ function ProductsList({ products, allCount, search, sectionFilter, catalog, isAd
       <div className="admin-filters">
         <input type="text" className="admin-search" style={{ marginBottom: 0 }} placeholder="ძებნა სახელით ან ნომრით..."
           value={search} onChange={e => onSearch(e.target.value)} />
-        <select className="admin-input admin-select" value={sectionFilter} onChange={e => onSectionFilter(e.target.value)}>
+        <select className="admin-input admin-select admin-cat-select-mobile" value={sectionFilter} onChange={e => onSectionFilter(e.target.value)}>
           <option value="all">ყველა კატეგორია</option>
           {catalog.map(s => <option key={s.id} value={s.id}>{s.nameGe || s.name}</option>)}
         </select>
       </div>
-      {products.length === 0
-        ? <div className="admin-empty"><div className="admin-empty-icon">📦</div><h3>პროდუქტები ვერ მოიძებნა</h3></div>
-        : <div className="admin-product-grid">
-            {products.map(p => (
-              <ProductRow key={p.id} product={p} catalog={catalog} isAdmin={isAdmin(p.id)} onEdit={onEdit} onDelete={onDelete} />
-            ))}
-          </div>
-      }
+      <div className="admin-prod-layout">
+        <aside className="admin-cat-side">
+          <button
+            className={`admin-cat-btn ${sectionFilter === 'all' ? 'admin-cat-btn-active' : ''}`}
+            onClick={() => onSectionFilter('all')}
+          >
+            <span>ყველა</span>
+            <span className="admin-cat-count">{allProducts.length}</span>
+          </button>
+          {catalog.map(s => {
+            const n = allProducts.filter(p => p.sectionId === s.id).length;
+            if (n === 0) return null;
+            return (
+              <button key={s.id}
+                className={`admin-cat-btn ${sectionFilter === s.id ? 'admin-cat-btn-active' : ''}`}
+                onClick={() => onSectionFilter(s.id)}
+              >
+                {s.groupNumber != null && <span className="admin-cat-num">{s.groupNumber}</span>}
+                <span className="admin-cat-name">{s.nameGe || s.name}</span>
+                <span className="admin-cat-count">{n}</span>
+              </button>
+            );
+          })}
+        </aside>
+        {products.length === 0
+          ? <div className="admin-empty"><div className="admin-empty-icon">📦</div><h3>პროდუქტები ვერ მოიძებნა</h3></div>
+          : <div className="admin-product-grid">
+              {products.map(p => (
+                <ProductRow key={p.id} product={p} catalog={catalog} models={models} isAdmin={isAdmin(p.id)} onEdit={onEdit} onDelete={onDelete} />
+              ))}
+            </div>
+        }
+      </div>
     </>
   );
 }
 
-function ProductRow({ product, catalog, isAdmin, onEdit, onDelete }: {
-  product: Product; catalog: CatalogSection[]; isAdmin: boolean;
+function ProductRow({ product, catalog, models, isAdmin, onEdit, onDelete }: {
+  product: Product; catalog: CatalogSection[]; models: TeslaModel[]; isAdmin: boolean;
   onEdit: (p: Product) => void; onDelete: (id: string) => void;
 }) {
   const section = catalog.find(s => s.id === product.sectionId);
+  const fitEntries = Object.entries(product.fits ?? {});
   return (
     <div className="admin-product-card">
       <img src={product.image} alt={product.name} className="admin-product-thumb" />
@@ -421,6 +449,16 @@ function ProductRow({ product, catalog, isAdmin, onEdit, onDelete }: {
             {product.inStock ? 'მარაგშია' : 'არ არის'}
           </span>
           {!isAdmin && <span className="admin-meta-tag tag-sys">სისტემური</span>}
+          {fitEntries.length === 0
+            ? <span className="admin-meta-tag tag-fit">ყველა მოდელი</span>
+            : fitEntries.map(([mid, r]) => {
+                const mdl = models.find(mm => mm.id === mid);
+                return (
+                  <span key={mid} className="admin-meta-tag tag-fit">
+                    🚗 {mdl?.name ?? mid} {r!.from}–{r!.to}
+                  </span>
+                );
+              })}
         </div>
       </div>
       <div className="admin-product-price">{product.price.toLocaleString()} ₾</div>
@@ -641,19 +679,6 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, c
             <div className="admin-field">
               <label className="admin-label">აღწერა</label>
               <textarea className="admin-input" rows={4} value={form.description} onChange={e => set('description', e.target.value)} placeholder="ნაწილის დეტალური აღწერა..." />
-            </div>
-          </div>
-          <div className="admin-card">
-            <h3 className="admin-card-title">რეიტინგი</h3>
-            <div className="admin-row-2">
-              <div className="admin-field">
-                <label className="admin-label">შეფასება (0–5)</label>
-                <input className="admin-input" type="number" min="0" max="5" step="0.1" value={form.rating} onChange={e => set('rating', e.target.value)} />
-              </div>
-              <div className="admin-field">
-                <label className="admin-label">მიმოხილვების რაოდ.</label>
-                <input className="admin-input" type="number" min="0" value={form.reviews} onChange={e => set('reviews', e.target.value)} />
-              </div>
             </div>
           </div>
         </div>

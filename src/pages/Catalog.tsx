@@ -370,10 +370,6 @@ function EpcCard({ product, onAddToCart, accentColor, lang, t }: {
   t: TFn;
 }) {
   const displayName = lang === 'ka' ? product.nameGe : product.name;
-  const stars = Array.from({ length: 5 }, (_, i) => (
-    <span key={i} className={i < Math.floor(product.rating) ? 'star-on' : 'star-off'}>★</span>
-  ));
-
   return (
     <div className="epc-card">
       <Link to={`/products/${product.id}`} className="epc-card-img-wrap">
@@ -389,10 +385,7 @@ function EpcCard({ product, onAddToCart, accentColor, lang, t }: {
           <h3 className="epc-card-name">{displayName}</h3>
         </Link>
         <p className="epc-card-desc">{product.description}</p>
-        <div className="epc-card-rating">
-          <div style={{ fontSize: 12 }}>{stars}</div>
-          <span className="epc-card-reviews">({product.reviews})</span>
-        </div>
+        
         <div className="epc-card-footer">
           <span className="epc-card-price">{product.price.toLocaleString()} ₾</span>
           <button

@@ -41,10 +41,6 @@ export default function ProductDetail() {
 
   const fitEntries = Object.entries(product.fits);
 
-  const stars = Array.from({ length: 5 }, (_, i) => (
-    <span key={i} className={i < Math.floor(product.rating) ? 'star-filled' : 'star-empty'}>★</span>
-  ));
-
   const tSection = (id: string) => {
     const s = catalog.find(x => x.id === id);
     return s ? getCatName(s, lang, 'section') : id;
@@ -84,11 +80,7 @@ export default function ProductDetail() {
               <p className="detail-name-ge">{product.nameGe}</p>
             )}
 
-            <div className="detail-rating">
-              <div className="stars">{stars}</div>
-              <span className="rating-val">{product.rating}</span>
-              <span className="rating-count">({product.reviews} {t('detail_reviews')})</span>
-            </div>
+            
 
             <div className="detail-price-row">
               <span className="detail-price">{product.price.toLocaleString()} ₾</span>
