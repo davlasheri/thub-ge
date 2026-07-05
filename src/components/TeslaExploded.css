@@ -1,0 +1,70 @@
+.tesla-exploded {
+  width: 100%;
+  max-width: 860px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.tesla-exploded path,
+.tesla-exploded rect,
+.tesla-exploded circle,
+.tesla-exploded line {
+  stroke: #6b7585;
+  stroke-width: 2;
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  transition: stroke 0.2s, filter 0.2s;
+}
+
+.tx-ground {
+  stroke: #333a45 !important;
+  stroke-dasharray: 3 9;
+}
+
+.tx-glass { stroke: #4c5a70; }
+.tx-lamp { stroke: #8f9aad; }
+.tx-tyre { stroke-width: 4; }
+.tx-batt { stroke: #b34; }
+.tx-bolt { stroke: #e31937; stroke-width: 2.5; }
+
+/* ── assembly animation ── */
+.tz {
+  opacity: 0;
+  transform: translate(var(--dx), var(--dy));
+  animation: tzAssemble 0.9s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
+  animation-delay: var(--d);
+  cursor: pointer;
+  outline: none;
+}
+.tz-static { cursor: default; pointer-events: none; }
+
+@keyframes tzAssemble {
+  0% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translate(0, 0); }
+}
+
+/* ── hover / focus glow ── */
+.tz-active path,
+.tz-active rect,
+.tz-active circle,
+.tz:focus-visible path,
+.tz:focus-visible rect,
+.tz:focus-visible circle {
+  stroke: var(--red);
+  filter: drop-shadow(0 0 7px rgba(227, 25, 55, 0.85));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tz { animation-duration: 0.01s; }
+}
+
+/* invisible but clickable hit areas */
+.tesla-exploded .tz-hit {
+  fill: #fff;
+  opacity: 0.001;
+  stroke: none !important;
+  pointer-events: all;
+}

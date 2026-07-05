@@ -580,3 +580,10 @@
   .epc-groups-grid  { grid-template-columns: 1fr; }
   .epc-catalog-grid { grid-template-columns: 1fr; }
 }
+
+/* flash highlight when arriving from the home page car diagram */
+@keyframes epcSecFlash {
+  0%, 60% { box-shadow: 0 0 0 2px var(--red), 0 0 24px rgba(227,25,55,0.35); }
+  100% { box-shadow: none; }
+}
+.epc-sec-flash > * { animation: epcSecFlash 2.4s ease forwards; border-radius: 16px; }

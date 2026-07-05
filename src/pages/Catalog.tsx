@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useRef } from 'react';
+import { Link , useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { itemStatusLabel } from '../utils/itemStatus';
@@ -65,6 +65,9 @@ export default function Catalog() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [activeSubsectionId, setActiveSubsectionId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  // section requested by the home page car diagram (?sec=...)
+  const pendingSecRef = useRef<string | null>(searchParams.get('sec'));
 
   const selectedModel = models.find(m => m.id === selectedModelId);
   const modalModel    = models.find(m => m.id === yearModalModelId);
@@ -77,6 +80,18 @@ export default function Catalog() {
     setActiveSubsectionId(null);
     setSearch('');
     setView('groups');
+    const sec = pendingSecRef.current;
+    if (sec) {
+      pendingSecRef.current = null;
+      setTimeout(() => {
+        const el = document.getElementById('epc-sec-' + sec);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.classList.add('epc-sec-flash');
+          setTimeout(() => el.classList.remove('epc-sec-flash'), 2400);
+        }
+      }, 200);
+    }
   };
 
   const openSubsection = (sectionId: string, subsectionId: string) => {
@@ -216,8 +231,8 @@ export default function Catalog() {
             ) : (
               <div className="epc-groups-grid">
                 {filteredCatalog.map(section => (
+                  <div key={section.id} id={'epc-sec-' + section.id}>
                   <GroupCard
-                    key={section.id}
                     section={section}
                     tSection={tSection}
                     tSub={tSub}
@@ -225,6 +240,7 @@ export default function Catalog() {
                     onSubsectionClick={openSubsection}
                     accentColor={selectedModel.color}
                   />
+                  </div>
                 ))}
               </div>
             )}

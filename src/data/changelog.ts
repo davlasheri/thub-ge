@@ -1,7 +1,7 @@
 // Site version and change history.
 // Bump APP_VERSION and add an entry at the TOP for every released change.
 
-export const APP_VERSION = '1.2';
+export const APP_VERSION = '1.3';
 
 export interface ChangelogEntry {
   version: string;
@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.3',
+    date: '2026-07-04',
+    changes: [
+      'ახალი მთავარი გვერდი: Tesla ნაწილებისგან იწყობა თვალწინ',
+      'ინტერაქტიული ავტომობილი — შეეხეთ ნაწილს და გაიხსნება კატალოგის შესაბამისი ჯგუფი',
+    ],
+  },
   {
     version: '1.2',
     date: '2026-07-04',
