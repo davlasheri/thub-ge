@@ -14,6 +14,7 @@ export interface SaleItemInput {
 
 export interface Sale {
   id: number;
+  refSaleId?: number | null;
   total: number;
   payment: Payment;
   customerPhone?: string;
@@ -260,17 +261,48 @@ function logLocalStockMoves(
   localStorage.setItem(LOCAL_STOCK_KEY, JSON.stringify(list));
 }
 
+const itemKey = (it: { productId?: string; name: string; unitPrice: number }) =>
+  `${it.productId ?? ''}|${it.name}|${Number(it.unitPrice).toFixed(2)}`;
+
+// how many of each item from a sale can still be returned
+export function returnableItems(sale: Sale, allSales: Sale[]): Map<string, number> {
+  const remaining = new Map<string, number>();
+  for (const it of sale.items) {
+    remaining.set(itemKey(it), (remaining.get(itemKey(it)) ?? 0) + Number(it.qty));
+  }
+  for (const s of allSales) {
+    if (Number(s.total) >= 0) continue;
+    const ref = s.refSaleId ?? (s.note?.match(/#(\d+)/)?.[1] ? Number(s.note.match(/#(\d+)/)![1]) : null);
+    if (ref !== sale.id) continue;
+    for (const it of s.items) {
+      remaining.set(itemKey(it), (remaining.get(itemKey(it)) ?? 0) - Number(it.qty));
+    }
+  }
+  return remaining;
+}
+
 async function saveSaleLike(
   session: Session,
-  payload: { items: SaleItemInput[]; payment: Payment; customerPhone?: string; note?: string },
+  payload: { items: SaleItemInput[]; payment: Payment; customerPhone?: string; note?: string; refSaleId?: number },
   isReturn: boolean,
 ): Promise<{ saleId: number; total: number }> {
   let total = payload.items.reduce((s, it) => s + it.qty * it.unitPrice, 0);
   if (isReturn) total = -total;
   if (session.local) {
     const sales = readLocalSales();
+    if (isReturn) {
+      const orig = sales.find(s => s.id === payload.refSaleId);
+      if (!orig) throw new Error('საწყისი გაყიდვა ვერ მოიძებნა');
+      const remaining = returnableItems(orig, sales);
+      for (const it of payload.items) {
+        if ((remaining.get(itemKey(it)) ?? 0) < it.qty) {
+          throw new Error('ეს რაოდენობა უკვე დაბრუნებულია');
+        }
+      }
+    }
     const sale: Sale = {
       id: (sales[0]?.id ?? 0) + 1,
+      refSaleId: isReturn ? payload.refSaleId : null,
       total: Math.round(total * 100) / 100,
       payment: payload.payment,
       customerPhone: payload.customerPhone,
@@ -310,9 +342,58 @@ export async function recordSale(
 
 export async function recordReturn(
   session: Session,
-  payload: { items: SaleItemInput[]; payment: Payment; note?: string },
+  payload: { items: SaleItemInput[]; payment: Payment; note?: string; refSaleId: number },
 ): Promise<{ saleId: number; total: number }> {
   return saveSaleLike(session, payload, true);
+}
+
+// ── edit / delete history (admin) ──────────────────────────────────────────
+export async function updateSale(
+  session: Session,
+  payload: { id: number; payment?: Payment; customerPhone?: string; note?: string },
+): Promise<void> {
+  if (session.local) {
+    const sales = readLocalSales();
+    const s = sales.find(x => x.id === payload.id);
+    if (!s) throw new Error('გაყიდვა ვერ მოიძებნა');
+    if (payload.payment) s.payment = payload.payment;
+    if (payload.customerPhone !== undefined) s.customerPhone = payload.customerPhone;
+    if (payload.note !== undefined) s.note = payload.note;
+    writeLocalSales(sales);
+    return;
+  }
+  const res = await post('sales.php', { action: 'update', ...payload }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+}
+
+export async function deleteSale(session: Session, id: number): Promise<void> {
+  if (session.local) {
+    const sales = readLocalSales();
+    const s = sales.find(x => x.id === id);
+    if (!s) throw new Error('გაყიდვა ვერ მოიძებნა');
+    const hasReturns = sales.some(x => Number(x.total) < 0 && (x.refSaleId ?? -1) === id);
+    if (hasReturns) throw new Error('ამ გაყიდვას აქვს დაბრუნებები — ჯერ ისინი წაშალეთ');
+    const isReturn = Number(s.total) < 0;
+    const inv = readLocalInventory();
+    for (const it of s.items) {
+      if (!it.productId || it.productId === 'custom') continue;
+      const delta = isReturn ? -Number(it.qty) : Number(it.qty);
+      inv[it.productId] = Math.max(0, (inv[it.productId] ?? 0) + delta);
+    }
+    writeLocalInventory(inv);
+    logLocalStockMoves(
+      session,
+      s.items.map(it => ({ ...it, qty: isReturn ? -Number(it.qty) : Number(it.qty) })),
+      'adjustment',
+      isReturn ? `return #${id} deleted` : `sale #${id} deleted`,
+    );
+    writeLocalSales(sales.filter(x => x.id !== id));
+    return;
+  }
+  const res = await post('sales.php', { action: 'delete', id }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
 }
 
 // ── stock intake & movement report ─────────────────────────────────────────

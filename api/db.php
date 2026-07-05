@@ -68,6 +68,10 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS inventory (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// migration: returns reference their original sale
+$hasRef = $pdo->query("SHOW COLUMNS FROM sales LIKE 'ref_sale_id'")->fetch();
+if (!$hasRef) $pdo->exec("ALTER TABLE sales ADD COLUMN ref_sale_id INT NULL");
+
 $pdo->exec("CREATE TABLE IF NOT EXISTS stock_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   employee_id INT NOT NULL,

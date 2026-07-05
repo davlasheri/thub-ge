@@ -519,3 +519,9 @@
   .hist-detail { padding-left: 8px; }
   .dash-bar-label { font-size: 9px; }
 }
+
+/* history actions */
+.hist-actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.hist-del-btn:hover { background: var(--red); color: #fff; }
+.hist-del-confirm { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); font-weight: 700; }
+.hist-del-yes { width: auto; padding: 8px 14px; font-size: 13px; }

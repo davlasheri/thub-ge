@@ -8,6 +8,7 @@ import {
   Session, Sale, Stats, SaleItemInput, Payment, CashReport, StockMovement,
   login, loadSession, saveSession, recordSale, recordReturn, getSales, getStats,
   getInventory, seedInventory, addStock, getStockMovements, getCash, addCashMovement,
+  returnableItems, updateSale, deleteSale,
 } from '../utils/staffApi';
 import './Staff.css';
 
@@ -814,6 +815,9 @@ function CashView({ session }: { session: Session }) {
 
 
 // ── Sales history ──────────────────────────────────────────────────────────
+const saleItemKey = (it: { productId?: string; name: string; unitPrice: number }) =>
+  `${it.productId ?? ''}|${it.name}|${Number(it.unitPrice).toFixed(2)}`;
+
 function SalesHistoryView({ session }: { session: Session }) {
   const [sales, setSales] = useState<Sale[] | null>(null);
   const [err, setErr] = useState('');
@@ -821,8 +825,15 @@ function SalesHistoryView({ session }: { session: Session }) {
   const [returning, setReturning] = useState<number | null>(null);
   const [retQty, setRetQty] = useState<Record<string, number>>({});
   const [retReason, setRetReason] = useState('');
+  const [editing, setEditing] = useState<number | null>(null);
+  const [editPayment, setEditPayment] = useState<Payment>('cash');
+  const [editPhone, setEditPhone] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [deleting, setDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+
+  const isAdmin = session.employee.role === 'admin';
 
   const reload = () =>
     getSales(session, 100).then(setSales).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
@@ -832,11 +843,13 @@ function SalesHistoryView({ session }: { session: Session }) {
   if (err && !sales) return <div className="staff-content"><div className="staff-login-err">{err}</div></div>;
   if (!sales) return <div className="staff-content"><p className="pos-empty">იტვირთება…</p></div>;
 
+  const flash = (m: string) => { setMsg(m); setErr(''); setTimeout(() => setMsg(''), 4000); };
+
   const startReturn = (s: Sale) => {
-    setReturning(s.id);
-    setRetReason('');
+    setReturning(s.id); setEditing(null); setRetReason('');
+    const remaining = returnableItems(s, sales);
     const q: Record<string, number> = {};
-    s.items.forEach((it, i) => { q[`${i}`] = Number(it.qty); });
+    s.items.forEach((it, i) => { q[`${i}`] = Math.max(0, remaining.get(saleItemKey(it)) ?? 0); });
     setRetQty(q);
   };
 
@@ -852,14 +865,48 @@ function SalesHistoryView({ session }: { session: Session }) {
       await recordReturn(session, {
         items,
         payment: s.payment,
+        refSaleId: s.id,
         note: `დაბრუნება #${s.id}${retReason.trim() ? ' — ' + retReason.trim() : ''}`,
       });
       setReturning(null); setOpen(null);
-      setMsg('✅ დაბრუნება გაფორმდა — თანხა გამოაკლდა, ნაწილები დაბრუნდა მარაგში');
-      setTimeout(() => setMsg(''), 4000);
+      flash('✅ დაბრუნება გაფორმდა — თანხა გამოაკლდა, ნაწილები დაბრუნდა მარაგში');
       await reload();
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally { setBusy(false); }
+  };
+
+  const startEdit = (s: Sale) => {
+    setEditing(s.id); setReturning(null);
+    setEditPayment(s.payment);
+    setEditPhone(s.customerPhone ?? '');
+    setEditNote(s.note ?? '');
+  };
+
+  const submitEdit = async (s: Sale) => {
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      await updateSale(session, { id: s.id, payment: editPayment, customerPhone: editPhone.trim(), note: editNote.trim() });
+      setEditing(null);
+      flash('✅ შენახულია');
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally { setBusy(false); }
+  };
+
+  const submitDelete = async (s: Sale) => {
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      await deleteSale(session, s.id);
+      setDeleting(null); setOpen(null);
+      flash('🗑 ჩანაწერი წაიშალა — მარაგი აღდგა');
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      setDeleting(null);
     } finally { setBusy(false); }
   };
 
@@ -872,12 +919,14 @@ function SalesHistoryView({ session }: { session: Session }) {
       {sales.map(s => {
         const dt = new Date(s.createdAt.includes('T') ? s.createdAt : s.createdAt.replace(' ', 'T'));
         const isReturn = Number(s.total) < 0;
+        const remaining = !isReturn ? returnableItems(s, sales) : null;
+        const anyReturnable = remaining ? [...remaining.values()].some(v => v > 0) : false;
         return (
           <div key={s.id} className="hist-row-wrap">
-            <button className="hist-row" onClick={() => { setOpen(open === s.id ? null : s.id); setReturning(null); }}>
+            <button className="hist-row" onClick={() => { setOpen(open === s.id ? null : s.id); setReturning(null); setEditing(null); }}>
               <span className="hist-id">#{s.id}</span>
               <span className="hist-date">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
-              <span className="hist-emp">{s.employee}{isReturn && <span className="hist-return-chip">↩ დაბრუნება</span>}</span>
+              <span className="hist-emp">{s.employee}{isReturn && <span className="hist-return-chip">↩ დაბრუნება{s.refSaleId ? ` #${s.refSaleId}` : ''}</span>}</span>
               <span className="hist-pay">{PAYMENT_LABELS[s.payment]}</span>
               <span className={`hist-total ${isReturn ? 'hist-total-neg' : ''}`}>{GEL(s.total)}</span>
             </button>
@@ -892,23 +941,63 @@ function SalesHistoryView({ session }: { session: Session }) {
                 {s.customerPhone && <div className="hist-meta">📞 {s.customerPhone}</div>}
                 {s.note && <div className="hist-meta">📝 {s.note}</div>}
 
-                {!isReturn && returning !== s.id && (
-                  <button className="staff-btn-secondary hist-return-btn" onClick={() => startReturn(s)}>↩ დაბრუნების გაფორმება</button>
+                {editing !== s.id && returning !== s.id && (
+                  <div className="hist-actions">
+                    {!isReturn && anyReturnable && (
+                      <button className="staff-btn-secondary" onClick={() => startReturn(s)}>↩ დაბრუნება</button>
+                    )}
+                    {!isReturn && !anyReturnable && (
+                      <span className="hist-meta">✔ სრულად დაბრუნებულია</span>
+                    )}
+                    {isAdmin && <button className="staff-btn-secondary" onClick={() => startEdit(s)}>✎ რედაქტირება</button>}
+                    {isAdmin && deleting !== s.id && (
+                      <button className="staff-btn-secondary hist-del-btn" onClick={() => setDeleting(s.id)}>🗑 წაშლა</button>
+                    )}
+                    {isAdmin && deleting === s.id && (
+                      <span className="hist-del-confirm">
+                        დარწმუნებული ხართ?
+                        <button className="staff-btn-primary hist-del-yes" disabled={busy} onClick={() => submitDelete(s)}>დიახ, წაშლა</button>
+                        <button className="staff-btn-secondary" onClick={() => setDeleting(null)}>არა</button>
+                      </span>
+                    )}
+                  </div>
                 )}
-                {returning === s.id && (
+
+                {editing === s.id && (
+                  <div className="hist-return-form">
+                    <p className="hist-return-title">რედაქტირება #{s.id}</p>
+                    <div className="pos-payment cash-type">
+                      {(Object.keys(PAYMENT_LABELS) as Payment[]).map(p => (
+                        <button key={p} type="button" className={editPayment === p ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'}
+                          onClick={() => setEditPayment(p)}>{PAYMENT_LABELS[p]}</button>
+                      ))}
+                    </div>
+                    <input className="staff-input" placeholder="მყიდველის ტელეფონი" value={editPhone} onChange={e => setEditPhone(e.target.value)} />
+                    <input className="staff-input" placeholder="შენიშვნა" value={editNote} onChange={e => setEditNote(e.target.value)} />
+                    <div className="hist-return-actions">
+                      <button className="staff-btn-primary" disabled={busy} onClick={() => submitEdit(s)}>{busy ? 'ინახება…' : 'შენახვა'}</button>
+                      <button className="staff-btn-secondary" onClick={() => setEditing(null)}>გაუქმება</button>
+                    </div>
+                  </div>
+                )}
+
+                {returning === s.id && remaining && (
                   <div className="hist-return-form">
                     <p className="hist-return-title">რა ბრუნდება?</p>
-                    {s.items.map((it, i) => (
-                      <div key={i} className="hist-return-line">
-                        <span className="pos-result-name">{it.name}<small>{it.partNumber}</small></span>
-                        <div className="pos-line-qty">
-                          <button onClick={() => setRetQty(q => ({ ...q, [`${i}`]: Math.max(0, (q[`${i}`] ?? 0) - 1) }))}>−</button>
-                          <span>{retQty[`${i}`] ?? 0}</span>
-                          <button onClick={() => setRetQty(q => ({ ...q, [`${i}`]: Math.min(Number(it.qty), (q[`${i}`] ?? 0) + 1) }))}>+</button>
+                    {s.items.map((it, i) => {
+                      const max = Math.max(0, remaining.get(saleItemKey(it)) ?? 0);
+                      return (
+                        <div key={i} className="hist-return-line">
+                          <span className="pos-result-name">{it.name}<small>{it.partNumber}</small></span>
+                          <div className="pos-line-qty">
+                            <button onClick={() => setRetQty(q => ({ ...q, [`${i}`]: Math.max(0, (q[`${i}`] ?? 0) - 1) }))}>−</button>
+                            <span>{retQty[`${i}`] ?? 0}</span>
+                            <button onClick={() => setRetQty(q => ({ ...q, [`${i}`]: Math.min(max, (q[`${i}`] ?? 0) + 1) }))}>+</button>
+                          </div>
+                          <span className="cash-meta">{max === 0 ? 'დაბრუნებულია' : `დარჩა ${max}`}</span>
                         </div>
-                        <span className="cash-meta">მაქს. {Number(it.qty)}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <input className="staff-input" placeholder="მიზეზი (არასავალდ.)" value={retReason} onChange={e => setRetReason(e.target.value)} />
                     <div className="hist-return-actions">
                       <button className="staff-btn-primary" disabled={busy} onClick={() => submitReturn(s)}>

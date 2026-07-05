@@ -1,7 +1,7 @@
 // Site version and change history.
 // Bump APP_VERSION and add an entry at the TOP for every released change.
 
-export const APP_VERSION = '1.5';
+export const APP_VERSION = '1.6';
 
 export interface ChangelogEntry {
   version: string;
@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '1.6',
+    date: '2026-07-04',
+    changes: [
+      'POS ისტორია: ჩანაწერების რედაქტირება და წაშლა (ადმინი)',
+      'გასწორდა დაბრუნების ხარვეზი — ერთი ნაწილის ორჯერ დაბრუნება აღარ შეიძლება',
+    ],
+  },
   {
     version: '1.5',
     date: '2026-07-04',
