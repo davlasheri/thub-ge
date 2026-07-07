@@ -29,7 +29,7 @@ export default function Catalog() {
   usePageMeta('კატალოგი — Tesla EPC ჯგუფები', 'Tesla-ს ნაწილების კატალოგი ოფიციალური ჯგუფებით: ძარა, სავარძლები, ბატარეა, სამუხრუჭე სისტემა და სხვა.');
   const { addToCart } = useCart();
   const { t, lang } = useLang();
-  const { products } = useProducts();
+  const { visibleProducts: products } = useProducts();
   const { catalog } = useCatalog();
   const { models } = useModels();
 

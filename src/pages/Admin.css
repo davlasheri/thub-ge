@@ -56,6 +56,34 @@
 }
 .admin-logout:hover { color: var(--red); background: rgba(227,25,55,0.06); }
 
+/* ── Sidebar preferences (language + theme) ── */
+.admin-prefs {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 4px 4px; margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.admin-lang-switcher {
+  display: flex; gap: 2px; flex: 1;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 3px;
+}
+.admin-lang-btn {
+  flex: 1; padding: 5px 0; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  color: var(--text-muted); background: none; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.admin-lang-btn:hover { color: var(--text); }
+.admin-lang-btn-active { background: var(--bg3); color: var(--text); }
+.admin-theme-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  flex-shrink: 0; color: var(--text-muted);
+  background: var(--surface); border: 1px solid var(--border);
+  cursor: pointer; transition: color 0.15s, background 0.15s;
+}
+.admin-theme-btn:hover { color: var(--text); background: var(--bg3); }
+
 /* ── Main ── */
 .admin-main {
   flex: 1; min-width: 0;

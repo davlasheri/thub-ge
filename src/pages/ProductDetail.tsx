@@ -16,7 +16,7 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const { vehicle } = useVehicle();
   const { t, lang } = useLang();
-  const { products, getById } = useProducts();
+  const { visibleProducts: products, getById } = useProducts();
   const { catalog } = useCatalog();
   const { models } = useModels();
   const product = getById(id ?? '');
