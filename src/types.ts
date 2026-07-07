@@ -50,6 +50,8 @@ export interface Product {
   description: string;
   fits: Partial<Record<ModelId, ModelYearRange>>;
   inStock: boolean;
+  /** When false, the product is hidden from the public website (still shown in admin). Undefined = visible. */
+  visible?: boolean;
   badge?: ItemStatus;
   rating: number;
   reviews: number;

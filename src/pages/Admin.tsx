@@ -23,7 +23,7 @@ interface ProductForm {
   name: string; nameGe: string; partNumber: string;
   sectionId: string; subsectionId: string;
   price: string; description: string; image: string;
-  inStock: boolean; badge: '' | 'new-original' | 'used-original' | 'new-replica' | 'used-replica';
+  inStock: boolean; visible: boolean; badge: '' | 'new-original' | 'used-original' | 'new-replica' | 'used-replica';
   rating: string; reviews: string;
   fits: FitsState;
 }
@@ -37,7 +37,7 @@ function emptyProductForm(catalog: CatalogSection[], models: TeslaModel[]): Prod
     sectionId: firstSection?.id ?? '',
     subsectionId: firstSection?.subsections[0]?.id ?? '',
     price: '', description: '', image: '',
-    inStock: true, badge: '', rating: '4.5', reviews: '0', fits,
+    inStock: true, visible: true, badge: '', rating: '4.5', reviews: '0', fits,
   };
 }
 
@@ -53,7 +53,7 @@ function productToForm(p: Product, models: TeslaModel[]): ProductForm {
     name: p.name, nameGe: p.nameGe, partNumber: p.partNumber,
     sectionId: p.sectionId, subsectionId: p.subsectionId,
     price: String(p.price), description: p.description, image: p.image,
-    inStock: p.inStock, badge: p.badge ?? '', rating: String(p.rating), reviews: String(p.reviews), fits,
+    inStock: p.inStock, visible: p.visible !== false, badge: p.badge ?? '', rating: String(p.rating), reviews: String(p.reviews), fits,
   };
 }
 
@@ -67,7 +67,7 @@ function formToProduct(f: ProductForm, id: string): Product {
     sectionId: f.sectionId, subsectionId: f.subsectionId,
     price: parseFloat(f.price) || 0, currency: 'GEL',
     image: f.image.trim() || 'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?w=600&q=80',
-    description: f.description.trim(), fits: fitsOut, inStock: f.inStock,
+    description: f.description.trim(), fits: fitsOut, inStock: f.inStock, visible: f.visible,
     badge: f.badge || undefined, rating: parseFloat(f.rating) || 4.5, reviews: parseInt(f.reviews) || 0,
   };
 }
@@ -448,6 +448,7 @@ function ProductRow({ product, catalog, models, isAdmin, onEdit, onDelete }: {
           <span className={`admin-meta-tag ${product.inStock ? 'tag-green' : 'tag-red'}`}>
             {product.inStock ? 'მარაგშია' : 'არ არის'}
           </span>
+          {product.visible === false && <span className="admin-meta-tag tag-red">დამალულია</span>}
           {!isAdmin && <span className="admin-meta-tag tag-sys">სისტემური</span>}
           {fitEntries.length === 0
             ? <span className="admin-meta-tag tag-fit">ყველა მოდელი</span>
@@ -619,6 +620,17 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, c
                 <span className="admin-toggle-knob" />
               </button>
             </label>
+            <label className="admin-toggle-row">
+              <span>ვაჩვენოთ საიტზე</span>
+              <button type="button" className={`admin-toggle ${form.visible ? 'admin-toggle-on' : ''}`} onClick={() => set('visible', !form.visible)}>
+                <span className="admin-toggle-knob" />
+              </button>
+            </label>
+            {!form.visible && (
+              <p className="admin-hint" style={{ marginTop: 8, color: 'var(--text-muted)' }}>
+                გამორთვისას პროდუქტი არ გამოჩნდება საიტზე, მარაგში არსებობის მიუხედავად.
+              </p>
+            )}
             <div className="admin-field" style={{ marginTop: 12 }}>
               <label className="admin-label">ნაწილის სტატუსი</label>
               <select className="admin-input" value={form.badge} onChange={e => set('badge', e.target.value)}>

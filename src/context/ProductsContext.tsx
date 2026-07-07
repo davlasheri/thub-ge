@@ -16,6 +16,8 @@ function readDeleted(): Set<string> {
 
 interface ProductsContextType {
   products:      Product[];
+  /** Products visible on the public website (excludes those toggled off in admin). */
+  visibleProducts: Product[];
   adminProducts: Product[];
   isAdminProduct: (id: string) => boolean;
   addProduct:    (p: Product) => void;
@@ -24,6 +26,9 @@ interface ProductsContextType {
   getById:       (id: string) => Product | undefined;
   filterByVehicle: (modelId: ModelId, year: number) => Product[];
 }
+
+/** A product is public unless it has been explicitly hidden (visible === false). */
+const isVisible = (p: Product) => p.visible !== false;
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
 
@@ -63,17 +68,21 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 
   const isAdminProduct = (id: string) => adminProducts.some(p => p.id === id);
 
-  const getById = (id: string) => products.find(p => p.id === id);
+  const visibleProducts = useMemo(() => products.filter(isVisible), [products]);
+
+  // Public lookups only surface visible products, so a hidden product's direct
+  // link 404s just like it disappears from the listings.
+  const getById = (id: string) => visibleProducts.find(p => p.id === id);
 
   const filterByVehicle = (modelId: ModelId, year: number) =>
-    products.filter(p => {
+    visibleProducts.filter(p => {
       const r = p.fits[modelId];
       return r && year >= r.from && year <= r.to;
     });
 
   return (
     <ProductsContext.Provider value={{
-      products, adminProducts, isAdminProduct,
+      products, visibleProducts, adminProducts, isAdminProduct,
       addProduct, updateProduct, deleteProduct,
       getById, filterByVehicle,
     }}>
