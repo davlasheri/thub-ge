@@ -123,7 +123,7 @@ export default function Catalog() {
   const codeMatches = useMemo(() => {
     const map = new Map<string, string[]>();
     const q = normalizeCode(search);
-    if (q.length < 3 || !selectedModelId || !selectedGen) return map;
+    if (q.length < 1 || !selectedModelId || !selectedGen) return map;
     for (const p of products) {
       const range = p.fits[selectedModelId];
       if (!range) continue;
