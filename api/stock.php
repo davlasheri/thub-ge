@@ -23,10 +23,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail(405, 'GET or POST only');
-if ($me['role'] !== 'admin') fail(403, 'მხოლოდ ადმინისტრატორს შეუძლია მარაგის შევსება');
+if ($me['role'] !== 'admin') fail(403, 'მხოლოდ ადმინისტრატორს შეუძლია');
+
+$in = body_json();
+$action = $in['action'] ?? 'add';
+
+// ── update a movement (admin): qty change also corrects the inventory ────────
+if ($action === 'update') {
+  $id = (int)($in['id'] ?? 0);
+  $st = $pdo->prepare('SELECT * FROM stock_movements WHERE id = ?');
+  $st->execute([$id]);
+  $m = $st->fetch();
+  if (!$m) fail(404, 'ჩანაწერი ვერ მოიძებნა');
+
+  $newQty = array_key_exists('qty', $in) ? (int)$in['qty'] : (int)$m['qty'];
+  if ($newQty === 0) fail(400, 'რაოდენობა არ შეიძლება იყოს 0');
+  $newType = isset($in['type']) && in_array($in['type'], ['purchase','disassembly','sale','return','adjustment'], true)
+    ? $in['type'] : $m['type'];
+  $newNote = array_key_exists('note', $in) ? substr(trim((string)$in['note']), 0, 255) : $m['note'];
+
+  $pdo->beginTransaction();
+  try {
+    $delta = $newQty - (int)$m['qty'];
+    if ($delta !== 0) {
+      $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
+                     ON DUPLICATE KEY UPDATE qty = GREATEST(0, qty + VALUES(qty))')
+          ->execute([$m['product_id'], $delta]);
+    }
+    $pdo->prepare('UPDATE stock_movements SET qty = ?, type = ?, note = ? WHERE id = ?')
+        ->execute([$newQty, $newType, $newNote, $id]);
+    $pdo->commit();
+  } catch (Throwable $e) {
+    $pdo->rollBack();
+    fail(500, 'ვერ შეინახა');
+  }
+  ok();
+}
+
+// ── delete a movement (admin), reversing its inventory effect ────────────────
+if ($action === 'delete') {
+  $id = (int)($in['id'] ?? 0);
+  $st = $pdo->prepare('SELECT * FROM stock_movements WHERE id = ?');
+  $st->execute([$id]);
+  $m = $st->fetch();
+  if (!$m) fail(404, 'ჩანაწერი ვერ მოიძებნა');
+
+  $pdo->beginTransaction();
+  try {
+    $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
+                   ON DUPLICATE KEY UPDATE qty = GREATEST(0, qty + VALUES(qty))')
+        ->execute([$m['product_id'], -(int)$m['qty']]);
+    $pdo->prepare('DELETE FROM stock_movements WHERE id = ?')->execute([$id]);
+    $pdo->commit();
+  } catch (Throwable $e) {
+    $pdo->rollBack();
+    fail(500, 'წაშლა ვერ მოხერხდა');
+  }
+  ok();
+}
 
 // POST: add stock via purchase / car disassembly / manual adjustment
-$in = body_json();
 $type = in_array($in['type'] ?? '', ['purchase','disassembly','adjustment'], true) ? $in['type'] : 'purchase';
 $items = $in['items'] ?? [];
 $note = substr(trim($in['note'] ?? ''), 0, 255);

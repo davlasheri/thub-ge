@@ -5,10 +5,11 @@ import { useCatalog } from '../context/CatalogContext';
 import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import {
-  Session, Sale, Stats, SaleItemInput, Payment, CashReport, StockMovement,
+  Session, Sale, Stats, SaleItemInput, Payment, CashReport, StockMovement, StockMoveType,
   login, loadSession, saveSession, recordSale, recordReturn, getSales, getStats,
   getInventory, seedInventory, addStock, getStockMovements, getCash, addCashMovement,
   returnableItems, updateSale, deleteSale,
+  updateStockMovement, deleteStockMovement, updateCashMovement, deleteCashMovement,
 } from '../utils/staffApi';
 import './Staff.css';
 
@@ -515,8 +516,54 @@ function InventoryView({ session }: { session: Session }) {
   // report
   const [repDays, setRepDays] = useState(30);
   const [moves, setMoves] = useState<StockMovement[] | null>(null);
+  // movement edit/delete (admin)
+  const [mvEditing, setMvEditing] = useState<number | null>(null);
+  const [mvQty, setMvQty] = useState('');
+  const [mvType, setMvType] = useState<StockMoveType>('adjustment');
+  const [mvNote, setMvNote] = useState('');
+  const [mvDeleting, setMvDeleting] = useState<number | null>(null);
+  const [mvBusy, setMvBusy] = useState(false);
+  const [mvMsg, setMvMsg] = useState('');
 
   const reloadInv = () => getInventory(session).then(setInv).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+  const reloadMoves = () =>
+    getStockMovements(session, repDays).then(setMoves).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+
+  const flashMv = (m: string) => { setMvMsg(m); setErr(''); setTimeout(() => setMvMsg(''), 4000); };
+
+  const startMvEdit = (m: StockMovement) => {
+    setMvEditing(m.id); setMvDeleting(null);
+    setMvQty(String(m.qty)); setMvType(m.type); setMvNote(m.note);
+  };
+
+  const submitMvEdit = async (m: StockMovement) => {
+    if (mvBusy) return;
+    const qty = parseInt(mvQty, 10);
+    if (!Number.isFinite(qty) || qty === 0) { setErr('რაოდენობა უნდა იყოს არანულოვანი რიცხვი'); return; }
+    setMvBusy(true); setErr('');
+    try {
+      await updateStockMovement(session, { id: m.id, qty, type: mvType, note: mvNote.trim() });
+      setMvEditing(null);
+      flashMv('✅ შენახულია — მარაგი შესწორდა');
+      await Promise.all([reloadMoves(), reloadInv()]);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally { setMvBusy(false); }
+  };
+
+  const submitMvDelete = async (m: StockMovement) => {
+    if (mvBusy) return;
+    setMvBusy(true); setErr('');
+    try {
+      await deleteStockMovement(session, m.id);
+      setMvDeleting(null);
+      flashMv('🗑 ჩანაწერი წაიშალა — მარაგი შესწორდა');
+      await Promise.all([reloadMoves(), reloadInv()]);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      setMvDeleting(null);
+    } finally { setMvBusy(false); }
+  };
 
   useEffect(() => {
     (async () => {
@@ -705,19 +752,52 @@ function InventoryView({ session }: { session: Session }) {
               ))}
             </div>
           </div>
+          {mvMsg && <div className="pos-done">{mvMsg}</div>}
           {!moves && <p className="pos-empty">იტვირთება…</p>}
           {moves && moves.length === 0 && <p className="pos-empty">მოძრაობა არ არის ამ პერიოდში</p>}
           {moves && moves.map(m => {
             const dt = new Date(m.createdAt.includes('T') ? m.createdAt : m.createdAt.replace(' ', 'T'));
             const inbound = m.qty > 0;
             return (
-              <div key={m.id} className="stock-row">
-                <span className={`stock-qty ${inbound ? 'cash-in' : 'cash-out'}`}>{inbound ? `+${m.qty}` : m.qty}</span>
-                <span className={`stock-type stock-type-${m.type}`}>{STOCK_TYPE_LABELS[m.type] ?? m.type}</span>
-                <span className="pos-result-name">{m.name}<small>{m.partNumber}</small></span>
-                <span className="cash-meta">{m.note || '—'}</span>
-                <span className="cash-meta">{m.employee}</span>
-                <span className="cash-meta">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
+              <div key={m.id} className="row-wrap">
+                <div className="stock-row">
+                  <span className={`stock-qty ${inbound ? 'cash-in' : 'cash-out'}`}>{inbound ? `+${m.qty}` : m.qty}</span>
+                  <span className={`stock-type stock-type-${m.type}`}>{STOCK_TYPE_LABELS[m.type] ?? m.type}</span>
+                  <span className="pos-result-name">{m.name}<small>{m.partNumber}</small></span>
+                  <span className="cash-meta">{m.note || '—'}</span>
+                  <span className="cash-meta">{m.employee}</span>
+                  <span className="cash-meta">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
+                  <span className="row-actions">
+                    <button className="row-icon-btn" title="რედაქტირება" onClick={() => mvEditing === m.id ? setMvEditing(null) : startMvEdit(m)}>✎</button>
+                    <button className="row-icon-btn row-icon-del" title="წაშლა" onClick={() => { setMvDeleting(mvDeleting === m.id ? null : m.id); setMvEditing(null); }}>🗑</button>
+                  </span>
+                </div>
+                {mvDeleting === m.id && (
+                  <div className="hist-del-confirm row-del-confirm">
+                    წაიშალოს ჩანაწერი? მარაგი შესწორდება ({m.qty > 0 ? `−${m.qty}` : `+${-m.qty}`} ც.)
+                    <button className="staff-btn-primary hist-del-yes" disabled={mvBusy} onClick={() => submitMvDelete(m)}>დიახ, წაშლა</button>
+                    <button className="staff-btn-secondary" onClick={() => setMvDeleting(null)}>არა</button>
+                  </div>
+                )}
+                {mvEditing === m.id && (
+                  <div className="hist-return-form">
+                    <p className="hist-return-title">რედაქტირება — {m.name}</p>
+                    <div className="row-edit-grid">
+                      <select className="staff-input" value={mvType} onChange={e => setMvType(e.target.value as StockMoveType)}>
+                        {(Object.keys(STOCK_TYPE_LABELS) as StockMoveType[]).map(t => (
+                          <option key={t} value={t}>{STOCK_TYPE_LABELS[t]}</option>
+                        ))}
+                      </select>
+                      <input className="staff-input" inputMode="numeric" placeholder="რაოდენობა (+/−)" value={mvQty} onChange={e => setMvQty(e.target.value)} />
+                      <input className="staff-input" placeholder="შენიშვნა" value={mvNote} onChange={e => setMvNote(e.target.value)} />
+                    </div>
+                    <p className="cash-meta">რაოდენობის შეცვლა ავტომატურად შეასწორებს მარაგს</p>
+                    <div className="hist-return-actions">
+                      <button className="staff-btn-primary" disabled={mvBusy} onClick={() => submitMvEdit(m)}>{mvBusy ? 'ინახება…' : 'შენახვა'}</button>
+                      <button className="staff-btn-secondary" onClick={() => setMvEditing(null)}>გაუქმება</button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -737,9 +817,52 @@ function CashView({ session }: { session: Session }) {
   const [mAmount, setMAmount] = useState('');
   const [mReason, setMReason] = useState('');
   const [busy, setBusy] = useState(false);
+  // operation edit/delete (admin)
+  const [editing, setEditing] = useState<number | null>(null);
+  const [eType, setEType] = useState<'in' | 'out'>('out');
+  const [eAmount, setEAmount] = useState('');
+  const [eReason, setEReason] = useState('');
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const [msg, setMsg] = useState('');
 
   const reload = () =>
     getCash(session, days).then(setReport).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+
+  const flash = (m: string) => { setMsg(m); setErr(''); setTimeout(() => setMsg(''), 4000); };
+
+  const startEdit = (m: { id: number; type: 'in' | 'out'; amount: number; reason: string }) => {
+    setEditing(m.id); setDeleting(null);
+    setEType(m.type); setEAmount(String(m.amount)); setEReason(m.reason);
+  };
+
+  const submitEdit = async (id: number) => {
+    if (busy) return;
+    const amount = parseFloat(eAmount);
+    if (!(amount > 0)) { setErr('თანხა უნდა იყოს 0-ზე მეტი'); return; }
+    setBusy(true); setErr('');
+    try {
+      await updateCashMovement(session, { id, type: eType, amount, reason: eReason.trim() });
+      setEditing(null);
+      flash('✅ შენახულია');
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+    } finally { setBusy(false); }
+  };
+
+  const submitDelete = async (id: number) => {
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      await deleteCashMovement(session, id);
+      setDeleting(null);
+      flash('🗑 ოპერაცია წაიშალა');
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      setDeleting(null);
+    } finally { setBusy(false); }
+  };
 
   useEffect(() => { setReport(null); reload(); }, [session, days]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -796,15 +919,46 @@ function CashView({ session }: { session: Session }) {
 
       <div className="dash-panel">
         <h3 className="dash-panel-title">ოპერაციები</h3>
+        {msg && <div className="pos-done">{msg}</div>}
         {report.movements.length === 0 && <p className="pos-empty">ოპერაციები არ არის ამ პერიოდში</p>}
         {report.movements.map(m => {
           const dt = new Date(m.createdAt.includes('T') ? m.createdAt : m.createdAt.replace(' ', 'T'));
           return (
-            <div key={m.id} className="cash-row">
-              <span className={`cash-badge ${m.type === 'in' ? 'cash-in' : 'cash-out'}`}>{m.type === 'in' ? '+' : '−'}{GEL(m.amount)}</span>
-              <span className="cash-reason">{m.reason || '—'}</span>
-              <span className="cash-meta">{m.employee}</span>
-              <span className="cash-meta">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
+            <div key={m.id} className="row-wrap">
+              <div className="cash-row">
+                <span className={`cash-badge ${m.type === 'in' ? 'cash-in' : 'cash-out'}`}>{m.type === 'in' ? '+' : '−'}{GEL(m.amount)}</span>
+                <span className="cash-reason">{m.reason || '—'}</span>
+                <span className="cash-meta">{m.employee}</span>
+                <span className="cash-meta">{dt.getDate()}.{String(dt.getMonth() + 1).padStart(2, '0')} {String(dt.getHours()).padStart(2, '0')}:{String(dt.getMinutes()).padStart(2, '0')}</span>
+                <span className="row-actions">
+                  <button className="row-icon-btn" title="რედაქტირება" onClick={() => editing === m.id ? setEditing(null) : startEdit(m)}>✎</button>
+                  <button className="row-icon-btn row-icon-del" title="წაშლა" onClick={() => { setDeleting(deleting === m.id ? null : m.id); setEditing(null); }}>🗑</button>
+                </span>
+              </div>
+              {deleting === m.id && (
+                <div className="hist-del-confirm row-del-confirm">
+                  წაიშალოს ოპერაცია ({m.type === 'in' ? '+' : '−'}{GEL(m.amount)})?
+                  <button className="staff-btn-primary hist-del-yes" disabled={busy} onClick={() => submitDelete(m.id)}>დიახ, წაშლა</button>
+                  <button className="staff-btn-secondary" onClick={() => setDeleting(null)}>არა</button>
+                </div>
+              )}
+              {editing === m.id && (
+                <div className="hist-return-form">
+                  <p className="hist-return-title">რედაქტირება #{m.id}</p>
+                  <div className="pos-payment cash-type">
+                    <button type="button" className={eType === 'in' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setEType('in')}>+ შემოტანა</button>
+                    <button type="button" className={eType === 'out' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setEType('out')}>− გატანა / ხარჯი</button>
+                  </div>
+                  <div className="row-edit-grid">
+                    <input className="staff-input" placeholder="თანხა ₾" inputMode="decimal" value={eAmount} onChange={e => setEAmount(e.target.value)} />
+                    <input className="staff-input" placeholder="მიზეზი" value={eReason} onChange={e => setEReason(e.target.value)} />
+                  </div>
+                  <div className="hist-return-actions">
+                    <button className="staff-btn-primary" disabled={busy} onClick={() => submitEdit(m.id)}>{busy ? 'ინახება…' : 'შენახვა'}</button>
+                    <button className="staff-btn-secondary" onClick={() => setEditing(null)}>გაუქმება</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
