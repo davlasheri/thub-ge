@@ -3,6 +3,8 @@ import { processImageFile } from '../utils/imageProcess';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
+import { useGenerations } from '../context/GenerationsContext';
+import { GenerationDef, genLabel } from '../data/generations';
 import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { Lang } from '../data/translations';
@@ -916,9 +918,11 @@ interface ModelForm { id: string; name: string; fullName: string; yearFrom: stri
 
 function ModelsView() {
   const { models, isAdminModel, addModel, updateModel, deleteModel } = useModels();
+  const { getGenerations } = useGenerations();
   const [modal, setModal]   = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
   const [form, setForm]     = useState<ModelForm>({ id: '', name: '', fullName: '', yearFrom: '2020', yearTo: '2025', color: '#888888' });
   const [deleteTgt, setDeleteTgt] = useState<string | null>(null);
+  const [genModel, setGenModel]   = useState<TeslaModel | null>(null);
 
   const openAdd = () => {
     setForm({ id: '', name: '', fullName: '', yearFrom: '2020', yearTo: '2025', color: '#888888' });
@@ -961,6 +965,9 @@ function ModelsView() {
             <div className="admin-model-info">
               <p className="admin-model-name">{m.fullName}</p>
               <p className="admin-model-years">{m.years.from}–{m.years.to} · ID: <code>{m.id}</code></p>
+              <button className="admin-gen-link" onClick={() => setGenModel(m)}>
+                თაობები: {getGenerations(m.id, m.name, m.years.from, m.years.to).map(g => `${g.from}–${g.to}`).join(', ')} ✎
+              </button>
             </div>
             {!isAdminModel(m.id) && <span className="admin-meta-tag tag-sys">სისტ.</span>}
             <div className="admin-model-color-chip" style={{ background: m.color }}>{m.color}</div>
@@ -1016,7 +1023,87 @@ function ModelsView() {
           onCancel={() => setDeleteTgt(null)}
         />
       )}
+
+      {genModel && <GenerationsModal model={genModel} onClose={() => setGenModel(null)} />}
     </>
+  );
+}
+
+// ── Generations (model year-ranges) editor ─────────────────────────────────
+type GenRow = { id: string; from: string; to: string; note: string };
+
+function GenerationsModal({ model, onClose }: { model: TeslaModel; onClose: () => void }) {
+  const { getDefs, saveDefs, resetDefs, isCustom } = useGenerations();
+  const [rows, setRows] = useState<GenRow[]>(() =>
+    getDefs(model.id, model.years.from, model.years.to).map(d => ({
+      id: d.id, from: String(d.from), to: String(d.to), note: d.note ?? '',
+    }))
+  );
+
+  const update = (i: number, patch: Partial<GenRow>) =>
+    setRows(rs => rs.map((r, idx) => idx === i ? { ...r, ...patch } : r));
+  const addRow = () =>
+    setRows(rs => [...rs, { id: genId(), from: String(model.years.from), to: String(model.years.to), note: '' }]);
+  const removeRow = (i: number) => setRows(rs => rs.filter((_, idx) => idx !== i));
+
+  const save = () => {
+    const cleaned: GenerationDef[] = rows
+      .map(r => ({
+        id: r.id || genId(),
+        from: parseInt(r.from) || model.years.from,
+        to: parseInt(r.to) || model.years.to,
+        note: r.note.trim() || undefined,
+      }))
+      .sort((a, b) => a.from - b.from);
+    if (cleaned.length === 0) { alert('დაამატეთ მინიმუმ ერთი თაობა.'); return; }
+    saveDefs(model.id, cleaned);
+    onClose();
+  };
+
+  const reset = () => { resetDefs(model.id); onClose(); };
+
+  return (
+    <div className="admin-modal-overlay" onClick={onClose}>
+      <div className="admin-modal admin-modal-wide" onClick={e => e.stopPropagation()}>
+        <h3>{model.name} — თაობები</h3>
+        <p className="admin-page-sub" style={{ margin: '4px 0 16px' }}>
+          წლების დიაპაზონები, რომლებიც კატალოგში მოდელზე დაჭერისას ჩანს.
+        </p>
+
+        <div className="admin-gen-rows">
+          {rows.map((r, i) => (
+            <div key={r.id} className="admin-gen-row">
+              <input className="admin-input admin-year-input" type="number" value={r.from}
+                onChange={e => update(i, { from: e.target.value })} placeholder="დან" />
+              <span style={{ color: 'var(--text-muted)' }}>–</span>
+              <input className="admin-input admin-year-input" type="number" value={r.to}
+                onChange={e => update(i, { to: e.target.value })} placeholder="მდე" />
+              <input className="admin-input" style={{ flex: 1 }} value={r.note}
+                onChange={e => update(i, { note: e.target.value })} placeholder="ნიშანი (მაგ. Highland) — არასავალდებულო" />
+              <button className="admin-btn-icon admin-btn-icon-danger" onClick={() => removeRow(i)} aria-label="წაშლა">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button className="admin-btn-ghost admin-gen-add" onClick={addRow}>+ თაობის დამატება</button>
+
+        <div className="admin-gen-preview">
+          {rows.filter(r => r.from && r.to).map(r => (
+            <span key={r.id} className="admin-meta-tag tag-fit">
+              {genLabel(model.name, { from: parseInt(r.from), to: parseInt(r.to), note: r.note.trim() || undefined })}
+            </span>
+          ))}
+        </div>
+
+        <div className="admin-modal-actions">
+          <button className="admin-btn-primary" onClick={save}>შენახვა</button>
+          {isCustom(model.id) && <button className="admin-btn-ghost" onClick={reset}>ნაგულისხმევზე დაბრუნება</button>}
+          <button className="admin-btn-ghost" onClick={onClose}>გაუქმება</button>
+        </div>
+      </div>
+    </div>
   );
 }
 

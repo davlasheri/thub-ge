@@ -8,7 +8,8 @@ import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
 import { TeslaModel, CatalogSection, Product } from '../types';
-import { Generation, getGenerations } from '../data/generations';
+import { Generation } from '../data/generations';
+import { useGenerations } from '../context/GenerationsContext';
 import { TranslationKey } from '../data/translations';
 import ModelBlueprint from '../components/ModelBlueprint';
 import { sectionArt } from '../utils/partArt';
@@ -32,6 +33,7 @@ export default function Catalog() {
   const { visibleProducts: products } = useProducts();
   const { catalog } = useCatalog();
   const { models } = useModels();
+  const { getGenerations } = useGenerations();
 
   const [view, setView] = useState<EpcView>('models');
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export default function Catalog() {
     pendingModelRef.current = null;
     const mdl = models.find(m => m.id === mid);
     if (!mdl) return;
-    const gens = getGenerations(mdl.id, mdl.years.from, mdl.years.to);
+    const gens = getGenerations(mdl.id, mdl.name, mdl.years.from, mdl.years.to);
     if (gens[0]) selectGeneration(mdl.id, gens[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [models]);
@@ -156,7 +158,7 @@ export default function Catalog() {
                   />
                 </div>
                 <div className="epc-gen-list">
-                  {getGenerations(modalModel.id, modalModel.years.from, modalModel.years.to).map(gen => (
+                  {getGenerations(modalModel.id, modalModel.name, modalModel.years.from, modalModel.years.to).map(gen => (
                     <button
                       key={gen.id}
                       className="epc-gen-btn"
