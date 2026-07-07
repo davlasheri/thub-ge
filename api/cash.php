@@ -46,6 +46,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail(405, 'GET or POST only');
 
 $in = body_json();
+$action = $in['action'] ?? 'add';
+
+// ── edit / delete an operation (admin) ───────────────────────────────────────
+if ($action === 'update' || $action === 'delete') {
+  if ($me['role'] !== 'admin') fail(403, 'მხოლოდ ადმინისტრატორს შეუძლია');
+  $id = (int)($in['id'] ?? 0);
+  $st = $pdo->prepare('SELECT * FROM cash_movements WHERE id = ?');
+  $st->execute([$id]);
+  $m = $st->fetch();
+  if (!$m) fail(404, 'ოპერაცია ვერ მოიძებნა');
+
+  if ($action === 'delete') {
+    $pdo->prepare('DELETE FROM cash_movements WHERE id = ?')->execute([$id]);
+    ok();
+  }
+
+  $newType = in_array($in['type'] ?? '', ['in','out'], true) ? $in['type'] : $m['type'];
+  $newAmount = array_key_exists('amount', $in) ? (float)$in['amount'] : (float)$m['amount'];
+  if (!($newAmount > 0)) fail(400, 'თანხა უნდა იყოს 0-ზე მეტი');
+  $newReason = array_key_exists('reason', $in) ? substr(trim((string)$in['reason']), 0, 255) : $m['reason'];
+
+  $pdo->prepare('UPDATE cash_movements SET type = ?, amount = ?, reason = ? WHERE id = ?')
+      ->execute([$newType, round($newAmount, 2), $newReason, $id]);
+  ok();
+}
+
 $type = ($in['type'] ?? '') === 'in' ? 'in' : (($in['type'] ?? '') === 'out' ? 'out' : '');
 $amount = (float)($in['amount'] ?? 0);
 if ($type === '') fail(400, 'type must be in/out');

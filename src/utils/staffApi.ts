@@ -435,6 +435,55 @@ export async function getStockMovements(session: Session, days = 30): Promise<St
   return data.movements;
 }
 
+// ── edit / delete stock movements (admin) ──────────────────────────────────
+function readLocalStockMoves(): StockMovement[] {
+  try { return JSON.parse(localStorage.getItem(LOCAL_STOCK_KEY) ?? '[]'); }
+  catch { return []; }
+}
+
+export async function updateStockMovement(
+  session: Session,
+  payload: { id: number; qty?: number; type?: StockMoveType; note?: string },
+): Promise<void> {
+  if (payload.qty !== undefined && (!Number.isFinite(payload.qty) || payload.qty === 0)) {
+    throw new Error('რაოდენობა არ შეიძლება იყოს 0');
+  }
+  if (session.local) {
+    const list = readLocalStockMoves();
+    const m = list.find(x => x.id === payload.id);
+    if (!m) throw new Error('ჩანაწერი ვერ მოიძებნა');
+    if (payload.qty !== undefined && payload.qty !== m.qty) {
+      const inv = readLocalInventory();
+      inv[m.productId] = Math.max(0, (inv[m.productId] ?? 0) + payload.qty - m.qty);
+      writeLocalInventory(inv);
+      m.qty = payload.qty;
+    }
+    if (payload.type) m.type = payload.type;
+    if (payload.note !== undefined) m.note = payload.note;
+    localStorage.setItem(LOCAL_STOCK_KEY, JSON.stringify(list));
+    return;
+  }
+  const res = await post('stock.php', { action: 'update', ...payload }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+}
+
+export async function deleteStockMovement(session: Session, id: number): Promise<void> {
+  if (session.local) {
+    const list = readLocalStockMoves();
+    const m = list.find(x => x.id === id);
+    if (!m) throw new Error('ჩანაწერი ვერ მოიძებნა');
+    const inv = readLocalInventory();
+    inv[m.productId] = Math.max(0, (inv[m.productId] ?? 0) - m.qty);
+    writeLocalInventory(inv);
+    localStorage.setItem(LOCAL_STOCK_KEY, JSON.stringify(list.filter(x => x.id !== id)));
+    return;
+  }
+  const res = await post('stock.php', { action: 'delete', id }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
+}
+
 // ── list sales ─────────────────────────────────────────────────────────────
 export async function getSales(session: Session, limit = 50): Promise<Sale[]> {
   if (session.local) return readLocalSales().slice(0, limit);
@@ -550,6 +599,41 @@ export async function addCashMovement(
   const res = await post('cash.php', payload, session.token);
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+}
+
+// ── edit / delete cash operations (admin) ──────────────────────────────────
+export async function updateCashMovement(
+  session: Session,
+  payload: { id: number; type?: 'in' | 'out'; amount?: number; reason?: string },
+): Promise<void> {
+  if (payload.amount !== undefined && !(payload.amount > 0)) {
+    throw new Error('თანხა უნდა იყოს 0-ზე მეტი');
+  }
+  if (session.local) {
+    const list = readLocalCash();
+    const m = list.find(x => x.id === payload.id);
+    if (!m) throw new Error('ოპერაცია ვერ მოიძებნა');
+    if (payload.type) m.type = payload.type;
+    if (payload.amount !== undefined) m.amount = Math.round(payload.amount * 100) / 100;
+    if (payload.reason !== undefined) m.reason = payload.reason;
+    localStorage.setItem(LOCAL_CASH_KEY, JSON.stringify(list));
+    return;
+  }
+  const res = await post('cash.php', { action: 'update', ...payload }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+}
+
+export async function deleteCashMovement(session: Session, id: number): Promise<void> {
+  if (session.local) {
+    const list = readLocalCash();
+    if (!list.some(x => x.id === id)) throw new Error('ოპერაცია ვერ მოიძებნა');
+    localStorage.setItem(LOCAL_CASH_KEY, JSON.stringify(list.filter(x => x.id !== id)));
+    return;
+  }
+  const res = await post('cash.php', { action: 'delete', id }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
 }
 
 function dayKey(d: Date): string {

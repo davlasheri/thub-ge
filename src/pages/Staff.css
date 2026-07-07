@@ -302,10 +302,10 @@
 .cash-submit { width: auto; padding: 11px 24px; }
 
 .cash-row {
-  display: grid; grid-template-columns: 130px 1fr auto auto; gap: 14px; align-items: center;
+  display: grid; grid-template-columns: 130px 1fr auto auto auto; gap: 14px; align-items: center;
   padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px;
 }
-.cash-row:last-child { border-bottom: none; }
+.cash-row:last-child, .row-wrap:last-child .cash-row { border-bottom: none; }
 .cash-badge { font-weight: 800; font-size: 14px; }
 .cash-reason { color: var(--text); }
 .cash-meta { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
@@ -324,10 +324,26 @@
 .intake-types { margin-bottom: 12px; }
 
 .stock-row {
-  display: grid; grid-template-columns: 56px 110px 1.4fr 1fr auto auto; gap: 12px; align-items: center;
+  display: grid; grid-template-columns: 56px 110px 1.4fr 1fr auto auto auto; gap: 12px; align-items: center;
   padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px;
 }
-.stock-row:last-child { border-bottom: none; }
+.stock-row:last-child, .row-wrap:last-child .stock-row { border-bottom: none; }
+
+/* ── Inline edit/delete of report rows (admin) ── */
+.row-actions { display: inline-flex; gap: 6px; justify-content: flex-end; }
+.row-icon-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text-muted);
+  border-radius: 8px; padding: 4px 9px; font-size: 12px; cursor: pointer; line-height: 1;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.row-icon-btn:hover { color: var(--text); border-color: #555; }
+.row-icon-del:hover { background: var(--red); color: #fff; border-color: var(--red); }
+.row-del-confirm { padding: 8px 0 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.row-edit-grid { display: grid; grid-template-columns: 160px 140px 1fr; gap: 10px; }
+.hist-return-form .cash-meta { white-space: normal; }
+@media (max-width: 860px) {
+  .row-edit-grid { grid-template-columns: 1fr; }
+}
 .stock-qty { font-weight: 800; font-size: 14px; text-align: right; }
 .stock-type {
   font-size: 11px; font-weight: 700; border-radius: 10px; padding: 3px 9px; text-align: center;
@@ -358,7 +374,7 @@
 .hist-return-actions .staff-btn-primary { width: auto; padding: 10px 18px; }
 
 @media (max-width: 860px) {
-  .stock-row { grid-template-columns: 48px 1fr auto; }
+  .stock-row { grid-template-columns: 48px 1fr auto auto; }
   .stock-row .cash-meta:nth-child(4), .stock-row .cash-meta:nth-child(5) { display: none; }
 }
 
