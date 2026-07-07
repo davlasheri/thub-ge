@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { CATALOG as HARDCODED } from '../data/catalog';
 import { CatalogSection, CatalogSubsection } from '../types';
+import { syncContent } from '../utils/contentSync';
 
 const SECTIONS_KEY = 'thub_admin_catalog';
 const DELETED_KEY  = 'thub_deleted_sections';
@@ -40,11 +41,11 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   }, [adminSections, deletedIds]);
 
   const persistSections = (list: CatalogSection[]) => {
-    localStorage.setItem(SECTIONS_KEY, JSON.stringify(list));
+    syncContent(SECTIONS_KEY, JSON.stringify(list));
     setAdminSections(list);
   };
   const persistDeleted = (set: Set<string>) => {
-    localStorage.setItem(DELETED_KEY, JSON.stringify([...set]));
+    syncContent(DELETED_KEY, JSON.stringify([...set]));
     setDeletedIds(set);
   };
 

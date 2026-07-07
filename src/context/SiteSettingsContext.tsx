@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react';
+import { syncContent } from '../utils/contentSync';
 
 const SETTINGS_KEY = 'thub_site_settings';
 
@@ -71,7 +72,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
 
   const persist = (s: SiteSettings) => {
     setSettings(s);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    syncContent(SETTINGS_KEY, JSON.stringify(s));
   };
 
   const updateContact = (c: ContactSettings) => persist({ ...settings, contact: c });

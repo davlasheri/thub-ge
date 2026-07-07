@@ -10,10 +10,12 @@ import { CatalogProvider } from './context/CatalogContext';
 import { ProductsProvider } from './context/ProductsContext';
 import { CartProvider } from './context/CartContext';
 import { CarsProvider } from './context/CarsContext';
+import { hydrateContent } from './utils/contentSync';
 import './index.css';
 import App from './App';
 
-createRoot(document.getElementById('root')!).render(
+function render() {
+  createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ThemeProvider>
@@ -37,4 +39,9 @@ createRoot(document.getElementById('root')!).render(
       </ThemeProvider>
     </BrowserRouter>
   </StrictMode>
-);
+  );
+}
+
+// Seed catalog content from the server first, then render — the contexts read
+// it through their normal localStorage initializers. Never block on failure.
+hydrateContent().finally(render);

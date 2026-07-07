@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 import { products as HARDCODED } from '../data/products';
 import { Product, ModelId } from '../types';
+import { syncContent } from '../utils/contentSync';
 
 const ADMIN_KEY   = 'thub_admin_products';
 const DELETED_KEY = 'thub_deleted_products';
@@ -45,11 +46,11 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   }, [adminProducts, deletedIds]);
 
   const persistAdmin = (list: Product[]) => {
-    localStorage.setItem(ADMIN_KEY, JSON.stringify(list));
+    syncContent(ADMIN_KEY, JSON.stringify(list));
     setAdminProducts(list);
   };
   const persistDeleted = (set: Set<string>) => {
-    localStorage.setItem(DELETED_KEY, JSON.stringify([...set]));
+    syncContent(DELETED_KEY, JSON.stringify([...set]));
     setDeletedIds(set);
   };
 
