@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link , useSearchParams } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
@@ -43,6 +43,7 @@ export default function Catalog() {
   const [searchParams] = useSearchParams();
   // section requested by the home page car diagram (?sec=...)
   const pendingSecRef = useRef<string | null>(searchParams.get('sec'));
+  const pendingModelRef = useRef<string | null>(searchParams.get('model'));
 
   const selectedModel = models.find(m => m.id === selectedModelId);
   const modalModel    = models.find(m => m.id === yearModalModelId);
@@ -68,6 +69,19 @@ export default function Catalog() {
       }, 200);
     }
   };
+
+  // deep link from the home hero: ?model=MS[&sec=body] → open that model's
+  // newest generation, then the pendingSec scroll runs inside selectGeneration
+  useEffect(() => {
+    const mid = pendingModelRef.current;
+    if (!mid) return;
+    pendingModelRef.current = null;
+    const mdl = models.find(m => m.id === mid);
+    if (!mdl) return;
+    const gens = getGenerations(mdl.id, mdl.years.from, mdl.years.to);
+    if (gens[0]) selectGeneration(mdl.id, gens[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [models]);
 
   const openSubsection = (sectionId: string, subsectionId: string) => {
     setActiveSectionId(sectionId);

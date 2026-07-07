@@ -1,0 +1,79 @@
+.tml {
+  --bp-stroke: #7d8798;
+  --bp-glass: #4f5d73;
+  --bp-ground: #333a45;
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.tml-line,
+.tml-glass,
+.tml-tyre {
+  stroke: var(--bp-stroke);
+  stroke-width: 2;
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tml-glass { stroke: var(--bp-glass); }
+.tml-thin { stroke-width: 1.3; opacity: 0.8; }
+.tml-tyre { stroke-width: 3.5; }
+.tml-ground { stroke: var(--bp-ground); stroke-width: 2; stroke-dasharray: 2 10; }
+.tml-batt { stroke: #b3455a; stroke-width: 5; stroke-linecap: round; opacity: 0.85; }
+
+/* ── lamps ── */
+.tml-head { fill: #cfe4ff; stroke: none; opacity: 0.85; }
+.tml-tail { fill: #ff2d4d; stroke: none; opacity: 0.9; }
+
+/* glow only in dark mode */
+:root:not([data-theme='light']) .tml-head {
+  filter: drop-shadow(0 0 6px rgba(150, 200, 255, 0.9)) drop-shadow(0 0 12px rgba(120, 180, 255, 0.5));
+  animation: tmlHeadPulse 2.6s ease-in-out infinite;
+}
+:root:not([data-theme='light']) .tml-tail {
+  filter: drop-shadow(0 0 6px rgba(255, 45, 77, 0.95)) drop-shadow(0 0 14px rgba(255, 45, 77, 0.6));
+  animation: tmlTailPulse 2.6s ease-in-out infinite;
+}
+@keyframes tmlHeadPulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+@keyframes tmlTailPulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+/* ── model-switch draw-in ── */
+.tml-draw { animation: tmlDraw 0.55s cubic-bezier(0.2, 0.7, 0.2, 1); transform-origin: center; }
+@keyframes tmlDraw {
+  0% { opacity: 0; transform: translateY(10px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── clickable zones ── */
+.tml-hit {
+  fill: #ffffff;
+  opacity: 0.001;
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.15s;
+}
+.tml-hit-on,
+.tml-hit:focus-visible {
+  fill: var(--red);
+  opacity: 0.12;
+}
+
+/* light theme: ink on paper */
+:root[data-theme='light'] .tml {
+  --bp-stroke: #3f5498;
+  --bp-glass: #7183bd;
+  --bp-ground: #a9b4cf;
+}
+:root[data-theme='light'] .tml-head { fill: #4a74c8; opacity: 0.9; }
+:root[data-theme='light'] .tml-tail { fill: #d21f3c; opacity: 0.9; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tml-draw { animation-duration: 0.01s; }
+  :root:not([data-theme='light']) .tml-head,
+  :root:not([data-theme='light']) .tml-tail { animation: none; }
+}
