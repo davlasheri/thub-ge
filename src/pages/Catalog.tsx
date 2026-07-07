@@ -114,6 +114,28 @@ export default function Catalog() {
     });
   }, [selectedModelId, selectedGen, activeSubsectionId, products]);
 
+  // part numbers are stored like "1494822-00-F"; compare ignoring dashes/spaces
+  const normalizeCode = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // subsectionId -> part numbers whose code matches the search query
+  // (only among products fitting the selected model/generation, so a click
+  // on a highlighted category always shows the matched item)
+  const codeMatches = useMemo(() => {
+    const map = new Map<string, string[]>();
+    const q = normalizeCode(search);
+    if (q.length < 3 || !selectedModelId || !selectedGen) return map;
+    for (const p of products) {
+      const range = p.fits[selectedModelId];
+      if (!range) continue;
+      if (selectedGen.from > range.to || selectedGen.to < range.from) continue;
+      if (!normalizeCode(p.partNumber).includes(q)) continue;
+      const list = map.get(p.subsectionId) ?? [];
+      list.push(p.partNumber);
+      map.set(p.subsectionId, list);
+    }
+    return map;
+  }, [search, products, selectedModelId, selectedGen]);
+
   const filteredCatalog = useMemo(() => {
     if (!search.trim()) return catalog;
     const q = search.toLowerCase();
@@ -121,14 +143,15 @@ export default function Catalog() {
       .map(sec => ({
         ...sec,
         subsections: sec.subsections.filter(sub =>
-          getCatName(sub, lang, 'sub').toLowerCase().includes(q)
+          getCatName(sub, lang, 'sub').toLowerCase().includes(q) ||
+          codeMatches.has(sub.id)
         ),
       }))
       .filter(sec =>
         getCatName(sec, lang, 'section').toLowerCase().includes(q) ||
         sec.subsections.length > 0
       );
-  }, [catalog, search, lang]);
+  }, [catalog, search, lang, codeMatches]);
 
   const tSection = (sec: CatalogSection) => getCatName(sec, lang, 'section');
   const tSub = (sub: { id: string; name: string; nameGe?: string }) => getCatName(sub, lang, 'sub');
@@ -230,6 +253,7 @@ export default function Catalog() {
                     countInSubsection={countInSubsection}
                     onSubsectionClick={openSubsection}
                     accentColor={selectedModel.color}
+                    codeMatches={codeMatches}
                   />
                   </div>
                 ))}
@@ -331,7 +355,7 @@ function ModelCard({ model, onClick, t }: { model: TeslaModel; onClick: () => vo
 
 // ── GroupCard ─────────────────────────────────────────────────────────────────
 function GroupCard({
-  section, tSection, tSub, countInSubsection, onSubsectionClick, accentColor,
+  section, tSection, tSub, countInSubsection, onSubsectionClick, accentColor, codeMatches,
 }: {
   section: CatalogSection;
   tSection: (s: CatalogSection) => string;
@@ -339,9 +363,14 @@ function GroupCard({
   countInSubsection: (id: string) => number;
   onSubsectionClick: (sectionId: string, subId: string) => void;
   accentColor?: string;
+  codeMatches: Map<string, string[]>;
 }) {
+  const hasCodeMatch = section.subsections.some(sub => codeMatches.has(sub.id));
   return (
-    <div className="epc-group-card">
+    <div
+      className={`epc-group-card ${hasCodeMatch ? 'epc-group-card-code-match' : ''}`}
+      style={hasCodeMatch && accentColor ? { '--epc-match-color': accentColor } as React.CSSProperties : undefined}
+    >
       <div className="epc-group-img-wrap">
         <img src={sectionArt(section.id)} alt={tSection(section)} loading="lazy" />
         {section.groupNumber && (
@@ -356,13 +385,21 @@ function GroupCard({
         <ul className="epc-sub-list">
           {section.subsections.map(sub => {
             const count = countInSubsection(sub.id);
+            const matchedCodes = codeMatches.get(sub.id);
             return (
               <li key={sub.id}>
                 <button
-                  className={`epc-sub-item ${count === 0 ? 'epc-sub-item-empty' : ''}`}
+                  className={`epc-sub-item ${count === 0 ? 'epc-sub-item-empty' : ''} ${matchedCodes ? 'epc-sub-item-code-match' : ''}`}
                   onClick={() => onSubsectionClick(section.id, sub.id)}
                 >
-                  <span className="epc-sub-name">{tSub(sub)}</span>
+                  <span className="epc-sub-name">
+                    {tSub(sub)}
+                    {matchedCodes && (
+                      <span className="epc-sub-code-badge" style={{ background: accentColor }}>
+                        #{matchedCodes[0]}{matchedCodes.length > 1 ? ` +${matchedCodes.length - 1}` : ''}
+                      </span>
+                    )}
+                  </span>
                   {count > 0
                     ? <span className="epc-sub-count" style={{ background: accentColor }}>{count}</span>
                     : <span className="epc-sub-dash">—</span>

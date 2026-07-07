@@ -396,6 +396,33 @@
 .epc-sub-item:not(.epc-sub-item-empty) .epc-sub-name { color: var(--text-muted); }
 .epc-sub-item:not(.epc-sub-item-empty):hover .epc-sub-name { color: var(--text); }
 
+/* category highlighted because it contains the searched item code */
+.epc-group-card-code-match {
+  border-color: var(--epc-match-color, #e82127);
+  box-shadow: 0 0 0 1px var(--epc-match-color, #e82127), 0 8px 28px rgba(0,0,0,0.35);
+}
+.epc-sub-item-code-match {
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.epc-sub-item-code-match .epc-sub-name,
+.epc-sub-item:not(.epc-sub-item-empty).epc-sub-item-code-match .epc-sub-name { color: var(--text); }
+.epc-sub-code-badge {
+  display: inline-block;
+  margin-left: 7px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #fff;
+  background: #e82127;
+  padding: 1px 6px;
+  border-radius: 8px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
 .epc-sub-count {
   font-size: 10px;
   font-weight: 800;
