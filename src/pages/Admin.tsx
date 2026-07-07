@@ -139,6 +139,7 @@ export default function Admin() {
   const [productForm, setProductForm]     = useState<ProductForm>(() => emptyProductForm(catalog, models));
   const [productSearch, setProductSearch] = useState('');
   const [productSectionFilter, setProductSectionFilter] = useState('all');
+  const [productModelFilter, setProductModelFilter] = useState('all');
   const [deleteProductTarget, setDeleteProductTarget]   = useState<string | null>(null);
 
   const [carsView, setCarsView] = useState<'list' | 'form'>('list');
@@ -170,6 +171,7 @@ export default function Admin() {
 
   const displayedProducts = products.filter(p => {
     if (productSectionFilter !== 'all' && p.sectionId !== productSectionFilter) return false;
+    if (productModelFilter !== 'all' && !p.fits[productModelFilter]) return false;
     if (productSearch) {
       const q = productSearch.toLowerCase();
       return p.name.toLowerCase().includes(q) || p.nameGe.toLowerCase().includes(q) || p.partNumber.toLowerCase().includes(q);
@@ -281,9 +283,9 @@ export default function Admin() {
             allProducts={products}
             models={models}
             products={displayedProducts} allCount={products.length}
-            search={productSearch} sectionFilter={productSectionFilter}
+            search={productSearch} sectionFilter={productSectionFilter} modelFilter={productModelFilter}
             catalog={catalog} isAdmin={isAdminProduct}
-            onSearch={setProductSearch} onSectionFilter={setProductSectionFilter}
+            onSearch={setProductSearch} onSectionFilter={setProductSectionFilter} onModelFilter={setProductModelFilter}
             onAdd={startAddProduct} onEdit={startEditProduct} onDelete={setDeleteProductTarget}
           />
         )}
@@ -407,10 +409,10 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 }
 
 // ── Products list ──────────────────────────────────────────────────────────
-function ProductsList({ products, allProducts, models, allCount, search, sectionFilter, catalog, isAdmin, onSearch, onSectionFilter, onAdd, onEdit, onDelete }: {
-  products: Product[]; allProducts: Product[]; models: TeslaModel[]; allCount: number; search: string; sectionFilter: string;
+function ProductsList({ products, allProducts, models, allCount, search, sectionFilter, modelFilter, catalog, isAdmin, onSearch, onSectionFilter, onModelFilter, onAdd, onEdit, onDelete }: {
+  products: Product[]; allProducts: Product[]; models: TeslaModel[]; allCount: number; search: string; sectionFilter: string; modelFilter: string;
   catalog: CatalogSection[]; isAdmin: (id: string) => boolean;
-  onSearch: (s: string) => void; onSectionFilter: (s: string) => void;
+  onSearch: (s: string) => void; onSectionFilter: (s: string) => void; onModelFilter: (s: string) => void;
   onAdd: () => void; onEdit: (p: Product) => void; onDelete: (id: string) => void;
 }) {
   return (
@@ -432,9 +434,31 @@ function ProductsList({ products, allProducts, models, allCount, search, section
           <option value="all">ყველა კატეგორია</option>
           {catalog.map(s => <option key={s.id} value={s.id}>{s.nameGe || s.name}</option>)}
         </select>
+        <select className="admin-input admin-select admin-cat-select-mobile" value={modelFilter} onChange={e => onModelFilter(e.target.value)}>
+          <option value="all">ყველა მოდელი</option>
+          {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
       </div>
       <div className="admin-prod-layout">
         <aside className="admin-cat-side">
+          <div className="admin-model-filter">
+            <button
+              className={`admin-model-btn ${modelFilter === 'all' ? 'admin-model-btn-active' : ''}`}
+              onClick={() => onModelFilter('all')}
+            >
+              ყველა მოდელი
+            </button>
+            {models.map(m => (
+              <button
+                key={m.id}
+                className={`admin-model-btn ${modelFilter === m.id ? 'admin-model-btn-active' : ''}`}
+                onClick={() => onModelFilter(m.id)}
+                style={modelFilter === m.id ? { borderColor: m.color, color: m.color } : undefined}
+              >
+                {m.id}
+              </button>
+            ))}
+          </div>
           <button
             className={`admin-cat-btn ${sectionFilter === 'all' ? 'admin-cat-btn-active' : ''}`}
             onClick={() => onSectionFilter('all')}

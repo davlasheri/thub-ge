@@ -612,6 +612,19 @@
   border-radius: 12px; overflow: hidden; position: sticky; top: 16px;
   max-height: calc(100vh - 60px); overflow-y: auto;
 }
+.admin-model-filter {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px; border-bottom: 1px solid var(--border, #2e2e2e);
+}
+.admin-model-btn {
+  padding: 5px 10px; border-radius: 8px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+  color: var(--text-muted, #999); background: var(--surface, #222);
+  border: 1px solid var(--border, #2e2e2e); cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.admin-model-btn:hover { color: var(--text, #eee); }
+.admin-model-btn-active { color: #fff; background: rgba(227,25,55,0.14); border-color: rgba(227,25,55,0.4); }
 .admin-cat-btn {
   display: flex; align-items: center; gap: 8px; width: 100%;
   background: none; text-align: left; padding: 9px 12px;
