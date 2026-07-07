@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { CarListing } from '../types';
+import { syncContent } from '../utils/contentSync';
 
 const CARS_KEY = 'thub_cars';
 
@@ -91,7 +92,7 @@ export function CarsProvider({ children }: { children: ReactNode }) {
   const [cars, setCars] = useState<CarListing[]>(readStored);
 
   const persist = (list: CarListing[]) => {
-    localStorage.setItem(CARS_KEY, JSON.stringify(list));
+    syncContent(CARS_KEY, JSON.stringify(list));
     setCars(list);
   };
 

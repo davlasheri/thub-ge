@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { processImageFile } from '../utils/imageProcess';
+import { publishLocalContent } from '../utils/contentSync';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
@@ -149,6 +150,10 @@ export default function Admin() {
   const [carForm, setCarForm] = useState<CarForm>(emptyCarForm());
   const [deleteCarTarget, setDeleteCarTarget] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
+
+  // Once an admin is logged in, publish any local-only edits the server doesn't
+  // yet have, so pre-existing changes become visible site-wide.
+  useEffect(() => { if (authed) publishLocalContent(); }, [authed]);
 
   if (!authed) return <LoginScreen onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setAuthed(true); }} />;
 

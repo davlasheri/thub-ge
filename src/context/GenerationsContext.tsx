@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { Generation, GenerationDef, defaultGenerationDefs, buildGenerations } from '../data/generations';
+import { syncContent } from '../utils/contentSync';
 
 const KEY = 'thub_admin_generations';
 
@@ -24,7 +25,7 @@ export function GenerationsProvider({ children }: { children: ReactNode }) {
 
   const persist = (o: Record<string, GenerationDef[]>) => {
     setOverrides(o);
-    localStorage.setItem(KEY, JSON.stringify(o));
+    syncContent(KEY, JSON.stringify(o));
   };
 
   const getDefs = (modelId: string, yearFrom: number, yearTo: number): GenerationDef[] =>

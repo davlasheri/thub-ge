@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useMemo } from 'react';
 import { TeslaModel } from '../types';
 import { MODELS as HARDCODED } from '../data/vehicles';
+import { syncContent } from '../utils/contentSync';
 
 const MODELS_KEY  = 'thub_admin_models';
 const DELETED_KEY = 'thub_deleted_models';
@@ -28,11 +29,11 @@ export function ModelsProvider({ children }: { children: React.ReactNode }) {
 
   const persistModels = (ms: TeslaModel[]) => {
     setAdminModels(ms);
-    localStorage.setItem(MODELS_KEY, JSON.stringify(ms));
+    syncContent(MODELS_KEY, JSON.stringify(ms));
   };
   const persistDeleted = (ids: Set<string>) => {
     setDeletedIds(ids);
-    localStorage.setItem(DELETED_KEY, JSON.stringify([...ids]));
+    syncContent(DELETED_KEY, JSON.stringify([...ids]));
   };
 
   const models = useMemo(() => {
