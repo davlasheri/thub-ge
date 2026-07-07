@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
-import { products as HARDCODED } from '../data/products';
 import { Product, ModelId } from '../types';
 import { syncContent } from '../utils/contentSync';
 
@@ -37,13 +36,13 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const [adminProducts, setAdminProducts] = useState<Product[]>(readStored);
   const [deletedIds,    setDeletedIds]    = useState<Set<string>>(readDeleted);
 
-  const products = useMemo(() => {
-    const adminIds = new Set(adminProducts.map(p => p.id));
-    return [
-      ...HARDCODED.filter(p => !adminIds.has(p.id) && !deletedIds.has(p.id)),
-      ...adminProducts.filter(p => !deletedIds.has(p.id)),
-    ];
-  }, [adminProducts, deletedIds]);
+  // Only admin-created products exist now. Ids without the 'adm_' prefix are
+  // stored overrides of the demo catalogue that used to ship with the site —
+  // drop them along with anything the admin deleted.
+  const products = useMemo(
+    () => adminProducts.filter(p => p.id.startsWith('adm_') && !deletedIds.has(p.id)),
+    [adminProducts, deletedIds],
+  );
 
   const persistAdmin = (list: Product[]) => {
     syncContent(ADMIN_KEY, JSON.stringify(list));
