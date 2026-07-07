@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ModelsProvider } from './context/ModelsContext';
+import { GenerationsProvider } from './context/GenerationsContext';
 import { SiteSettingsProvider } from './context/SiteSettingsContext';
 import { CatalogProvider } from './context/CatalogContext';
 import { ProductsProvider } from './context/ProductsContext';
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
       <ThemeProvider>
         <LanguageProvider>
           <ModelsProvider>
+           <GenerationsProvider>
             <SiteSettingsProvider>
               <CatalogProvider>
                 <ProductsProvider>
@@ -29,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
                 </ProductsProvider>
               </CatalogProvider>
             </SiteSettingsProvider>
+           </GenerationsProvider>
           </ModelsProvider>
         </LanguageProvider>
       </ThemeProvider>

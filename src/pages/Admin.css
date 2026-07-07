@@ -420,6 +420,21 @@
 .admin-model-info  { flex: 1; min-width: 0; }
 .admin-model-name  { font-size: 15px; font-weight: 700; }
 .admin-model-years { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.admin-gen-link {
+  margin-top: 6px; padding: 0; background: none; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--red, #e31937); text-align: left;
+}
+.admin-gen-link:hover { text-decoration: underline; }
+
+/* ── Generations editor modal ── */
+.admin-gen-rows { display: flex; flex-direction: column; gap: 10px; }
+.admin-gen-row { display: flex; align-items: center; gap: 8px; }
+.admin-gen-row .admin-year-input { width: 84px; flex-shrink: 0; }
+.admin-gen-add { margin-top: 12px; }
+.admin-gen-preview {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+}
 
 .admin-model-color-chip {
   font-size: 11px; font-family: monospace; letter-spacing: 0.5px;
