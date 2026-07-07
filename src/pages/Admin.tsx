@@ -3,6 +3,9 @@ import { processImageFile } from '../utils/imageProcess';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
+import { useLang } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
+import { Lang } from '../data/translations';
 import { useSiteSettings, ContactSettings, HomeSettings } from '../context/SiteSettingsContext';
 import { useCars } from '../context/CarsContext';
 import { getCatName, slugify } from '../utils/catalog';
@@ -13,6 +16,11 @@ import { login as staffLogin, loadSession, saveSession, Session as StaffSession 
 import './Admin.css';
 
 const SESSION_KEY  = 'thub_admin_auth';
+const ADMIN_LANGS: { code: Lang; label: string }[] = [
+  { code: 'ka', label: 'KA' },
+  { code: 'en', label: 'EN' },
+  { code: 'ru', label: 'RU' },
+];
 function genId() {
   return 'adm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
@@ -124,6 +132,8 @@ export default function Admin() {
   const { catalog } = useCatalog();
   const { models } = useModels();
   const { cars, addCar, updateCar, deleteCar } = useCars();
+  const { lang, setLang } = useLang();
+  const { theme, toggleTheme } = useTheme();
 
   const [editProductId, setEditProductId] = useState<string | null>(null);
   const [productForm, setProductForm]     = useState<ProductForm>(() => emptyProductForm(catalog, models));
@@ -205,6 +215,36 @@ export default function Admin() {
         <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="თანამშრომლები" />
         <NavBtn active={tab === 'cars'}       onClick={() => switchTab('cars')}       icon={<IcoCar />}   label="ავტომობილები" count={cars.length} />
       </nav>
+      <div className="admin-prefs">
+        <div className="admin-lang-switcher">
+          {ADMIN_LANGS.map(l => (
+            <button
+              key={l.code}
+              className={`admin-lang-btn ${lang === l.code ? 'admin-lang-btn-active' : ''}`}
+              onClick={() => setLang(l.code)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+        <button
+          className="admin-theme-btn"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          title={theme === 'dark' ? 'ღია თემა' : 'მუქი თემა'}
+        >
+          {theme === 'dark' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          )}
+        </button>
+      </div>
       <button className="admin-logout" style={{ marginBottom: 8 }} onClick={downloadBackup}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
