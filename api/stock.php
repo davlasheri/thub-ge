@@ -28,6 +28,12 @@ if ($me['role'] !== 'admin') fail(403, 'მხოლოდ ადმინის
 $in = body_json();
 $action = $in['action'] ?? 'add';
 
+// ── clear the whole movement history (admin): log purge only, stock unchanged ─
+if ($action === 'clearAll') {
+  $pdo->exec('DELETE FROM stock_movements');
+  ok();
+}
+
 // ── update a movement (admin): qty change also corrects the inventory ────────
 if ($action === 'update') {
   $id = (int)($in['id'] ?? 0);

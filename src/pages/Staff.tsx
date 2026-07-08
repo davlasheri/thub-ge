@@ -10,6 +10,7 @@ import {
   getInventory, seedInventory, addStock, getStockMovements, getCash, addCashMovement,
   returnableItems, updateSale, deleteSale,
   updateStockMovement, deleteStockMovement, updateCashMovement, deleteCashMovement,
+  clearStockMovements, clearCashMovements,
 } from '../utils/staffApi';
 import './Staff.css';
 
@@ -524,6 +525,7 @@ function InventoryView({ session }: { session: Session }) {
   const [mvDeleting, setMvDeleting] = useState<number | null>(null);
   const [mvBusy, setMvBusy] = useState(false);
   const [mvMsg, setMvMsg] = useState('');
+  const [mvClearing, setMvClearing] = useState(false);
 
   const reloadInv = () => getInventory(session).then(setInv).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
   const reloadMoves = () =>
@@ -562,6 +564,20 @@ function InventoryView({ session }: { session: Session }) {
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : 'შეცდომა');
       setMvDeleting(null);
+    } finally { setMvBusy(false); }
+  };
+
+  const submitMvClear = async () => {
+    if (mvBusy) return;
+    setMvBusy(true); setErr('');
+    try {
+      await clearStockMovements(session);
+      setMvClearing(false);
+      flashMv('🧹 ისტორია გასუფთავდა — მარაგის ნაშთები არ შეცვლილა');
+      await reloadMoves();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      setMvClearing(false);
     } finally { setMvBusy(false); }
   };
 
@@ -750,8 +766,18 @@ function InventoryView({ session }: { session: Session }) {
                 <button key={p} className={repDays === p ? 'dash-period-btn dash-period-active' : 'dash-period-btn'}
                   onClick={() => setRepDays(p)}>{p} დღე</button>
               ))}
+              {moves && moves.length > 0 && !mvClearing && (
+                <button className="dash-period-btn row-clear-btn" onClick={() => setMvClearing(true)}>🧹 გასუფთავება</button>
+              )}
             </div>
           </div>
+          {mvClearing && (
+            <div className="hist-del-confirm row-del-confirm">
+              წაიშალოს მოძრაობის მთელი ისტორია? მარაგის ნაშთები არ შეიცვლება.
+              <button className="staff-btn-primary hist-del-yes" disabled={mvBusy} onClick={submitMvClear}>დიახ, გასუფთავება</button>
+              <button className="staff-btn-secondary" onClick={() => setMvClearing(false)}>არა</button>
+            </div>
+          )}
           {mvMsg && <div className="pos-done">{mvMsg}</div>}
           {!moves && <p className="pos-empty">იტვირთება…</p>}
           {moves && moves.length === 0 && <p className="pos-empty">მოძრაობა არ არის ამ პერიოდში</p>}
@@ -823,6 +849,7 @@ function CashView({ session }: { session: Session }) {
   const [eAmount, setEAmount] = useState('');
   const [eReason, setEReason] = useState('');
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [clearing, setClearing] = useState(false);
   const [msg, setMsg] = useState('');
 
   const reload = () =>
@@ -861,6 +888,20 @@ function CashView({ session }: { session: Session }) {
     } catch (ex) {
       setErr(ex instanceof Error ? ex.message : 'შეცდომა');
       setDeleting(null);
+    } finally { setBusy(false); }
+  };
+
+  const submitClear = async () => {
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      await clearCashMovements(session);
+      setClearing(false);
+      flash('🧹 ოპერაციების ისტორია გასუფთავდა');
+      await reload();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      setClearing(false);
     } finally { setBusy(false); }
   };
 
@@ -918,7 +959,19 @@ function CashView({ session }: { session: Session }) {
       </div>
 
       <div className="dash-panel">
-        <h3 className="dash-panel-title">ოპერაციები</h3>
+        <div className="dash-panel-head">
+          <h3 className="dash-panel-title">ოპერაციები</h3>
+          {report.movements.length > 0 && !clearing && (
+            <button className="dash-period-btn row-clear-btn" onClick={() => setClearing(true)}>🧹 გასუფთავება</button>
+          )}
+        </div>
+        {clearing && (
+          <div className="hist-del-confirm row-del-confirm">
+            წაიშალოს ოპერაციების მთელი ისტორია?
+            <button className="staff-btn-primary hist-del-yes" disabled={busy} onClick={submitClear}>დიახ, გასუფთავება</button>
+            <button className="staff-btn-secondary" onClick={() => setClearing(false)}>არა</button>
+          </div>
+        )}
         {msg && <div className="pos-done">{msg}</div>}
         {report.movements.length === 0 && <p className="pos-empty">ოპერაციები არ არის ამ პერიოდში</p>}
         {report.movements.map(m => {
