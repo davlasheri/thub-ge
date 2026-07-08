@@ -484,6 +484,17 @@ export async function deleteStockMovement(session: Session, id: number): Promise
   if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
 }
 
+// Clears the whole movement history (log purge — current stock is untouched).
+export async function clearStockMovements(session: Session): Promise<void> {
+  if (session.local) {
+    localStorage.setItem(LOCAL_STOCK_KEY, '[]');
+    return;
+  }
+  const res = await post('stock.php', { action: 'clearAll' }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
+}
+
 // ── list sales ─────────────────────────────────────────────────────────────
 export async function getSales(session: Session, limit = 50): Promise<Sale[]> {
   if (session.local) return readLocalSales().slice(0, limit);
@@ -632,6 +643,16 @@ export async function deleteCashMovement(session: Session, id: number): Promise<
     return;
   }
   const res = await post('cash.php', { action: 'delete', id }, session.token);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
+}
+
+export async function clearCashMovements(session: Session): Promise<void> {
+  if (session.local) {
+    localStorage.setItem(LOCAL_CASH_KEY, '[]');
+    return;
+  }
+  const res = await post('cash.php', { action: 'clearAll' }, session.token);
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
 }

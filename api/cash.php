@@ -48,6 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail(405, 'GET or POST only');
 $in = body_json();
 $action = $in['action'] ?? 'add';
 
+// ── clear the whole operations history (admin) ───────────────────────────────
+if ($action === 'clearAll') {
+  if ($me['role'] !== 'admin') fail(403, 'მხოლოდ ადმინისტრატორს შეუძლია');
+  $pdo->exec('DELETE FROM cash_movements');
+  ok();
+}
+
 // ── edit / delete an operation (admin) ───────────────────────────────────────
 if ($action === 'update' || $action === 'delete') {
   if ($me['role'] !== 'admin') fail(403, 'მხოლოდ ადმინისტრატორს შეუძლია');

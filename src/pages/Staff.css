@@ -541,3 +541,5 @@
 .hist-del-btn:hover { background: var(--red); color: #fff; }
 .hist-del-confirm { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); font-weight: 700; }
 .hist-del-yes { width: auto; padding: 8px 14px; font-size: 13px; }
+
+.row-clear-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
