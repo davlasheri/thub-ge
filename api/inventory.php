@@ -25,19 +25,10 @@ if ($action === 'set') {
   ok();
 }
 
-if ($action === 'bulkSeed') {
-  // Insert only products that are not yet tracked (used for the initial random seed)
-  $items = $in['items'] ?? [];
-  if (!is_array($items)) fail(400, 'items required');
-  $st = $pdo->prepare('INSERT IGNORE INTO inventory (product_id, qty) VALUES (?,?)');
-  $n = 0;
-  foreach ($items as $it) {
-    $pid = substr((string)($it['productId'] ?? ''), 0, 64);
-    if ($pid === '') continue;
-    $st->execute([$pid, max(0, (int)($it['qty'] ?? 0))]);
-    $n += $st->rowCount();
-  }
-  ok(['seeded' => $n]);
+if ($action === 'resetAll') {
+  // Zero every balance — dropping the rows also clears leftovers of deleted products
+  $pdo->exec('DELETE FROM inventory');
+  ok();
 }
 
 fail(400, 'Unknown action');

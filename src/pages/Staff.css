@@ -543,3 +543,8 @@
 .hist-del-yes { width: auto; padding: 8px 14px; font-size: 13px; }
 
 .row-clear-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* stock list toolbar */
+.inv-stock-tools { display: flex; align-items: center; gap: 10px; }
+.inv-stock-tools .pos-search { flex: 1; }
+.inv-stock-tools .row-clear-btn { white-space: nowrap; }

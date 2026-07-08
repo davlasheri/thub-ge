@@ -7,7 +7,7 @@ import { Product } from '../types';
 import {
   Session, Sale, Stats, SaleItemInput, Payment, CashReport, StockMovement, StockMoveType,
   login, loadSession, saveSession, recordSale, recordReturn, getSales, getStats,
-  getInventory, seedInventory, addStock, getStockMovements, getCash, addCashMovement,
+  getInventory, resetInventory, addStock, getStockMovements, getCash, addCashMovement,
   returnableItems, updateSale, deleteSale,
   updateStockMovement, deleteStockMovement, updateCashMovement, deleteCashMovement,
   clearStockMovements, clearCashMovements,
@@ -526,6 +526,9 @@ function InventoryView({ session }: { session: Session }) {
   const [mvBusy, setMvBusy] = useState(false);
   const [mvMsg, setMvMsg] = useState('');
   const [mvClearing, setMvClearing] = useState(false);
+  // reset all stock balances (admin)
+  const [invResetting, setInvResetting] = useState(false);
+  const [invMsg, setInvMsg] = useState('');
 
   const reloadInv = () => getInventory(session).then(setInv).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
   const reloadMoves = () =>
@@ -567,6 +570,21 @@ function InventoryView({ session }: { session: Session }) {
     } finally { setMvBusy(false); }
   };
 
+  const submitInvReset = async () => {
+    if (mvBusy) return;
+    setMvBusy(true); setErr('');
+    try {
+      await resetInventory(session);
+      setInvResetting(false);
+      setInvMsg('🧹 ყველა ნაშთი განულდა');
+      setTimeout(() => setInvMsg(''), 4000);
+      await reloadInv();
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
+      setInvResetting(false);
+    } finally { setMvBusy(false); }
+  };
+
   const submitMvClear = async () => {
     if (mvBusy) return;
     setMvBusy(true); setErr('');
@@ -582,23 +600,8 @@ function InventoryView({ session }: { session: Session }) {
   };
 
   useEffect(() => {
-    (async () => {
-      try {
-        let map = await getInventory(session);
-        const missing = products.filter(p => map[p.id] === undefined);
-        if (missing.length > 0) {
-          await seedInventory(session, missing.map(p => ({
-            productId: p.id,
-            qty: 1 + Math.floor(Math.random() * 10),
-          })));
-          map = await getInventory(session);
-        }
-        setInv(map);
-      } catch (ex) {
-        setErr(ex instanceof Error ? ex.message : 'შეცდომა');
-      }
-    })();
-  }, [session, products]);
+    getInventory(session).then(setInv).catch(ex => setErr(ex instanceof Error ? ex.message : 'შეცდომა'));
+  }, [session]);
 
   useEffect(() => {
     if (view !== 'report') return;
@@ -613,7 +616,7 @@ function InventoryView({ session }: { session: Session }) {
   const list = products.filter(p =>
     !q || p.name.toLowerCase().includes(q) || p.nameGe.toLowerCase().includes(q) || p.partNumber.toLowerCase().includes(q)
   );
-  const totalUnits = Object.values(inv).reduce((s, n) => s + n, 0);
+  const totalUnits = products.reduce((s, p) => s + (inv[p.id] ?? 0), 0);
   const outOfStock = products.filter(p => (inv[p.id] ?? 0) === 0).length;
 
   // quick edit in the stock list — logged as adjustment so the report stays true
@@ -686,8 +689,21 @@ function InventoryView({ session }: { session: Session }) {
 
       {view === 'stock' && (
         <>
-          <input className="staff-input pos-search" placeholder="🔍 ფილტრი — სახელი ან პარტ-ნომერი…"
-            value={filter} onChange={e => setFilter(e.target.value)} />
+          <div className="inv-stock-tools">
+            <input className="staff-input pos-search" placeholder="🔍 ფილტრი — სახელი ან პარტ-ნომერი…"
+              value={filter} onChange={e => setFilter(e.target.value)} />
+            {totalUnits > 0 && !invResetting && (
+              <button className="dash-period-btn row-clear-btn" onClick={() => setInvResetting(true)}>🧹 განულება</button>
+            )}
+          </div>
+          {invResetting && (
+            <div className="hist-del-confirm row-del-confirm">
+              განულდეს ყველა პოზიციის ნაშთი? ეს მოქმედება ვერ გაუქმდება.
+              <button className="staff-btn-primary hist-del-yes" disabled={mvBusy} onClick={submitInvReset}>დიახ, განულება</button>
+              <button className="staff-btn-secondary" onClick={() => setInvResetting(false)}>არა</button>
+            </div>
+          )}
+          {invMsg && <div className="pos-done">{invMsg}</div>}
           <div className="inv-table">
             {list.map(p => {
               const qty = inv[p.id] ?? 0;
