@@ -72,6 +72,21 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS inventory (
 $hasRef = $pdo->query("SHOW COLUMNS FROM sales LIKE 'ref_sale_id'")->fetch();
 if (!$hasRef) $pdo->exec("ALTER TABLE sales ADD COLUMN ref_sale_id INT NULL");
 
+// key/value store for one-off migration markers
+$pdo->exec("CREATE TABLE IF NOT EXISTS app_meta (
+  k VARCHAR(64) PRIMARY KEY,
+  v VARCHAR(255) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+// One-time cleanup: early builds auto-seeded every product with a random 1-10
+// quantity, so the stock total was a made-up number. Wipe those seeded rows once.
+// Guarded by a marker, so real stock entered after this deploy is never touched.
+$seedCleared = $pdo->query("SELECT 1 FROM app_meta WHERE k = 'inv_seed_cleared'")->fetch();
+if (!$seedCleared) {
+  $pdo->exec('DELETE FROM inventory');
+  $pdo->prepare("INSERT INTO app_meta (k, v) VALUES ('inv_seed_cleared', ?)")->execute([date('c')]);
+}
+
 $pdo->exec("CREATE TABLE IF NOT EXISTS stock_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   employee_id INT NOT NULL,

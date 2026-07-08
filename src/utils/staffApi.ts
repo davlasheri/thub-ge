@@ -548,16 +548,15 @@ export async function setInventoryQty(session: Session, productId: string, qty: 
   if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
 }
 
-export async function seedInventory(session: Session, items: { productId: string; qty: number }[]): Promise<void> {
+// Zeroes every stock balance (admin) — also drops rows of products removed from the catalog.
+export async function resetInventory(session: Session): Promise<void> {
   if (session.local) {
-    const inv = readLocalInventory();
-    for (const it of items) if (inv[it.productId] === undefined) inv[it.productId] = it.qty;
-    writeLocalInventory(inv);
+    writeLocalInventory({});
     return;
   }
-  const res = await post('inventory.php', { action: 'bulkSeed', items }, session.token);
+  const res = await post('inventory.php', { action: 'resetAll' }, session.token);
   const data = await res.json().catch(() => null);
-  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ შეინახა');
+  if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ განულდა');
 }
 
 // ── cash movements ─────────────────────────────────────────────────────────
