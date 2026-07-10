@@ -88,8 +88,9 @@ if ($action === 'delete') {
   ok();
 }
 
-// POST: add stock via purchase / car disassembly / manual adjustment
-$type = in_array($in['type'] ?? '', ['purchase','disassembly','adjustment'], true) ? $in['type'] : 'purchase';
+// POST: manual stock adjustment only — purchase/disassembly intake was removed,
+// products and their quantities are managed from the admin panel
+$type = 'adjustment';
 $items = $in['items'] ?? [];
 $note = substr(trim($in['note'] ?? ''), 0, 255);
 if (!is_array($items) || count($items) === 0) fail(400, 'No items');
@@ -104,7 +105,6 @@ try {
     if ($pid === '') continue;
     $qty = (int)($it['qty'] ?? 0);
     if ($qty === 0) continue;
-    if ($type !== 'adjustment' && $qty < 0) $qty = abs($qty);
     $invUp->execute([$pid, $qty]);
     $mv->execute([
       $me['id'], $pid,

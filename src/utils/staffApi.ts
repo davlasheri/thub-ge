@@ -396,11 +396,13 @@ export async function deleteSale(session: Session, id: number): Promise<void> {
   if (!res.ok || !data?.ok) throw new Error(data?.error || 'ვერ წაიშალა');
 }
 
-// ── stock intake & movement report ─────────────────────────────────────────
+// ── stock adjustments & movement report ────────────────────────────────────
+// Purchase/disassembly intake was removed from the POS — products and their
+// quantities are managed in the admin panel; only manual corrections remain.
 export async function addStock(
   session: Session,
   payload: {
-    type: 'purchase' | 'disassembly' | 'adjustment';
+    type: 'adjustment';
     items: { productId: string; name: string; partNumber?: string; qty: number }[];
     note?: string;
   },

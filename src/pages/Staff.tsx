@@ -143,7 +143,8 @@ function PosView({ session }: { session: Session }) {
     return products.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.nameGe.toLowerCase().includes(q) ||
-      p.partNumber.toLowerCase().includes(q)
+      p.partNumber.toLowerCase().includes(q) ||
+      (p.batch ?? '').toLowerCase().includes(q)
     ).slice(0, 8);
   }, [query, products]);
 
@@ -273,7 +274,7 @@ function PosView({ session }: { session: Session }) {
             {results.map(p => (
               <button key={p.id} className="pos-result" onClick={() => add(p)}>
                 <img src={p.image} alt="" className="pos-result-img" />
-                <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                 <StockChip id={p.id} />
                 <span className="pos-result-price">{GEL(p.price)}</span>
               </button>
@@ -294,7 +295,7 @@ function PosView({ session }: { session: Session }) {
               {subProducts.map(p => (
                 <button key={p.id} className="pos-result" onClick={() => add(p)}>
                   <img src={p.image} alt="" className="pos-result-img" />
-                  <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                  <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                   <StockChip id={p.id} />
                   <span className="pos-result-price">{GEL(p.price)}</span>
                 </button>
@@ -493,27 +494,21 @@ function DashboardView({ session }: { session: Session }) {
 }
 
 // ── Inventory ──────────────────────────────────────────────────────────────
+// purchase/disassembly are legacy types kept only so old history rows render;
+// products and stock quantities are now added from the admin panel
 const STOCK_TYPE_LABELS: Record<string, string> = {
   purchase: 'შესყიდვა', disassembly: 'ავტოს დაშლა', sale: 'გაყიდვა',
   return: 'დაბრუნება', adjustment: 'კორექტირება',
 };
-
-interface IntakeLine { productId: string; name: string; partNumber?: string; qty: number }
+const EDITABLE_MOVE_TYPES: StockMoveType[] = ['sale', 'return', 'adjustment'];
 
 function InventoryView({ session }: { session: Session }) {
   const { products } = useProducts();
   const [inv, setInv] = useState<Record<string, number> | null>(null);
   const [err, setErr] = useState('');
-  const [view, setView] = useState<'stock' | 'intake' | 'report'>('stock');
+  const [view, setView] = useState<'stock' | 'report'>('stock');
   const [filter, setFilter] = useState('');
   const [savedId, setSavedId] = useState<string | null>(null);
-  // intake form
-  const [inType, setInType] = useState<'purchase' | 'disassembly' | 'adjustment'>('purchase');
-  const [inQuery, setInQuery] = useState('');
-  const [inLines, setInLines] = useState<IntakeLine[]>([]);
-  const [inNote, setInNote] = useState('');
-  const [inBusy, setInBusy] = useState(false);
-  const [inDone, setInDone] = useState('');
   // report
   const [repDays, setRepDays] = useState(30);
   const [moves, setMoves] = useState<StockMovement[] | null>(null);
@@ -614,7 +609,8 @@ function InventoryView({ session }: { session: Session }) {
 
   const q = filter.trim().toLowerCase();
   const list = products.filter(p =>
-    !q || p.name.toLowerCase().includes(q) || p.nameGe.toLowerCase().includes(q) || p.partNumber.toLowerCase().includes(q)
+    !q || p.name.toLowerCase().includes(q) || p.nameGe.toLowerCase().includes(q) ||
+    p.partNumber.toLowerCase().includes(q) || (p.batch ?? '').toLowerCase().includes(q)
   );
   const totalUnits = products.reduce((s, p) => s + (inv[p.id] ?? 0), 0);
   const outOfStock = products.filter(p => (inv[p.id] ?? 0) === 0).length;
@@ -640,37 +636,6 @@ function InventoryView({ session }: { session: Session }) {
     }
   };
 
-  // intake helpers
-  const inResults = inQuery.trim().length >= 2
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(inQuery.trim().toLowerCase()) ||
-        p.nameGe.toLowerCase().includes(inQuery.trim().toLowerCase()) ||
-        p.partNumber.toLowerCase().includes(inQuery.trim().toLowerCase())).slice(0, 6)
-    : [];
-
-  const addIntakeLine = (p: { id: string; name: string; partNumber: string }) => {
-    setInDone('');
-    setInLines(ls => {
-      const ex = ls.find(l => l.productId === p.id);
-      if (ex) return ls.map(l => l.productId === p.id ? { ...l, qty: l.qty + 1 } : l);
-      return [...ls, { productId: p.id, name: p.name, partNumber: p.partNumber, qty: 1 }];
-    });
-    setInQuery('');
-  };
-
-  const submitIntake = async () => {
-    if (inLines.length === 0 || inBusy) return;
-    setInBusy(true); setErr('');
-    try {
-      await addStock(session, { type: inType, items: inLines, note: inNote.trim() });
-      setInDone(`✅ მარაგი შეივსო — ${inLines.reduce((s, l) => s + l.qty, 0)} ერთეული`);
-      setInLines([]); setInNote('');
-      await reloadInv();
-    } catch (ex) {
-      setErr(ex instanceof Error ? ex.message : 'შეცდომა');
-    } finally { setInBusy(false); }
-  };
-
   return (
     <div className="staff-content">
       <div className="dash-tiles inv-tiles">
@@ -681,9 +646,13 @@ function InventoryView({ session }: { session: Session }) {
 
       <div className="dash-period inv-subtabs">
         <button className={view === 'stock' ? 'dash-period-btn dash-period-active' : 'dash-period-btn'} onClick={() => setView('stock')}>ნაშთები</button>
-        <button className={view === 'intake' ? 'dash-period-btn dash-period-active' : 'dash-period-btn'} onClick={() => setView('intake')}>+ მიღება</button>
         <button className={view === 'report' ? 'dash-period-btn dash-period-active' : 'dash-period-btn'} onClick={() => setView('report')}>მოძრაობის რეპორტი</button>
       </div>
+
+      <p className="cash-meta inv-admin-note">
+        📦 პროდუქტის დამატება და მარაგის შევსება ხდება <Link to="/admin">ადმინ პანელიდან</Link> — რაოდენობის ველით.
+        აქ შესაძლებელია მხოლოდ სწრაფი კორექტირება.
+      </p>
 
       {err && <div className="staff-login-err emp-err">{err}</div>}
 
@@ -710,7 +679,7 @@ function InventoryView({ session }: { session: Session }) {
               return (
                 <div key={p.id} className={`inv-row ${qty === 0 ? 'inv-row-zero' : ''}`}>
                   <img src={p.image} alt="" className="pos-result-img" />
-                  <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
+                  <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                   <span className="inv-price">{GEL(p.price)}</span>
                   <div className="inv-qty-ctrl">
                     <button onClick={() => adjustTo(p, qty - 1)}>−</button>
@@ -724,53 +693,6 @@ function InventoryView({ session }: { session: Session }) {
             })}
           </div>
         </>
-      )}
-
-      {view === 'intake' && (
-        <div className="dash-panel">
-          <h3 className="dash-panel-title">მარაგის მიღება</h3>
-          <div className="pos-payment intake-types">
-            <button className={inType === 'purchase' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setInType('purchase')}>🛒 შესყიდვა</button>
-            <button className={inType === 'disassembly' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setInType('disassembly')}>🚗 ავტოს დაშლა</button>
-            <button className={inType === 'adjustment' ? 'pos-pay-btn pos-pay-active' : 'pos-pay-btn'} onClick={() => setInType('adjustment')}>✏️ კორექტირება</button>
-          </div>
-          <input className="staff-input pos-search" placeholder="🔍 დაამატეთ ნაწილი — სახელი ან პარტ-ნომერი…"
-            value={inQuery} onChange={e => setInQuery(e.target.value)} />
-          {inResults.length > 0 && (
-            <div className="pos-results">
-              {inResults.map(p => (
-                <button key={p.id} className="pos-result" onClick={() => addIntakeLine(p)}>
-                  <img src={p.image} alt="" className="pos-result-img" />
-                  <span className="pos-result-name">{p.name}<small>{p.partNumber}</small></span>
-                  <span className="pos-stock">ნაშთი: {inv[p.id] ?? 0}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {inDone && <div className="pos-done" style={{ marginTop: 12 }}>{inDone}</div>}
-          {inLines.map(l => (
-            <div key={l.productId} className="pos-line">
-              <span className="pos-line-name">{l.name}{l.partNumber && <small>{l.partNumber}</small>}</span>
-              <div className="pos-line-qty">
-                <button onClick={() => setInLines(ls => l.qty <= 1 ? ls.filter(x => x.productId !== l.productId) : ls.map(x => x.productId === l.productId ? { ...x, qty: x.qty - 1 } : x))}>−</button>
-                <span>{l.qty}</span>
-                <button onClick={() => setInLines(ls => ls.map(x => x.productId === l.productId ? { ...x, qty: x.qty + 1 } : x))}>+</button>
-              </div>
-              <span />
-              <span className="pos-line-sum">+{l.qty} ც.</span>
-              <button className="pos-line-x" onClick={() => setInLines(ls => ls.filter(x => x.productId !== l.productId))}>✕</button>
-            </div>
-          ))}
-          {inLines.length > 0 && (
-            <>
-              <input className="staff-input" style={{ marginTop: 12 }} value={inNote} onChange={e => setInNote(e.target.value)}
-                placeholder={inType === 'disassembly' ? 'დონორი ავტო (მაგ: Model 3 2019, VIN…)' : 'შენიშვნა / მომწოდებელი (არასავალდ.)'} />
-              <button className="staff-btn-primary" style={{ marginTop: 10 }} disabled={inBusy} onClick={submitIntake}>
-                {inBusy ? 'ინახება…' : `✓ მიღება — ${inLines.reduce((s, l) => s + l.qty, 0)} ერთეული`}
-              </button>
-            </>
-          )}
-        </div>
       )}
 
       {view === 'report' && (
@@ -826,8 +748,8 @@ function InventoryView({ session }: { session: Session }) {
                     <p className="hist-return-title">რედაქტირება — {m.name}</p>
                     <div className="row-edit-grid">
                       <select className="staff-input" value={mvType} onChange={e => setMvType(e.target.value as StockMoveType)}>
-                        {(Object.keys(STOCK_TYPE_LABELS) as StockMoveType[]).map(t => (
-                          <option key={t} value={t}>{STOCK_TYPE_LABELS[t]}</option>
+                        {(EDITABLE_MOVE_TYPES.includes(m.type) ? EDITABLE_MOVE_TYPES : [m.type, ...EDITABLE_MOVE_TYPES]).map(t => (
+                          <option key={t} value={t}>{STOCK_TYPE_LABELS[t] ?? t}</option>
                         ))}
                       </select>
                       <input className="staff-input" inputMode="numeric" placeholder="რაოდენობა (+/−)" value={mvQty} onChange={e => setMvQty(e.target.value)} />

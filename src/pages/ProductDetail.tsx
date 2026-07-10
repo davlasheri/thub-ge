@@ -74,7 +74,7 @@ export default function ProductDetail() {
           </div>
 
           <div className="detail-info">
-            <p className="detail-pn">{t('detail_part_num')}{product.partNumber}</p>
+            <p className="detail-pn">{t('detail_part_num')}{product.partNumber}{product.batch ? ` · ${product.batch}` : ''}</p>
             <h1 className="detail-name">{displayName}</h1>
             {lang !== 'ka' && product.nameGe && (
               <p className="detail-name-ge">{product.nameGe}</p>
