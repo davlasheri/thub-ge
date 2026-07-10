@@ -5,18 +5,31 @@ import { loadImageFile, renderProductImage, exportCanvas } from '../utils/imageP
  * Zoom/crop editor for product photos. Shows a live preview of the final
  * 800×600 (4:3) image (dark background + THub badge); the photo can be zoomed with
  * the slider / mouse wheel and repositioned by dragging.
+ * Source is either a freshly picked File or the product's current image
+ * (data URL / https URL), so existing photos can be re-cropped too.
  */
 
 interface Props {
-  file: File;
+  source: File | string;
   onSave: (dataUrl: string) => void;
   onCancel: () => void;
+}
+
+function loadImageUrl(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    // remote images need CORS approval or the canvas becomes tainted
+    if (!src.startsWith('data:')) img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Image load failed'));
+    img.src = src;
+  });
 }
 
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 3;
 
-export default function ProductImageEditor({ file, onSave, onCancel }: Props) {
+export default function ProductImageEditor({ source, onSave, onCancel }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const drag = useRef<{ x: number; y: number } | null>(null);
@@ -29,11 +42,11 @@ export default function ProductImageEditor({ file, onSave, onCancel }: Props) {
 
   useEffect(() => {
     let alive = true;
-    loadImageFile(file)
+    (source instanceof File ? loadImageFile(source) : loadImageUrl(source))
       .then(img => { if (alive) { imgRef.current = img; setReady(true); } })
       .catch(() => { if (alive) setErr('სურათი ვერ ჩაიტვირთა'); });
     return () => { alive = false; };
-  }, [file]);
+  }, [source]);
 
   useEffect(() => {
     if (!ready || !canvasRef.current || !imgRef.current) return;
@@ -68,10 +81,11 @@ export default function ProductImageEditor({ file, onSave, onCancel }: Props) {
     if (!canvasRef.current || saving) return;
     setSaving(true);
     try {
-      const res = await exportCanvas(canvasRef.current, file.name);
+      const res = await exportCanvas(canvasRef.current, source instanceof File ? source.name : 'photo.jpg');
       onSave(res.dataUrl);
     } catch {
-      setErr('შენახვა ვერ მოხერხდა');
+      // most likely a CORS-tainted canvas from a foreign image URL
+      setErr('ამ სურათის შენახვა ვერ ხერხდება — ატვირთეთ ფოტო ფაილიდან');
       setSaving(false);
     }
   };

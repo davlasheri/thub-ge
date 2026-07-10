@@ -581,7 +581,7 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
   catalog: CatalogSection[]; models: TeslaModel[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [editorFile, setEditorFile] = useState<File | null>(null);
+  const [editorFile, setEditorFile] = useState<File | string | null>(null);
   const set = (key: keyof ProductForm, value: unknown) => onChange({ ...form, [key]: value });
 
   const [pnSuggestion, setPnSuggestion] = useState<CategorySuggestion | null>(null);
@@ -673,6 +673,12 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
                 <input ref={fileInputRef} type="file" accept="image/*" capture="environment"
                   style={{ display: 'none' }} onChange={handleFile} />
               </label>
+              {form.image && (
+                <button type="button" className="admin-btn-ghost admin-img-upload-label" onClick={() => setEditorFile(form.image)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  სურათის რედაქტირება
+                </button>
+              )}
               <p className="admin-img-process-note">
                 ↑ 800×600 (4:3) · მუქი ფონი · THub.ge ბეიჯი · მასშტაბი და პოზიცია მორგებადია
               </p>
@@ -822,7 +828,7 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
 
       {editorFile && (
         <ProductImageEditor
-          file={editorFile}
+          source={editorFile}
           onSave={dataUrl => { set('image', dataUrl); setEditorFile(null); }}
           onCancel={() => setEditorFile(null)}
         />

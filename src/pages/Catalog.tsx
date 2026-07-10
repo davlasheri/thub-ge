@@ -287,7 +287,6 @@ export default function Catalog() {
                     onSectionClick={openSection}
                     accentColor={selectedModel.color}
                     codeMatches={codeMatches}
-                    allPartsLabel={t('epc_all_section_parts')}
                   />
                   </div>
                 ))}
@@ -399,7 +398,7 @@ function ModelCard({ model, onClick, t }: { model: TeslaModel; onClick: () => vo
 
 // ── GroupCard ─────────────────────────────────────────────────────────────────
 function GroupCard({
-  section, tSection, tSub, countInSubsection, sectionTotal, onSubsectionClick, onSectionClick, accentColor, codeMatches, allPartsLabel,
+  section, tSection, tSub, countInSubsection, sectionTotal, onSubsectionClick, onSectionClick, accentColor, codeMatches,
 }: {
   section: CatalogSection;
   tSection: (s: CatalogSection) => string;
@@ -410,7 +409,6 @@ function GroupCard({
   onSectionClick: (sectionId: string) => void;
   accentColor?: string;
   codeMatches: Map<string, string[]>;
-  allPartsLabel: string;
 }) {
   const hasCodeMatch = section.subsections.some(sub => codeMatches.has(sub.id));
   const openAll = () => onSectionClick(section.id);
@@ -464,14 +462,6 @@ function GroupCard({
               </li>
             );
           })}
-          {sectionTotal > 0 && (
-            <li>
-              <button className="epc-sub-item epc-sub-item-all" onClick={openAll}>
-                <span className="epc-sub-name">{allPartsLabel} →</span>
-                <span className="epc-sub-count" style={{ background: accentColor }}>{sectionTotal}</span>
-              </button>
-            </li>
-          )}
         </ul>
       </div>
     </div>
