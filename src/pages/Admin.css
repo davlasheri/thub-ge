@@ -620,22 +620,45 @@
 }
 .admin-pn-apply:hover { background: var(--red); color: #fff; }
 
-/* ── hover zoom preview for product thumbnails ── */
-.admin-zoom-preview {
+/* ── click-to-enlarge lightbox for product thumbnails ── */
+.admin-thumb-clickable { cursor: zoom-in; }
+.admin-lightbox {
   position: fixed;
+  inset: 0;
   z-index: 2000;
-  width: 320px;
-  aspect-ratio: 4/3;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
-  background: var(--bg2);
-  pointer-events: none;
-  animation: zoomPreviewIn 0.12s ease-out;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  cursor: zoom-out;
+  animation: zoomPreviewIn 0.15s ease-out;
 }
-.admin-zoom-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
-@keyframes zoomPreviewIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.admin-lightbox img {
+  max-width: min(90vw, 900px);
+  max-height: 85vh;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  cursor: default;
+}
+.admin-lightbox-close {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.admin-lightbox-close:hover { background: rgba(255, 255, 255, 0.15); }
+@keyframes zoomPreviewIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
 /* ── POS link in the sidebar nav ── */
 .admin-nav-pos {
