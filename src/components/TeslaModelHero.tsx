@@ -18,6 +18,8 @@ interface Zone {
 interface ModelPhoto {
   img: string;                        // /cars/hero-<img>-<color>.webp
   box: [number, number, number, number]; // image placement in the 900×300 viewBox
+  head: [number, number];             // headlight centre as fractions of the image
+  tail: [number, number];             // taillight centre as fractions of the image
   zones: Zone[];
 }
 
@@ -28,6 +30,7 @@ const MODELS: Record<string, ModelPhoto> = {
   // refreshed Model S, image ratio 3.210
   MS: {
     img: 'ms', box: [50, 43, 800, 249],
+    head: [0.050, 0.49], tail: [0.972, 0.42],
     zones: [
       { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.44, 0.075, 0.48] },
       { sec: 'electrical',   label: 'ფარები',          frac: [0.010, 0.40, 0.090, 0.17] },
@@ -46,6 +49,7 @@ const MODELS: Record<string, ModelPhoto> = {
   // image ratio 3.117
   M3: {
     img: 'm3', box: [70, 48, 760, 244],
+    head: [0.058, 0.51], tail: [0.965, 0.40],
     zones: [
       { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.47, 0.075, 0.44] },
       { sec: 'electrical',   label: 'ფარები',          frac: [0.015, 0.42, 0.100, 0.16] },
@@ -64,6 +68,7 @@ const MODELS: Record<string, ModelPhoto> = {
   // image ratio 2.836
   MX: {
     img: 'mx', box: [60, 17, 780, 275],
+    head: [0.050, 0.50], tail: [0.958, 0.41],
     zones: [
       { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.48, 0.070, 0.40] },
       { sec: 'electrical',   label: 'ფარები',          frac: [0.010, 0.43, 0.095, 0.15] },
@@ -82,6 +87,7 @@ const MODELS: Record<string, ModelPhoto> = {
   // image ratio 2.707
   MY: {
     img: 'my', box: [80, 19, 740, 273],
+    head: [0.055, 0.52], tail: [0.963, 0.36],
     zones: [
       { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.50, 0.070, 0.42] },
       { sec: 'electrical',   label: 'ფარები',          frac: [0.010, 0.44, 0.095, 0.16] },
@@ -113,8 +119,19 @@ export default function TeslaModelHero({ modelId, onZoneClick, onZoneHover }: Pr
   const color = theme === 'light' ? 'white' : 'black';
   const src = `${import.meta.env.BASE_URL}cars/hero-${m.img}-${color}.webp`;
 
+  // lamp centres in viewBox coordinates (dark theme glow)
+  const hx = bx + m.head[0] * bw, hy = by + m.head[1] * bh;
+  const tx = bx + m.tail[0] * bw, ty = by + m.tail[1] * bh;
+
   return (
     <svg className="tml" viewBox="0 0 900 300" fill="none" aria-label={`Tesla ${modelId} side view`}>
+      <defs>
+        <linearGradient id="tmlBeam" gradientUnits="userSpaceOnUse" x1={hx} y1={hy} x2={hx - 170} y2={hy + 14}>
+          <stop offset="0" stopColor="rgba(185, 218, 255, 0.4)" />
+          <stop offset="1" stopColor="rgba(185, 218, 255, 0)" />
+        </linearGradient>
+      </defs>
+
       {/* ground */}
       <line className="tml-ground" x1="30" y1="286" x2="870" y2="286" />
 
@@ -126,6 +143,19 @@ export default function TeslaModelHero({ modelId, onZoneClick, onZoneHover }: Pr
           x={bx} y={by} width={bw} height={bh}
           preserveAspectRatio="xMidYMid meet"
         />
+
+        {/* lamps light up in dark theme */}
+        <g className="tml-lamps" aria-hidden="true">
+          <polygon
+            className="tml-beam"
+            points={`${hx},${hy - 5} ${hx},${hy + 7} ${hx - 165},${hy + 34} ${hx - 165},${hy - 6}`}
+            fill="url(#tmlBeam)"
+          />
+          <ellipse className="tml-head-halo" cx={hx} cy={hy} rx={26} ry={11} />
+          <ellipse className="tml-head-core" cx={hx} cy={hy} rx={10} ry={4.5} />
+          <ellipse className="tml-tail-halo" cx={tx} cy={ty} rx={22} ry={9} />
+          <ellipse className="tml-tail-core" cx={tx} cy={ty} rx={8} ry={4} />
+        </g>
 
         {/* clickable zones */}
         {m.zones.map((z, i) => (
