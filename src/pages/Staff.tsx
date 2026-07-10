@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
+import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import {
@@ -113,6 +114,8 @@ interface TicketLine extends SaleItemInput { key: string }
 function PosView({ session }: { session: Session }) {
   const { products } = useProducts();
   const { catalog } = useCatalog();
+  const { models } = useModels();
+  const [modelFilter, setModelFilter] = useState('all');
   const [query, setQuery] = useState('');
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<{ sectionId: string; subId: string } | null>(null);
@@ -137,26 +140,32 @@ function PosView({ session }: { session: Session }) {
     return <span className={`pos-stock ${n === 0 ? 'pos-stock-zero' : ''}`}>{n === 0 ? 'ამოიწურა' : `მარაგი: ${n}`}</span>;
   };
 
+  // model filter — like admin-products; parts with no ticked models fit all
+  const posProducts = useMemo(() => {
+    if (modelFilter === 'all') return products;
+    return products.filter(p => Object.keys(p.fits).length === 0 || !!p.fits[modelFilter]);
+  }, [products, modelFilter]);
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q.length < 2) return [];
-    return products.filter(p =>
+    return posProducts.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.nameGe.toLowerCase().includes(q) ||
       p.partNumber.toLowerCase().includes(q) ||
       (p.batch ?? '').toLowerCase().includes(q)
     ).slice(0, 8);
-  }, [query, products]);
+  }, [query, posProducts]);
 
   // product counts per subsection, for the catalogue tree
   const countBySub = useMemo(() => {
     const m = new Map<string, number>();
-    for (const p of products) {
+    for (const p of posProducts) {
       const k = `${p.sectionId}|${p.subsectionId}`;
       m.set(k, (m.get(k) ?? 0) + 1);
     }
     return m;
-  }, [products]);
+  }, [posProducts]);
 
   const sectionCount = (sectionId: string) => {
     let n = 0;
@@ -166,8 +175,8 @@ function PosView({ session }: { session: Session }) {
 
   const subProducts = useMemo(() => {
     if (!activeSub) return [];
-    return products.filter(p => p.sectionId === activeSub.sectionId && p.subsectionId === activeSub.subId);
-  }, [activeSub, products]);
+    return posProducts.filter(p => p.sectionId === activeSub.sectionId && p.subsectionId === activeSub.subId);
+  }, [activeSub, posProducts]);
 
   const add = (p: Product) => {
     setDone(null);
@@ -226,12 +235,31 @@ function PosView({ session }: { session: Session }) {
 
   return (
     <div className="staff-content pos-layout">
-      {/* ── Column 1: catalogue tree ── */}
+      {/* ── Column 1: model filter + catalogue tree ── */}
       <section className="pos-col-tree">
         <h2 className="staff-section-title">კატალოგი</h2>
+        <div className="pos-model-filter">
+          <button
+            className={`pos-model-btn ${modelFilter === 'all' ? 'pos-model-btn-active' : ''}`}
+            onClick={() => { setModelFilter('all'); setActiveSub(null); }}
+          >
+            ყველა მოდელი
+          </button>
+          {models.map(mdl => (
+            <button
+              key={mdl.id}
+              className={`pos-model-btn ${modelFilter === mdl.id ? 'pos-model-btn-active' : ''}`}
+              style={modelFilter === mdl.id ? { borderColor: mdl.color, color: mdl.color } : undefined}
+              onClick={() => { setModelFilter(modelFilter === mdl.id ? 'all' : mdl.id); setActiveSub(null); }}
+            >
+              {mdl.id}
+            </button>
+          ))}
+        </div>
         <div className="pos-tree">
           {catalog.map(sec => {
             const total = sectionCount(sec.id);
+            if (total === 0) return null; // only categories that have products
             const isOpen = openSection === sec.id;
             return (
               <div key={sec.id} className="pos-tree-section">
@@ -240,19 +268,20 @@ function PosView({ session }: { session: Session }) {
                   <span className="pos-tree-caret">{isOpen ? '▾' : '▸'}</span>
                   {sec.groupNumber != null && <span className="pos-tree-num">{sec.groupNumber}</span>}
                   <span className="pos-tree-sec-name">{getCatName(sec, 'ka', 'section')}</span>
-                  <span className={`pos-tree-count ${total === 0 ? 'pos-tree-count-zero' : ''}`}>{total}</span>
+                  <span className="pos-tree-count">{total}</span>
                 </button>
                 {isOpen && (
                   <div className="pos-tree-subs">
                     {sec.subsections.map(sub => {
                       const n = countBySub.get(`${sec.id}|${sub.id}`) ?? 0;
+                      if (n === 0) return null;
                       const isActive = activeSub?.sectionId === sec.id && activeSub?.subId === sub.id;
                       return (
                         <button key={sub.id}
                           className={`pos-tree-sub-btn ${isActive ? 'pos-tree-sub-active' : ''}`}
                           onClick={() => setActiveSub(isActive ? null : { sectionId: sec.id, subId: sub.id })}>
                           <span className="pos-tree-sub-name">{getCatName(sub, 'ka', 'sub')}</span>
-                          <span className={`pos-tree-count ${n === 0 ? 'pos-tree-count-zero' : ''}`}>{n}</span>
+                          <span className="pos-tree-count">{n}</span>
                         </button>
                       );
                     })}
@@ -261,6 +290,11 @@ function PosView({ session }: { session: Session }) {
               </div>
             );
           })}
+          {catalog.every(sec => sectionCount(sec.id) === 0) && (
+            <p className="pos-empty">
+              {modelFilter === 'all' ? 'პროდუქტები ჯერ არ არის' : 'ამ მოდელისთვის პროდუქტები არ არის'}
+            </p>
+          )}
         </div>
       </section>
 
