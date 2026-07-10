@@ -526,25 +526,28 @@ function ProductsList({ products, allProducts, models, inventory, allCount, sear
   );
 }
 
-// thumbnail that shows a large floating preview while the mouse is over it
+// thumbnail that opens an enlarged view on click
 function ZoomThumb({ src, alt }: { src: string; alt: string }) {
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
-  const place = (e: React.MouseEvent) => setPos({ x: e.clientX, y: e.clientY });
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
     <>
       <img
-        src={src} alt={alt} className="admin-product-thumb"
-        onMouseEnter={place} onMouseMove={place} onMouseLeave={() => setPos(null)}
+        src={src} alt={alt} className="admin-product-thumb admin-thumb-clickable"
+        title="სურათის გადიდება"
+        onClick={() => setOpen(true)}
       />
-      {pos && (
-        <div
-          className="admin-zoom-preview"
-          style={{
-            left: Math.min(pos.x + 24, window.innerWidth - 344),
-            top: Math.max(12, Math.min(pos.y - 130, window.innerHeight - 272)),
-          }}
-        >
-          <img src={src} alt="" />
+      {open && (
+        <div className="admin-lightbox" onClick={() => setOpen(false)}>
+          <img src={src} alt={alt} onClick={e => e.stopPropagation()} />
+          <button className="admin-lightbox-close" aria-label="დახურვა" onClick={() => setOpen(false)}>×</button>
         </div>
       )}
     </>
