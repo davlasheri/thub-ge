@@ -319,6 +319,17 @@
   .dash-emp-row span:nth-child(3) { display: none; }
 }
 
+/* ── POS model filter chips ── */
+.pos-model-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.pos-model-btn {
+  padding: 5px 11px; font-size: 12px; font-weight: 700;
+  border-radius: 16px; border: 1.5px solid var(--border);
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.pos-model-btn:hover { border-color: var(--text-muted); }
+.pos-model-btn-active { border-color: var(--red); color: var(--red); }
+
 /* ── Stock movement report ── */
 .inv-subtabs { display: inline-flex; margin-bottom: 14px; }
 .inv-admin-note { display: block; margin: -4px 0 14px; }
