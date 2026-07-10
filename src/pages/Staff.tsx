@@ -156,7 +156,8 @@ function PosView({ session }: { session: Session }) {
   const StockChip = ({ id }: { id: string }) => {
     const n = inv[id];
     if (n === undefined) return null;
-    return <span className={`pos-stock ${n === 0 ? 'pos-stock-zero' : ''}`}>{n === 0 ? 'ამოიწურა' : `მარაგი: ${n}`}</span>;
+    // negative balance = oversold, i.e. the physical count was wrong
+    return <span className={`pos-stock ${n <= 0 ? 'pos-stock-zero' : ''}`}>{n === 0 ? 'ამოიწურა' : `მარაგი: ${n}`}</span>;
   };
 
   // model filter — like admin-products; parts with no ticked models fit all
@@ -235,8 +236,8 @@ function PosView({ session }: { session: Session }) {
       setInv(prev => {
         const next = { ...prev };
         for (const l of ticket) {
-          if (l.productId !== 'custom' && next[l.productId] !== undefined) {
-            next[l.productId] = Math.max(0, next[l.productId] - l.qty);
+          if (l.productId !== 'custom') {
+            next[l.productId] = (next[l.productId] ?? 0) - l.qty;
           }
         }
         return next;
@@ -666,12 +667,12 @@ function InventoryView({ session }: { session: Session }) {
     p.partNumber.toLowerCase().includes(q) || (p.batch ?? '').toLowerCase().includes(q)
   );
   const totalUnits = products.reduce((s, p) => s + (inv[p.id] ?? 0), 0);
-  const outOfStock = products.filter(p => (inv[p.id] ?? 0) === 0).length;
+  const outOfStock = products.filter(p => (inv[p.id] ?? 0) <= 0).length;
 
   // quick edit in the stock list — logged as adjustment so the report stays true
   const adjustTo = async (p: { id: string; name: string; partNumber: string }, target: number) => {
     const current = inv[p.id] ?? 0;
-    const clean = Math.max(0, Math.round(target) || 0);
+    const clean = Math.round(target) || 0;
     const delta = clean - current;
     if (delta === 0) return;
     setInv(prev => ({ ...(prev ?? {}), [p.id]: clean }));
@@ -730,7 +731,7 @@ function InventoryView({ session }: { session: Session }) {
             {list.map(p => {
               const qty = inv[p.id] ?? 0;
               return (
-                <div key={p.id} className={`inv-row ${qty === 0 ? 'inv-row-zero' : ''}`}>
+                <div key={p.id} className={`inv-row ${qty <= 0 ? 'inv-row-zero' : ''}`}>
                   <img src={p.image} alt="" className="pos-result-img" />
                   <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                   <span className="inv-price">{GEL(p.price)}</span>

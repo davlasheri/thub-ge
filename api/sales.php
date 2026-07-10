@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo->beginTransaction();
     try {
       $invUp   = $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
-                                ON DUPLICATE KEY UPDATE qty = GREATEST(0, qty + VALUES(qty))');
+                                ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty)');
       $mv = $pdo->prepare('INSERT INTO stock_movements (employee_id, product_id, product_name, part_number, type, qty, note) VALUES (?,?,?,?,?,?,?)');
       foreach ($items as $it) {
         $pid = $it['product_id'];
@@ -130,7 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $saleId = (int)$pdo->lastInsertId();
 
     $sti = $pdo->prepare('INSERT INTO sale_items (sale_id, product_id, product_name, part_number, qty, unit_price) VALUES (?,?,?,?,?,?)');
-    $invDown = $pdo->prepare('UPDATE inventory SET qty = GREATEST(0, qty - ?) WHERE product_id = ?');
     $invUp   = $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
                               ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty)');
     $mv = $pdo->prepare('INSERT INTO stock_movements (employee_id, product_id, product_name, part_number, type, qty, note) VALUES (?,?,?,?,?,?,?)');
@@ -141,8 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $qty = max(1, (int)($it['qty'] ?? 1));
       $sti->execute([$saleId, $pid, $name, $pn, $qty, max(0, (float)($it['unitPrice'] ?? 0))]);
       if ($pid !== '' && $pid !== 'custom') {
-        if ($isReturn) $invUp->execute([$pid, $qty]);
-        else           $invDown->execute([$qty, $pid]);
+        // overselling drives the balance negative on purpose — it flags a
+        // miscount instead of silently stopping at 0
+        $invUp->execute([$pid, $isReturn ? $qty : -$qty]);
         $mv->execute([
           $emp['id'], $pid, $name, $pn,
           $isReturn ? 'return' : 'sale',

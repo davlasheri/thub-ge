@@ -14,7 +14,7 @@ import { getCatName, slugify } from '../utils/catalog';
 import { TeslaModel, Product, CatalogSection, CatalogSubsection, CarListing } from '../types';
 import EmployeesPanel from '../components/EmployeesPanel';
 import { suggestCategory, CategorySuggestion } from '../utils/partNumber';
-import { login as staffLogin, loadSession, saveSession, getInventory, setInventoryQty, Session as StaffSession } from '../utils/staffApi';
+import { login as staffLogin, loadSession, saveSession, getInventory, addStock, Session as StaffSession } from '../utils/staffApi';
 import './Admin.css';
 
 const SESSION_KEY  = 'thub_admin_auth';
@@ -182,12 +182,19 @@ export default function Admin() {
     if (editProductId) updateProduct(formToProduct(productForm, id));
     else               addProduct(formToProduct(productForm, id));
 
+    // stock changes go through addStock so they land in the movement report
+    // (მოძრაობის რეპორტი) with the date and the admin's name
     const qty = Math.max(0, parseInt(productForm.stockQty) || 0);
-    if ((inventory[id] ?? 0) !== qty) {
+    const delta = qty - (inventory[id] ?? 0);
+    if (delta !== 0) {
       const s = loadSession();
       if (s) {
         try {
-          await setInventoryQty(s, id, qty);
+          await addStock(s, {
+            type: 'adjustment',
+            items: [{ productId: id, name: productForm.name.trim(), partNumber: productForm.partNumber.trim(), qty: delta }],
+            note: editProductId ? 'ადმინ პანელი — მარაგის ცვლილება' : 'ადმინ პანელი — ახალი პროდუქტი',
+          });
           setInventory(prev => ({ ...prev, [id]: qty }));
         } catch (ex) {
           alert(`პროდუქტი შენახულია, მაგრამ მარაგის რაოდენობა ვერ შეინახა: ${ex instanceof Error ? ex.message : 'შეცდომა'}`);
