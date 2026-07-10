@@ -343,9 +343,6 @@ h3.epc-group-clickable:hover .epc-group-name { text-decoration: underline; text-
   border-radius: 12px;
   z-index: 1;
 }
-.epc-sub-item-all { border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 10px; }
-.epc-sub-item-all .epc-sub-name { font-weight: 700; }
-
 .epc-group-num-badge {
   position: absolute;
   top: 9px;
