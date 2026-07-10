@@ -47,7 +47,7 @@
   position: relative;
   border-radius: var(--radius);
   overflow: hidden;
-  aspect-ratio: 4/3;
+  aspect-ratio: 1/1;
   background: var(--bg2);
 }
 
@@ -267,7 +267,7 @@
 
 .related-card img {
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 1/1;
   object-fit: cover;
 }
 
