@@ -511,7 +511,7 @@
 .epc-card-img-wrap {
   display: block;
   position: relative;
-  aspect-ratio: 4/3;
+  aspect-ratio: 1/1;
   overflow: hidden;
   background: var(--bg3);
 }
