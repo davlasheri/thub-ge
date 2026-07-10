@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
+import { useTheme } from '../context/ThemeContext';
 import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import {
@@ -25,6 +26,7 @@ const GEL = (n: number | string) => `${(Number(n) || 0).toFixed(2)} ₾`;
 export default function Staff() {
   const [session, setSession] = useState<Session | null>(loadSession);
   const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales' | 'inventory' | 'cash'>('pos');
+  const { theme, toggleTheme } = useTheme();
 
   // Admin staff login also unlocks the site admin panel (/admin)
   const handleLogin = (s: Session) => {
@@ -59,6 +61,23 @@ export default function Staff() {
         </nav>
         <div className="staff-header-right">
           {session.local && <span className="staff-local-badge" title="მონაცემთა ბაზა არ არის მიერთებული — გაყიდვები ინახება მხოლოდ ამ ბრაუზერში">ლოკალური რეჟიმი</span>}
+          <button
+            className="staff-theme-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'ღია თემა' : 'მუქი თემა'}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
           <span className="staff-user">{session.employee.displayName}</span>
           <button className="staff-logout" onClick={logout}>გასვლა</button>
         </div>

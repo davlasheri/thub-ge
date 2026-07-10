@@ -125,13 +125,6 @@ export default function TeslaModelHero({ modelId, onZoneClick, onZoneHover }: Pr
 
   return (
     <svg className="tml" viewBox="0 0 900 300" fill="none" aria-label={`Tesla ${modelId} side view`}>
-      <defs>
-        <linearGradient id="tmlBeam" gradientUnits="userSpaceOnUse" x1={hx} y1={hy} x2={hx - 170} y2={hy + 14}>
-          <stop offset="0" stopColor="rgba(185, 218, 255, 0.4)" />
-          <stop offset="1" stopColor="rgba(185, 218, 255, 0)" />
-        </linearGradient>
-      </defs>
-
       {/* ground */}
       <line className="tml-ground" x1="30" y1="286" x2="870" y2="286" />
 
@@ -144,17 +137,12 @@ export default function TeslaModelHero({ modelId, onZoneClick, onZoneHover }: Pr
           preserveAspectRatio="xMidYMid meet"
         />
 
-        {/* lamps light up in dark theme */}
+        {/* lamps light up in dark theme — subtle bloom, no beam */}
         <g className="tml-lamps" aria-hidden="true">
-          <polygon
-            className="tml-beam"
-            points={`${hx},${hy - 5} ${hx},${hy + 7} ${hx - 165},${hy + 34} ${hx - 165},${hy - 6}`}
-            fill="url(#tmlBeam)"
-          />
-          <ellipse className="tml-head-halo" cx={hx} cy={hy} rx={26} ry={11} />
-          <ellipse className="tml-head-core" cx={hx} cy={hy} rx={10} ry={4.5} />
-          <ellipse className="tml-tail-halo" cx={tx} cy={ty} rx={22} ry={9} />
-          <ellipse className="tml-tail-core" cx={tx} cy={ty} rx={8} ry={4} />
+          <ellipse className="tml-head-halo" cx={hx} cy={hy} rx={13} ry={6} />
+          <ellipse className="tml-head-core" cx={hx} cy={hy} rx={6} ry={2.8} />
+          <ellipse className="tml-tail-halo" cx={tx} cy={ty} rx={11} ry={5} />
+          <ellipse className="tml-tail-core" cx={tx} cy={ty} rx={5} ry={2.5} />
         </g>
 
         {/* clickable zones */}

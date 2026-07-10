@@ -7,9 +7,7 @@ import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
 import { useGenerations } from '../context/GenerationsContext';
 import { GenerationDef, genLabel } from '../data/generations';
-import { useLang } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
-import { Lang } from '../data/translations';
 import { useSiteSettings, ContactSettings, HomeSettings } from '../context/SiteSettingsContext';
 import { useCars } from '../context/CarsContext';
 import { getCatName, slugify } from '../utils/catalog';
@@ -20,11 +18,6 @@ import { login as staffLogin, loadSession, saveSession, getInventory, setInvento
 import './Admin.css';
 
 const SESSION_KEY  = 'thub_admin_auth';
-const ADMIN_LANGS: { code: Lang; label: string }[] = [
-  { code: 'ka', label: 'KA' },
-  { code: 'en', label: 'EN' },
-  { code: 'ru', label: 'RU' },
-];
 function genId() {
   return 'adm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
@@ -140,7 +133,6 @@ export default function Admin() {
   const { catalog } = useCatalog();
   const { models } = useModels();
   const { cars, addCar, updateCar, deleteCar } = useCars();
-  const { lang, setLang } = useLang();
   const { theme, toggleTheme } = useTheme();
 
   const [editProductId, setEditProductId] = useState<string | null>(null);
@@ -260,17 +252,6 @@ export default function Admin() {
         </Link>
       </nav>
       <div className="admin-prefs">
-        <div className="admin-lang-switcher">
-          {ADMIN_LANGS.map(l => (
-            <button
-              key={l.code}
-              className={`admin-lang-btn ${lang === l.code ? 'admin-lang-btn-active' : ''}`}
-              onClick={() => setLang(l.code)}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
         <button
           className="admin-theme-btn"
           onClick={toggleTheme}
@@ -686,7 +667,7 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
                   style={{ display: 'none' }} onChange={handleFile} />
               </label>
               <p className="admin-img-process-note">
-                ↑ 800×800 · მუქი ფონი · THub.ge ბეიჯი · მასშტაბი და პოზიცია მორგებადია
+                ↑ 800×600 (4:3) · მუქი ფონი · THub.ge ბეიჯი · მასშტაბი და პოზიცია მორგებადია
               </p>
               <div className="admin-img-divider"><span>ან URL-ით</span></div>
               <input type="text" className="admin-input" placeholder="https://images.unsplash.com/..."
