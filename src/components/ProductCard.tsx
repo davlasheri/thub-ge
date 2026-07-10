@@ -3,6 +3,7 @@ import { Product } from '../types';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { itemStatusLabel } from '../utils/itemStatus';
+import { productGel } from '../utils/currency';
 import './ProductCard.css';
 
 interface Props {
@@ -39,7 +40,7 @@ export default function ProductCard({ product }: Props) {
         </Link>
 
         <div className="product-footer">
-          <span className="product-price">{product.price.toLocaleString()} ₾</span>
+          <span className="product-price">{productGel(product).toLocaleString()} ₾</span>
           <button
             className="btn-primary add-to-cart-btn"
             onClick={() => addToCart(product)}

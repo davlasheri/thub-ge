@@ -11,6 +11,7 @@ import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import './Products.css';
 import { usePageMeta } from '../utils/seo';
+import { productGel } from '../utils/currency';
 
 export default function Products() {
   usePageMeta('ნაწილები', 'Tesla-ს ნაწილების სრული სია თქვენი მოდელისთვის — ფასები, მარაგი, მიწოდება.');
@@ -45,8 +46,8 @@ export default function Products() {
       );
     }
 
-    if (sort === 'price-asc') list.sort((a, b) => a.price - b.price);
-    if (sort === 'price-desc') list.sort((a, b) => b.price - a.price);
+    if (sort === 'price-asc') list.sort((a, b) => productGel(a) - productGel(b));
+    if (sort === 'price-desc') list.sort((a, b) => productGel(b) - productGel(a));
     if (sort === 'rating') list.sort((a, b) => b.rating - a.rating);
 
     return list;
@@ -159,7 +160,7 @@ function ShopCard({ product, onAdd, modelColor, lang }: { product: Product; onAd
           <h3 className="product-name">{displayName}</h3>
         </Link>
         <div className="product-footer">
-          <span className="product-price">{product.price.toLocaleString()} ₾</span>
+          <span className="product-price">{productGel(product).toLocaleString()} ₾</span>
           <button
             className="add-to-cart-btn btn-primary"
             disabled={!product.inStock}

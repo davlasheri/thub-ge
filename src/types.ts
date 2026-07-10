@@ -45,7 +45,8 @@ export interface Product {
   sectionId: string;
   subsectionId: string;
   price: number;
-  currency: 'GEL';
+  /** USD products are priced in dollars for the POS; the public site always shows the GEL equivalent. */
+  currency: 'GEL' | 'USD';
   image: string;
   description: string;
   fits: Partial<Record<ModelId, ModelYearRange>>;

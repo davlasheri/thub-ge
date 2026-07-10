@@ -724,3 +724,16 @@
   .admin-cat-side { display: none; }
   .admin-cat-select-mobile { display: block; }
 }
+
+/* ── USD pricing ───────────────────────────────────────────────────────── */
+.admin-header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.admin-usd-rate {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border, #2e2e2e); border-radius: 8px; padding: 5px 10px;
+}
+.admin-usd-rate-label { font-size: 13px; font-weight: 700; color: var(--text-muted, #999); white-space: nowrap; }
+.admin-usd-rate-input { width: 72px; padding: 5px 8px; text-align: right; }
+.admin-price-row { display: flex; gap: 8px; }
+.admin-price-row input { flex: 1; min-width: 0; }
+.admin-price-currency { width: auto; flex-shrink: 0; }
+.admin-price-gel { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted, #999); }

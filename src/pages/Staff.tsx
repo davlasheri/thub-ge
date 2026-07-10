@@ -14,6 +14,7 @@ import {
   updateStockMovement, deleteStockMovement, updateCashMovement, deleteCashMovement,
   clearStockMovements, clearCashMovements,
 } from '../utils/staffApi';
+import { fmtUsd, getUsdRate } from '../utils/currency';
 import './Staff.css';
 
 const PAYMENT_LABELS: Record<Payment, string> = {
@@ -22,6 +23,10 @@ const PAYMENT_LABELS: Record<Payment, string> = {
 
 // MySQL DECIMAL values can arrive as strings — always coerce before toFixed
 const GEL = (n: number | string) => `${(Number(n) || 0).toFixed(2)} ₾`;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// price tag for POS product lists — USD items show their dollar price
+const posPrice = (p: Product) => p.currency === 'USD' ? fmtUsd(p.price) : GEL(p.price);
 
 export default function Staff() {
   const [session, setSession] = useState<Session | null>(loadSession);
@@ -128,7 +133,10 @@ function StaffLogin({ onLogin }: { onLogin: (s: Session) => void }) {
 }
 
 // ── POS ────────────────────────────────────────────────────────────────────
-interface TicketLine extends SaleItemInput { key: string }
+// USD lines keep their unitPrice in dollars while on the ticket; the sale is
+// booked in GEL at the rate shown next to the total, so history/stats/cash
+// stay single-currency.
+interface TicketLine extends SaleItemInput { key: string; currency: 'GEL' | 'USD' }
 
 function PosView({ session }: { session: Session }) {
   const { products } = useProducts();
@@ -148,6 +156,7 @@ function PosView({ session }: { session: Session }) {
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
   const [inv, setInv] = useState<Record<string, number>>({});
+  const [rateStr, setRateStr] = useState(() => String(getUsdRate()));
 
   useEffect(() => {
     getInventory(session).then(setInv).catch(() => {});
@@ -203,7 +212,10 @@ function PosView({ session }: { session: Session }) {
     setTicket(t => {
       const existing = t.find(l => l.productId === p.id);
       if (existing) return t.map(l => l.productId === p.id ? { ...l, qty: l.qty + 1 } : l);
-      return [...t, { key: `${p.id}_${t.length}`, productId: p.id, name: p.name, partNumber: p.partNumber, qty: 1, unitPrice: p.price }];
+      return [...t, {
+        key: `${p.id}_${t.length}`, productId: p.id, name: p.name, partNumber: p.partNumber,
+        qty: 1, unitPrice: p.price, currency: p.currency === 'USD' ? 'USD' : 'GEL',
+      }];
     });
     setQuery('');
   };
@@ -212,7 +224,7 @@ function PosView({ session }: { session: Session }) {
     const price = parseFloat(customPrice);
     if (!customName.trim() || !isFinite(price) || price < 0) return;
     setDone(null);
-    setTicket(t => [...t, { key: `custom_${Date.now()}_${t.length}`, productId: 'custom', name: customName.trim(), qty: 1, unitPrice: price }]);
+    setTicket(t => [...t, { key: `custom_${Date.now()}_${t.length}`, productId: 'custom', name: customName.trim(), qty: 1, unitPrice: price, currency: 'GEL' }]);
     setCustomName(''); setCustomPrice('');
   };
 
@@ -221,15 +233,24 @@ function PosView({ session }: { session: Session }) {
   const setPrice = (key: string, price: number) =>
     setTicket(t => t.map(l => l.key === key ? { ...l, unitPrice: isFinite(price) && price >= 0 ? price : 0 } : l));
 
-  const total = ticket.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+  const parsedRate = parseFloat(rateStr);
+  const usdRate = isFinite(parsedRate) && parsedRate > 0 ? parsedRate : 0;
+  const hasUsd = ticket.some(l => l.currency === 'USD');
+  const lineGel = (l: TicketLine) => l.currency === 'USD' ? round2(l.unitPrice * usdRate) : l.unitPrice;
+  const usdTotal = ticket.reduce((s, l) => s + (l.currency === 'USD' ? l.qty * l.unitPrice : 0), 0);
+  const total = ticket.reduce((s, l) => s + l.qty * lineGel(l), 0);
 
   const complete = async () => {
     if (ticket.length === 0 || busy) return;
+    if (hasUsd && usdRate <= 0) { setErr('მიუთითეთ დოლარის კურსი'); return; }
     setBusy(true); setErr('');
     try {
+      // book USD lines in GEL at today's rate; the rate is kept in the note
+      const usdNote = hasUsd ? `USD: ${fmtUsd(usdTotal)} × ${usdRate} = ${GEL(round2(usdTotal * usdRate))}` : '';
+      const fullNote = [note.trim(), usdNote].filter(Boolean).join(' | ');
       const res = await recordSale(session, {
-        items: ticket.map(({ key: _key, ...it }) => it),
-        payment, customerPhone: phone.trim() || undefined, note: note.trim() || undefined,
+        items: ticket.map(l => ({ productId: l.productId, name: l.name, partNumber: l.partNumber, qty: l.qty, unitPrice: lineGel(l) })),
+        payment, customerPhone: phone.trim() || undefined, note: fullNote || undefined,
       });
       setDone(res);
       // reflect sold quantities in the visible stock immediately
@@ -330,7 +351,7 @@ function PosView({ session }: { session: Session }) {
                 <img src={p.image} alt="" className="pos-result-img" />
                 <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                 <StockChip id={p.id} />
-                <span className="pos-result-price">{GEL(p.price)}</span>
+                <span className={`pos-result-price ${p.currency === 'USD' ? 'pos-price-usd' : ''}`}>{posPrice(p)}</span>
               </button>
             ))}
           </div>
@@ -351,7 +372,7 @@ function PosView({ session }: { session: Session }) {
                   <img src={p.image} alt="" className="pos-result-img" />
                   <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                   <StockChip id={p.id} />
-                  <span className="pos-result-price">{GEL(p.price)}</span>
+                  <span className={`pos-result-price ${p.currency === 'USD' ? 'pos-price-usd' : ''}`}>{posPrice(p)}</span>
                 </button>
               ))}
             </div>
@@ -384,9 +405,16 @@ function PosView({ session }: { session: Session }) {
               <span>{l.qty}</span>
               <button onClick={() => setQty(l.key, l.qty + 1)}>+</button>
             </div>
-            <input className="staff-input pos-line-price" inputMode="decimal" value={l.unitPrice}
-              onChange={e => setPrice(l.key, parseFloat(e.target.value))} />
-            <span className="pos-line-sum">{GEL(l.qty * l.unitPrice)}</span>
+            <div className="pos-line-price-wrap">
+              <input className="staff-input pos-line-price" inputMode="decimal" value={l.unitPrice}
+                onChange={e => setPrice(l.key, parseFloat(e.target.value))} />
+              <span className={`pos-line-cur ${l.currency === 'USD' ? 'pos-price-usd' : ''}`}>{l.currency === 'USD' ? '$' : '₾'}</span>
+            </div>
+            <span className="pos-line-sum">
+              {l.currency === 'USD'
+                ? <><span className="pos-price-usd">{fmtUsd(l.qty * l.unitPrice)}</span><small>≈ {GEL(l.qty * lineGel(l))}</small></>
+                : GEL(l.qty * l.unitPrice)}
+            </span>
             <button className="pos-line-x" onClick={() => setQty(l.key, 0)}>✕</button>
           </div>
         ))}
@@ -401,6 +429,15 @@ function PosView({ session }: { session: Session }) {
             </div>
             <input className="staff-input" placeholder="მყიდველის ტელეფონი (არასავალდ.)" value={phone} onChange={e => setPhone(e.target.value)} />
             <input className="staff-input" placeholder="შენიშვნა (არასავალდ.)" value={note} onChange={e => setNote(e.target.value)} />
+            {hasUsd && (
+              <div className="pos-usd-rate">
+                <span className="pos-usd-rate-label">💵 კურსი: $1 =</span>
+                <input className="staff-input pos-usd-rate-input" inputMode="decimal" value={rateStr}
+                  onChange={e => setRateStr(e.target.value)} />
+                <span className="pos-usd-rate-label">₾</span>
+                <span className="pos-usd-rate-sum">{fmtUsd(usdTotal)} ≈ {GEL(round2(usdTotal * usdRate))}</span>
+              </div>
+            )}
             <div className="pos-total"><span>ჯამი</span><strong>{GEL(total)}</strong></div>
             {err && <div className="staff-login-err">{err}</div>}
             <button className="staff-btn-primary pos-complete" disabled={busy} onClick={complete}>
@@ -734,7 +771,7 @@ function InventoryView({ session }: { session: Session }) {
                 <div key={p.id} className={`inv-row ${qty <= 0 ? 'inv-row-zero' : ''}`}>
                   <img src={p.image} alt="" className="pos-result-img" />
                   <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
-                  <span className="inv-price">{GEL(p.price)}</span>
+                  <span className={`inv-price ${p.currency === 'USD' ? 'pos-price-usd' : ''}`}>{posPrice(p)}</span>
                   <div className="inv-qty-ctrl">
                     <button onClick={() => adjustTo(p, qty - 1)}>−</button>
                     <input className="staff-input inv-qty-input" inputMode="numeric" defaultValue={qty} key={`${p.id}_${qty}`}
