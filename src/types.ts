@@ -49,6 +49,8 @@ export interface Product {
   image: string;
   description: string;
   fits: Partial<Record<ModelId, ModelYearRange>>;
+  /** Batch/lot label — lets the same part code exist as separate products (e.g. used parts from different donor cars). */
+  batch?: string;
   inStock: boolean;
   /** When false, the product is hidden from the public website (still shown in admin). Undefined = visible. */
   visible?: boolean;

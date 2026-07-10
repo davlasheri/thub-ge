@@ -319,9 +319,10 @@
   .dash-emp-row span:nth-child(3) { display: none; }
 }
 
-/* ── Stock movement report & intake ── */
+/* ── Stock movement report ── */
 .inv-subtabs { display: inline-flex; margin-bottom: 14px; }
-.intake-types { margin-bottom: 12px; }
+.inv-admin-note { display: block; margin: -4px 0 14px; }
+.inv-admin-note a { color: var(--red, #e31937); font-weight: 600; }
 
 .stock-row {
   display: grid; grid-template-columns: 56px 110px 1.4fr 1fr auto auto auto; gap: 12px; align-items: center;

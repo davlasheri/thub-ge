@@ -15,7 +15,7 @@ import { getCatName, slugify } from '../utils/catalog';
 import { TeslaModel, Product, CatalogSection, CatalogSubsection, CarListing } from '../types';
 import EmployeesPanel from '../components/EmployeesPanel';
 import { suggestCategory, CategorySuggestion } from '../utils/partNumber';
-import { login as staffLogin, loadSession, saveSession, Session as StaffSession } from '../utils/staffApi';
+import { login as staffLogin, loadSession, saveSession, getInventory, setInventoryQty, Session as StaffSession } from '../utils/staffApi';
 import './Admin.css';
 
 const SESSION_KEY  = 'thub_admin_auth';
@@ -31,9 +31,10 @@ function genId() {
 // ── Product form helpers ───────────────────────────────────────────────────
 type FitsState = Record<string, { enabled: boolean; from: string; to: string }>;
 interface ProductForm {
-  name: string; nameGe: string; partNumber: string;
+  name: string; nameGe: string; partNumber: string; batch: string;
   sectionId: string; subsectionId: string;
   price: string; description: string; image: string;
+  stockQty: string;
   inStock: boolean; visible: boolean; badge: '' | 'new-original' | 'used-original' | 'new-replica' | 'used-replica';
   rating: string; reviews: string;
   fits: FitsState;
@@ -44,15 +45,16 @@ function emptyProductForm(catalog: CatalogSection[], models: TeslaModel[]): Prod
   models.forEach(m => { fits[m.id] = { enabled: false, from: String(m.years.from), to: String(m.years.to) }; });
   const firstSection = catalog[0];
   return {
-    name: '', nameGe: '', partNumber: '',
+    name: '', nameGe: '', partNumber: '', batch: '',
     sectionId: firstSection?.id ?? '',
     subsectionId: firstSection?.subsections[0]?.id ?? '',
     price: '', description: '', image: '',
+    stockQty: '0',
     inStock: true, visible: true, badge: '', rating: '4.5', reviews: '0', fits,
   };
 }
 
-function productToForm(p: Product, models: TeslaModel[]): ProductForm {
+function productToForm(p: Product, models: TeslaModel[], stockQty: number): ProductForm {
   const fits = {} as FitsState;
   models.forEach(m => {
     const r = p.fits[m.id];
@@ -61,9 +63,10 @@ function productToForm(p: Product, models: TeslaModel[]): ProductForm {
       : { enabled: false, from: String(m.years.from), to: String(m.years.to) };
   });
   return {
-    name: p.name, nameGe: p.nameGe, partNumber: p.partNumber,
+    name: p.name, nameGe: p.nameGe, partNumber: p.partNumber, batch: p.batch ?? '',
     sectionId: p.sectionId, subsectionId: p.subsectionId,
     price: String(p.price), description: p.description, image: p.image,
+    stockQty: String(stockQty),
     inStock: p.inStock, visible: p.visible !== false, badge: p.badge ?? '', rating: String(p.rating), reviews: String(p.reviews), fits,
   };
 }
@@ -75,6 +78,7 @@ function formToProduct(f: ProductForm, id: string): Product {
   });
   return {
     id, partNumber: f.partNumber.trim(), name: f.name.trim(), nameGe: f.nameGe.trim(),
+    batch: f.batch.trim() || undefined,
     sectionId: f.sectionId, subsectionId: f.subsectionId,
     price: parseFloat(f.price) || 0, currency: 'GEL',
     image: f.image.trim() || 'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?w=600&q=80',
@@ -151,9 +155,19 @@ export default function Admin() {
   const [deleteCarTarget, setDeleteCarTarget] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
 
+  // Stock balances (qty per product id) — edited from the product form now that
+  // POS intake is gone and stock arrives via the admin panel only.
+  const [inventory, setInventory] = useState<Record<string, number>>({});
+
   // Once an admin is logged in, publish any local-only edits the server doesn't
   // yet have, so pre-existing changes become visible site-wide.
   useEffect(() => { if (authed) publishLocalContent(); }, [authed]);
+
+  useEffect(() => {
+    if (!authed) return;
+    const s = loadSession();
+    if (s) getInventory(s).then(setInventory).catch(() => {});
+  }, [authed]);
 
   if (!authed) return <LoginScreen onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setAuthed(true); }} />;
 
@@ -164,15 +178,31 @@ export default function Admin() {
   };
   const startEditProduct = (p: Product) => {
     setEditProductId(p.id);
-    setProductForm(productToForm(p, models));
+    setProductForm(productToForm(p, models, inventory[p.id] ?? 0));
     setView('product-form');
   };
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!productForm.name.trim() || !productForm.partNumber.trim() || !productForm.price) {
       alert('შეავსეთ სახელი, ნომერი და ფასი.'); return;
     }
-    if (editProductId) updateProduct(formToProduct(productForm, editProductId));
-    else               addProduct(formToProduct(productForm, genId()));
+    const id = editProductId ?? genId();
+    if (editProductId) updateProduct(formToProduct(productForm, id));
+    else               addProduct(formToProduct(productForm, id));
+
+    const qty = Math.max(0, parseInt(productForm.stockQty) || 0);
+    if ((inventory[id] ?? 0) !== qty) {
+      const s = loadSession();
+      if (s) {
+        try {
+          await setInventoryQty(s, id, qty);
+          setInventory(prev => ({ ...prev, [id]: qty }));
+        } catch (ex) {
+          alert(`პროდუქტი შენახულია, მაგრამ მარაგის რაოდენობა ვერ შეინახა: ${ex instanceof Error ? ex.message : 'შეცდომა'}`);
+        }
+      } else {
+        alert('პროდუქტი შენახულია, მაგრამ მარაგის შესანახად საჭიროა ხელახლა შესვლა ადმინის ანგარიშით.');
+      }
+    }
     setView('list');
   };
 
@@ -289,6 +319,7 @@ export default function Admin() {
           <ProductsList
             allProducts={products}
             models={models}
+            inventory={inventory}
             products={displayedProducts} allCount={products.length}
             search={productSearch} sectionFilter={productSectionFilter} modelFilter={productModelFilter}
             catalog={catalog} isAdmin={isAdminProduct}
@@ -301,7 +332,7 @@ export default function Admin() {
             products={products}
             form={productForm} onChange={setProductForm}
             onSave={handleSaveProduct} onCancel={() => setView('list')}
-            isEdit={!!editProductId} catalog={catalog} models={models}
+            isEdit={!!editProductId} editId={editProductId} catalog={catalog} models={models}
           />
         )}
         {tab === 'categories' && <CategoriesView />}
@@ -416,8 +447,8 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 }
 
 // ── Products list ──────────────────────────────────────────────────────────
-function ProductsList({ products, allProducts, models, allCount, search, sectionFilter, modelFilter, catalog, isAdmin, onSearch, onSectionFilter, onModelFilter, onAdd, onEdit, onDelete }: {
-  products: Product[]; allProducts: Product[]; models: TeslaModel[]; allCount: number; search: string; sectionFilter: string; modelFilter: string;
+function ProductsList({ products, allProducts, models, inventory, allCount, search, sectionFilter, modelFilter, catalog, isAdmin, onSearch, onSectionFilter, onModelFilter, onAdd, onEdit, onDelete }: {
+  products: Product[]; allProducts: Product[]; models: TeslaModel[]; inventory: Record<string, number>; allCount: number; search: string; sectionFilter: string; modelFilter: string;
   catalog: CatalogSection[]; isAdmin: (id: string) => boolean;
   onSearch: (s: string) => void; onSectionFilter: (s: string) => void; onModelFilter: (s: string) => void;
   onAdd: () => void; onEdit: (p: Product) => void; onDelete: (id: string) => void;
@@ -492,7 +523,7 @@ function ProductsList({ products, allProducts, models, allCount, search, section
           ? <div className="admin-empty"><div className="admin-empty-icon">📦</div><h3>პროდუქტები ვერ მოიძებნა</h3></div>
           : <div className="admin-product-grid">
               {products.map(p => (
-                <ProductRow key={p.id} product={p} catalog={catalog} models={models} isAdmin={isAdmin(p.id)} onEdit={onEdit} onDelete={onDelete} />
+                <ProductRow key={p.id} product={p} catalog={catalog} models={models} stockQty={inventory[p.id] ?? 0} isAdmin={isAdmin(p.id)} onEdit={onEdit} onDelete={onDelete} />
               ))}
             </div>
         }
@@ -501,8 +532,8 @@ function ProductsList({ products, allProducts, models, allCount, search, section
   );
 }
 
-function ProductRow({ product, catalog, models, isAdmin, onEdit, onDelete }: {
-  product: Product; catalog: CatalogSection[]; models: TeslaModel[]; isAdmin: boolean;
+function ProductRow({ product, catalog, models, stockQty, isAdmin, onEdit, onDelete }: {
+  product: Product; catalog: CatalogSection[]; models: TeslaModel[]; stockQty: number; isAdmin: boolean;
   onEdit: (p: Product) => void; onDelete: (id: string) => void;
 }) {
   const section = catalog.find(s => s.id === product.sectionId);
@@ -515,10 +546,12 @@ function ProductRow({ product, catalog, models, isAdmin, onEdit, onDelete }: {
         <p className="admin-product-namege">{product.nameGe}</p>
         <div className="admin-product-meta">
           <span className="admin-meta-tag">#{product.partNumber}</span>
+          {product.batch && <span className="admin-meta-tag">პარტია: {product.batch}</span>}
           {section && <span className="admin-meta-tag">{section.nameGe || section.name}</span>}
           <span className={`admin-meta-tag ${product.inStock ? 'tag-green' : 'tag-red'}`}>
             {product.inStock ? 'მარაგშია' : 'არ არის'}
           </span>
+          <span className={`admin-meta-tag ${stockQty > 0 ? 'tag-green' : 'tag-red'}`}>რაოდ.: {stockQty}</span>
           {product.visible === false && <span className="admin-meta-tag tag-red">დამალულია</span>}
           {!isAdmin && <span className="admin-meta-tag tag-sys">სისტემური</span>}
           {fitEntries.length === 0
@@ -547,10 +580,10 @@ function ProductRow({ product, catalog, models, isAdmin, onEdit, onDelete }: {
 }
 
 // ── Product form ───────────────────────────────────────────────────────────
-function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, catalog, models }: {
+function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, editId, catalog, models }: {
   products: Product[];
   form: ProductForm; onChange: (f: ProductForm) => void;
-  onSave: () => void; onCancel: () => void; isEdit: boolean;
+  onSave: () => void; onCancel: () => void; isEdit: boolean; editId: string | null;
   catalog: CatalogSection[]; models: TeslaModel[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -605,6 +638,14 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, c
 
   const updateFits = (modelId: string, key: 'enabled' | 'from' | 'to', val: string | boolean) =>
     onChange({ ...form, fits: { ...form.fits, [modelId]: { ...form.fits[modelId], [key]: val } } });
+
+  // Same part code on other products is allowed (old parts get a separate
+  // product with a different picture/batch) — just tell the admin about it.
+  const sameCode = form.partNumber.trim()
+    ? products.filter(p => p.id !== editId && p.partNumber.trim().toLowerCase() === form.partNumber.trim().toLowerCase())
+    : [];
+
+  const stepQty = (d: number) => set('stockQty', String(Math.max(0, (parseInt(form.stockQty) || 0) + d)));
 
   return (
     <>
@@ -730,6 +771,11 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, c
               <div className="admin-field">
                 <label className="admin-label">ნაწილის ნომერი *</label>
                 <input className="admin-input" value={form.partNumber} onChange={e => handlePartNumber(e.target.value)} placeholder="1494822-00-F" />
+                {sameCode.length > 0 && (
+                  <p className="admin-pn-hint">
+                    ℹ️ ეს კოდი უკვე აქვს {sameCode.length} პროდუქტს{form.batch.trim() ? '' : ' — ძველი ნაწილი განასხვავეთ პარტიით და სხვა ფოტოთი'}
+                  </p>
+                )}
                 {pnSuggestion && (
                   <p className={`admin-pn-hint ${pnSuggestion.confidence === 'high' ? 'admin-pn-hint-high' : ''}`}>
                     🪄 {isEdit ? 'შესაძლო კატეგორია' : 'კატეგორია განისაზღვრა'}: <strong>{suggestionLabel(pnSuggestion)}</strong>
@@ -743,6 +789,27 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, c
               <div className="admin-field">
                 <label className="admin-label">ფასი (₾) *</label>
                 <input className="admin-input" type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} placeholder="1850" />
+              </div>
+            </div>
+            <div className="admin-row-2">
+              <div className="admin-field">
+                <label className="admin-label">პარტია (ბაჩი)</label>
+                <input className="admin-input" value={form.batch} onChange={e => set('batch', e.target.value)} placeholder="მაგ: 2026-07 · დონორი Model 3 '19" />
+                <p className="admin-hint" style={{ marginTop: 6, color: 'var(--text-muted)' }}>
+                  ძველი ნაწილი დაამატეთ ცალკე პროდუქტად — იგივე კოდით, სხვა ფოტოთი და პარტიით.
+                </p>
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">რაოდენობა მარაგში</label>
+                <div className="admin-qty-ctrl">
+                  <button type="button" className="admin-qty-btn" onClick={() => stepQty(-1)} aria-label="კლება">−</button>
+                  <input className="admin-input admin-qty-input" inputMode="numeric" value={form.stockQty}
+                    onChange={e => set('stockQty', e.target.value)} />
+                  <button type="button" className="admin-qty-btn" onClick={() => stepQty(1)} aria-label="მატება">+</button>
+                </div>
+                <p className="admin-hint" style={{ marginTop: 6, color: 'var(--text-muted)' }}>
+                  ახალი მოსული ნაწილი ამავე პროდუქტს ერგება? უბრალოდ გაზარდეთ რაოდენობა.
+                </p>
               </div>
             </div>
             <div className="admin-row-2">
