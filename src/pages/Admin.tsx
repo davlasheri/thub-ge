@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { processImageFile } from '../utils/imageProcess';
+import { Link } from 'react-router-dom';
+import ProductImageEditor from '../components/ProductImageEditor';
 import { publishLocalContent } from '../utils/contentSync';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
@@ -253,6 +254,10 @@ export default function Admin() {
         <NavBtn active={tab === 'contact'}    onClick={() => switchTab('contact')}    icon={<IcoPhone />} label="საკონტაქტო" />
         <NavBtn active={tab === 'users'}      onClick={() => switchTab('users')}      icon={<IcoUser />}  label="თანამშრომლები" />
         <NavBtn active={tab === 'cars'}       onClick={() => switchTab('cars')}       icon={<IcoCar />}   label="ავტომობილები" count={cars.length} />
+        <Link to="/pos" className="admin-nav-btn admin-nav-pos">
+          <IcoPos />
+          POS — გაყიდვები
+        </Link>
       </nav>
       <div className="admin-prefs">
         <div className="admin-lang-switcher">
@@ -399,6 +404,7 @@ const IcoCar  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none
 const IcoHome = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
 const IcoPhone= () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6.13 6.13l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
 const IcoUser = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IcoPos  = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M2 9h20M7 22h10"/></svg>;
 
 // ── Login (shared employee accounts — same as POS) ─────────────────────────
 function LoginScreen({ onLogin }: { onLogin: () => void }) {
@@ -587,7 +593,7 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
   catalog: CatalogSection[]; models: TeslaModel[];
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imgProcessing, setImgProcessing] = useState(false);
+  const [editorFile, setEditorFile] = useState<File | null>(null);
   const set = (key: keyof ProductForm, value: unknown) => onChange({ ...form, [key]: value });
 
   const [pnSuggestion, setPnSuggestion] = useState<CategorySuggestion | null>(null);
@@ -623,17 +629,11 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
     onChange({ ...form, sectionId, subsectionId: sec?.subsections[0]?.id ?? '' });
   };
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    setImgProcessing(true);
-    try {
-      const result = await processImageFile(file);
-      set('image', result.dataUrl);
-    } finally {
-      setImgProcessing(false);
-    }
+    setEditorFile(file);
   };
 
   const updateFits = (modelId: string, key: 'enabled' | 'from' | 'to', val: string | boolean) =>
@@ -670,11 +670,9 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
           <div className="admin-card">
             <h3 className="admin-card-title">სურათი</h3>
             <div className="admin-img-preview">
-              {imgProcessing
-                ? <div className="admin-img-processing"><div className="admin-img-spinner" /><span>დამუშავება…</span></div>
-                : form.image
-                  ? <img src={form.image} alt="preview" className="admin-img-thumb" />
-                  : <div className="admin-img-placeholder">📷</div>
+              {form.image
+                ? <img src={form.image} alt="preview" className="admin-img-thumb" />
+                : <div className="admin-img-placeholder">📷</div>
               }
             </div>
             <div className="admin-img-actions">
@@ -688,7 +686,7 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
                   style={{ display: 'none' }} onChange={handleFile} />
               </label>
               <p className="admin-img-process-note">
-                ↑ ავტო: 800×800 · მუქი ფონი · THub.ge ბეიჯი
+                ↑ 800×800 · მუქი ფონი · THub.ge ბეიჯი · მასშტაბი და პოზიცია მორგებადია
               </p>
               <div className="admin-img-divider"><span>ან URL-ით</span></div>
               <input type="text" className="admin-input" placeholder="https://images.unsplash.com/..."
@@ -833,6 +831,14 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
           </div>
         </div>
       </div>
+
+      {editorFile && (
+        <ProductImageEditor
+          file={editorFile}
+          onSave={dataUrl => { set('image', dataUrl); setEditorFile(null); }}
+          onCancel={() => setEditorFile(null)}
+        />
+      )}
     </>
   );
 }
