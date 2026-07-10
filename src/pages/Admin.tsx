@@ -526,6 +526,31 @@ function ProductsList({ products, allProducts, models, inventory, allCount, sear
   );
 }
 
+// thumbnail that shows a large floating preview while the mouse is over it
+function ZoomThumb({ src, alt }: { src: string; alt: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const place = (e: React.MouseEvent) => setPos({ x: e.clientX, y: e.clientY });
+  return (
+    <>
+      <img
+        src={src} alt={alt} className="admin-product-thumb"
+        onMouseEnter={place} onMouseMove={place} onMouseLeave={() => setPos(null)}
+      />
+      {pos && (
+        <div
+          className="admin-zoom-preview"
+          style={{
+            left: Math.min(pos.x + 24, window.innerWidth - 344),
+            top: Math.max(12, Math.min(pos.y - 130, window.innerHeight - 272)),
+          }}
+        >
+          <img src={src} alt="" />
+        </div>
+      )}
+    </>
+  );
+}
+
 function ProductRow({ product, catalog, models, stockQty, isAdmin, onEdit, onDelete }: {
   product: Product; catalog: CatalogSection[]; models: TeslaModel[]; stockQty: number; isAdmin: boolean;
   onEdit: (p: Product) => void; onDelete: (id: string) => void;
@@ -534,7 +559,7 @@ function ProductRow({ product, catalog, models, stockQty, isAdmin, onEdit, onDel
   const fitEntries = Object.entries(product.fits ?? {});
   return (
     <div className="admin-product-card">
-      <img src={product.image} alt={product.name} className="admin-product-thumb" />
+      <ZoomThumb src={product.image} alt={product.name} />
       <div className="admin-product-info">
         <p className="admin-product-name">{product.name}</p>
         <p className="admin-product-namege">{product.nameGe}</p>
