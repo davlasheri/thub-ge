@@ -50,6 +50,19 @@ export default function Catalog() {
   const selectedModel = models.find(m => m.id === selectedModelId);
   const modalModel    = models.find(m => m.id === yearModalModelId);
 
+  // "all years" pseudo-generation: matches every fit range of the model
+  const allYearsGen = (mdl: TeslaModel): Generation => ({
+    id: `${mdl.id}-allyears`, from: 0, to: 9999, label: t('epc_all_years'),
+  });
+
+  // parts with no ticked models are universal — they fit every car
+  const fitsSelection = (p: Product, modelId: string, gen: Generation): boolean => {
+    if (Object.keys(p.fits).length === 0) return true;
+    const range = p.fits[modelId];
+    if (!range) return false;
+    return gen.from <= range.to && gen.to >= range.from;
+  };
+
   const selectGeneration = (modelId: string, gen: Generation) => {
     setSelectedModelId(modelId);
     setSelectedGen(gen);
@@ -72,16 +85,16 @@ export default function Catalog() {
     }
   };
 
-  // deep link from the home hero: ?model=MS[&sec=body] → open that model's
-  // newest generation, then the pendingSec scroll runs inside selectGeneration
+  // deep link from the home hero: ?model=MS[&sec=body] → open that model with
+  // ALL years (no trim guessing), then the pendingSec scroll runs inside
+  // selectGeneration
   useEffect(() => {
     const mid = pendingModelRef.current;
     if (!mid) return;
     pendingModelRef.current = null;
     const mdl = models.find(m => m.id === mid);
     if (!mdl) return;
-    const gens = getGenerations(mdl.id, mdl.name, mdl.years.from, mdl.years.to);
-    if (gens[0]) selectGeneration(mdl.id, gens[0]);
+    selectGeneration(mdl.id, allYearsGen(mdl));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [models]);
 
@@ -96,22 +109,17 @@ export default function Catalog() {
 
   const countInSubsection = (subsectionId: string): number => {
     if (!selectedModelId || !selectedGen) return 0;
-    return products.filter(p => {
-      const range = p.fits[selectedModelId];
-      if (!range) return false;
-      return selectedGen.from <= range.to && selectedGen.to >= range.from
-        && p.subsectionId === subsectionId;
-    }).length;
+    return products.filter(p =>
+      p.subsectionId === subsectionId && fitsSelection(p, selectedModelId, selectedGen)
+    ).length;
   };
 
   const partsForSubsection = useMemo<Product[]>(() => {
     if (!selectedModelId || !selectedGen || !activeSubsectionId) return [];
-    return products.filter(p => {
-      const range = p.fits[selectedModelId];
-      if (!range) return false;
-      return selectedGen.from <= range.to && selectedGen.to >= range.from
-        && p.subsectionId === activeSubsectionId;
-    });
+    return products.filter(p =>
+      p.subsectionId === activeSubsectionId && fitsSelection(p, selectedModelId, selectedGen)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModelId, selectedGen, activeSubsectionId, products]);
 
   // part numbers are stored like "1494822-00-F"; compare ignoring dashes/spaces
@@ -125,9 +133,7 @@ export default function Catalog() {
     const q = normalizeCode(search);
     if (q.length < 1 || !selectedModelId || !selectedGen) return map;
     for (const p of products) {
-      const range = p.fits[selectedModelId];
-      if (!range) continue;
-      if (selectedGen.from > range.to || selectedGen.to < range.from) continue;
+      if (!fitsSelection(p, selectedModelId, selectedGen)) continue;
       if (!normalizeCode(p.partNumber).includes(q)) continue;
       const list = map.get(p.subsectionId) ?? [];
       list.push(p.partNumber);
@@ -181,6 +187,13 @@ export default function Catalog() {
                   />
                 </div>
                 <div className="epc-gen-list">
+                  <button
+                    className="epc-gen-btn epc-gen-btn-all"
+                    style={{ borderColor: modalModel.color, color: modalModel.color }}
+                    onClick={() => selectGeneration(modalModel.id, allYearsGen(modalModel))}
+                  >
+                    ⭐ {t('epc_all_years')} · {modalModel.years.from} – {modalModel.years.to}
+                  </button>
                   {getGenerations(modalModel.id, modalModel.name, modalModel.years.from, modalModel.years.to).map(gen => (
                     <button
                       key={gen.id}
@@ -191,6 +204,7 @@ export default function Catalog() {
                     </button>
                   ))}
                 </div>
+                <p className="epc-gen-hint">{t('epc_all_years_hint')}</p>
               </div>
             </div>
           </div>

@@ -74,10 +74,12 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   // link 404s just like it disappears from the listings.
   const getById = (id: string) => visibleProducts.find(p => p.id === id);
 
+  // Products with no ticked models are universal — they fit every vehicle.
   const filterByVehicle = (modelId: ModelId, year: number) =>
     visibleProducts.filter(p => {
+      if (Object.keys(p.fits).length === 0) return true;
       const r = p.fits[modelId];
-      return r && year >= r.from && year <= r.to;
+      return !!r && year >= r.from && year <= r.to;
     });
 
   return (
