@@ -104,6 +104,14 @@ export default function Catalog() {
     setView('parts');
   };
 
+  // clicking the section itself (image / heading / "view all") shows every
+  // part of the whole group at once
+  const openSection = (sectionId: string) => {
+    setActiveSectionId(sectionId);
+    setActiveSubsectionId(null);
+    setView('parts');
+  };
+
   const goToGroups = () => { setView('groups'); setActiveSectionId(null); setActiveSubsectionId(null); };
   const goToModels = () => { setView('models'); setSelectedModelId(null); setSelectedGen(null); };
 
@@ -114,13 +122,22 @@ export default function Catalog() {
     ).length;
   };
 
-  const partsForSubsection = useMemo<Product[]>(() => {
-    if (!selectedModelId || !selectedGen || !activeSubsectionId) return [];
+  const countInSection = (sectionId: string): number => {
+    if (!selectedModelId || !selectedGen) return 0;
     return products.filter(p =>
-      p.subsectionId === activeSubsectionId && fitsSelection(p, selectedModelId, selectedGen)
+      p.sectionId === sectionId && fitsSelection(p, selectedModelId, selectedGen)
+    ).length;
+  };
+
+  // parts for the open subsection, or the whole section when no subsection
+  const partsForSubsection = useMemo<Product[]>(() => {
+    if (!selectedModelId || !selectedGen || !activeSectionId) return [];
+    return products.filter(p =>
+      (activeSubsectionId ? p.subsectionId === activeSubsectionId : p.sectionId === activeSectionId)
+      && fitsSelection(p, selectedModelId, selectedGen)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedModelId, selectedGen, activeSubsectionId, products]);
+  }, [selectedModelId, selectedGen, activeSectionId, activeSubsectionId, products]);
 
   // part numbers are stored like "1494822-00-F"; compare ignoring dashes/spaces
   const normalizeCode = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -265,9 +282,12 @@ export default function Catalog() {
                     tSection={tSection}
                     tSub={tSub}
                     countInSubsection={countInSubsection}
+                    sectionTotal={countInSection(section.id)}
                     onSubsectionClick={openSubsection}
+                    onSectionClick={openSection}
                     accentColor={selectedModel.color}
                     codeMatches={codeMatches}
+                    allPartsLabel={t('epc_all_section_parts')}
                   />
                   </div>
                 ))}
@@ -277,7 +297,7 @@ export default function Catalog() {
         )}
 
         {/* ── STEP 3: Parts ── */}
-        {view === 'parts' && selectedModel && selectedGen && activeSection && activeSub && (
+        {view === 'parts' && selectedModel && selectedGen && activeSection && (
           <div className="epc-parts-view">
             <nav className="epc-breadcrumb">
               <button className="epc-bc-btn" onClick={goToModels}>{t('epc_all_models')}</button>
@@ -287,16 +307,26 @@ export default function Catalog() {
                 {' · '}{selectedGen.label}
               </button>
               <span className="epc-bc-sep">›</span>
-              {activeSection.groupNumber && (
-                <span className="epc-bc-group">{activeSection.groupNumber} · {tSection(activeSection)}</span>
+              {activeSub ? (
+                <>
+                  {activeSection.groupNumber && (
+                    <button className="epc-bc-btn" onClick={() => setActiveSubsectionId(null)}>
+                      {activeSection.groupNumber} · {tSection(activeSection)}
+                    </button>
+                  )}
+                  <span className="epc-bc-sep">›</span>
+                  <span className="epc-bc-active">{tSub(activeSub)}</span>
+                </>
+              ) : (
+                <span className="epc-bc-active">
+                  {activeSection.groupNumber ? `${activeSection.groupNumber} · ` : ''}{tSection(activeSection)}
+                </span>
               )}
-              <span className="epc-bc-sep">›</span>
-              <span className="epc-bc-active">{tSub(activeSub)}</span>
             </nav>
 
             <div className="epc-parts-header">
               <div>
-                <h2 className="epc-parts-title">{tSub(activeSub)}</h2>
+                <h2 className="epc-parts-title">{activeSub ? tSub(activeSub) : tSection(activeSection)}</h2>
                 <p className="epc-parts-sub">
                   {partsForSubsection.length > 0
                     ? `${partsForSubsection.length} ${t('cat_parts')}`
@@ -369,30 +399,42 @@ function ModelCard({ model, onClick, t }: { model: TeslaModel; onClick: () => vo
 
 // ── GroupCard ─────────────────────────────────────────────────────────────────
 function GroupCard({
-  section, tSection, tSub, countInSubsection, onSubsectionClick, accentColor, codeMatches,
+  section, tSection, tSub, countInSubsection, sectionTotal, onSubsectionClick, onSectionClick, accentColor, codeMatches, allPartsLabel,
 }: {
   section: CatalogSection;
   tSection: (s: CatalogSection) => string;
   tSub: (s: { id: string; name: string; nameGe?: string }) => string;
   countInSubsection: (id: string) => number;
+  sectionTotal: number;
   onSubsectionClick: (sectionId: string, subId: string) => void;
+  onSectionClick: (sectionId: string) => void;
   accentColor?: string;
   codeMatches: Map<string, string[]>;
+  allPartsLabel: string;
 }) {
   const hasCodeMatch = section.subsections.some(sub => codeMatches.has(sub.id));
+  const openAll = () => onSectionClick(section.id);
   return (
     <div
       className={`epc-group-card ${hasCodeMatch ? 'epc-group-card-code-match' : ''}`}
       style={hasCodeMatch && accentColor ? { '--epc-match-color': accentColor } as React.CSSProperties : undefined}
     >
-      <div className="epc-group-img-wrap">
+      <div className="epc-group-img-wrap epc-group-clickable" role="button" tabIndex={0}
+        onClick={openAll} onKeyDown={e => { if (e.key === 'Enter') openAll(); }}
+        aria-label={tSection(section)}>
         <img src={sectionArt(section.id)} alt={tSection(section)} loading="lazy" />
         {section.groupNumber && (
           <span className="epc-group-num-badge">{section.groupNumber}</span>
         )}
+        {sectionTotal > 0 && (
+          <span className="epc-group-total" style={accentColor ? { background: accentColor } : undefined}>
+            {sectionTotal}
+          </span>
+        )}
       </div>
       <div className="epc-group-body">
-        <h3 className="epc-group-heading">
+        <h3 className="epc-group-heading epc-group-clickable" role="button" tabIndex={0}
+          onClick={openAll} onKeyDown={e => { if (e.key === 'Enter') openAll(); }}>
           {section.groupNumber && <span className="epc-group-num">{section.groupNumber}</span>}
           <span className="epc-group-name">{tSection(section)}</span>
         </h3>
@@ -422,6 +464,14 @@ function GroupCard({
               </li>
             );
           })}
+          {sectionTotal > 0 && (
+            <li>
+              <button className="epc-sub-item epc-sub-item-all" onClick={openAll}>
+                <span className="epc-sub-name">{allPartsLabel} →</span>
+                <span className="epc-sub-count" style={{ background: accentColor }}>{sectionTotal}</span>
+              </button>
+            </li>
+          )}
         </ul>
       </div>
     </div>

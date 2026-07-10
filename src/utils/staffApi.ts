@@ -316,7 +316,7 @@ async function saveSaleLike(
     for (const it of payload.items) {
       if (!it.productId || it.productId === 'custom') continue;
       if (isReturn) inv[it.productId] = (inv[it.productId] ?? 0) + it.qty;
-      else if (inv[it.productId] !== undefined) inv[it.productId] = Math.max(0, inv[it.productId] - it.qty);
+      else inv[it.productId] = (inv[it.productId] ?? 0) - it.qty;
     }
     writeLocalInventory(inv);
     logLocalStockMoves(
@@ -379,7 +379,7 @@ export async function deleteSale(session: Session, id: number): Promise<void> {
     for (const it of s.items) {
       if (!it.productId || it.productId === 'custom') continue;
       const delta = isReturn ? -Number(it.qty) : Number(it.qty);
-      inv[it.productId] = Math.max(0, (inv[it.productId] ?? 0) + delta);
+      inv[it.productId] = (inv[it.productId] ?? 0) + delta;
     }
     writeLocalInventory(inv);
     logLocalStockMoves(
@@ -411,7 +411,7 @@ export async function addStock(
     const inv = readLocalInventory();
     for (const it of payload.items) {
       if (!it.productId || it.qty === 0) continue;
-      inv[it.productId] = Math.max(0, (inv[it.productId] ?? 0) + it.qty);
+      inv[it.productId] = (inv[it.productId] ?? 0) + it.qty;
     }
     writeLocalInventory(inv);
     logLocalStockMoves(session, payload.items, payload.type, payload.note ?? '');
@@ -456,7 +456,7 @@ export async function updateStockMovement(
     if (!m) throw new Error('ჩანაწერი ვერ მოიძებნა');
     if (payload.qty !== undefined && payload.qty !== m.qty) {
       const inv = readLocalInventory();
-      inv[m.productId] = Math.max(0, (inv[m.productId] ?? 0) + payload.qty - m.qty);
+      inv[m.productId] = (inv[m.productId] ?? 0) + payload.qty - m.qty;
       writeLocalInventory(inv);
       m.qty = payload.qty;
     }
@@ -476,7 +476,7 @@ export async function deleteStockMovement(session: Session, id: number): Promise
     const m = list.find(x => x.id === id);
     if (!m) throw new Error('ჩანაწერი ვერ მოიძებნა');
     const inv = readLocalInventory();
-    inv[m.productId] = Math.max(0, (inv[m.productId] ?? 0) - m.qty);
+    inv[m.productId] = (inv[m.productId] ?? 0) - m.qty;
     writeLocalInventory(inv);
     localStorage.setItem(LOCAL_STOCK_KEY, JSON.stringify(list.filter(x => x.id !== id)));
     return;

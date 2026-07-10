@@ -21,44 +21,37 @@
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ── lamp glow (dark theme only) ── */
+/* ── lamp glow (dark theme only) — subtle, natural bloom ── */
 .tml-lamps { pointer-events: none; }
 :root[data-theme='light'] .tml-lamps { display: none; }
 
 .tml-head-core {
-  fill: #eef6ff;
-  filter: blur(1.5px) drop-shadow(0 0 6px rgba(170, 210, 255, 0.9));
-  animation: tmlIgnite 0.9s ease-out both, tmlHeadPulse 2.8s ease-in-out 0.9s infinite;
+  fill: rgba(235, 244, 255, 0.9);
+  filter: blur(1.2px) drop-shadow(0 0 3px rgba(180, 214, 255, 0.55));
+  animation: tmlIgnite 0.7s ease-out both, tmlHeadPulse 4.5s ease-in-out 0.7s infinite;
 }
 .tml-head-halo {
-  fill: rgba(150, 200, 255, 0.3);
-  filter: blur(9px);
-  animation: tmlIgnite 0.9s ease-out both, tmlHeadPulse 2.8s ease-in-out 0.9s infinite;
-}
-.tml-beam {
-  animation: tmlIgnite 1.1s ease-out both, tmlBeamPulse 2.8s ease-in-out 1.1s infinite;
+  fill: rgba(160, 205, 255, 0.14);
+  filter: blur(5px);
+  animation: tmlIgnite 0.7s ease-out both, tmlHeadPulse 4.5s ease-in-out 0.7s infinite;
 }
 .tml-tail-core {
-  fill: #ff3b57;
-  filter: blur(1px) drop-shadow(0 0 6px rgba(255, 45, 77, 0.95));
-  animation: tmlIgnite 0.9s ease-out 0.15s both, tmlTailPulse 2.8s ease-in-out 1.05s infinite;
+  fill: rgba(255, 64, 84, 0.85);
+  filter: blur(1px) drop-shadow(0 0 3px rgba(255, 45, 77, 0.5));
+  animation: tmlIgnite 0.7s ease-out 0.1s both, tmlTailPulse 4.5s ease-in-out 0.8s infinite;
 }
 .tml-tail-halo {
-  fill: rgba(255, 45, 77, 0.32);
-  filter: blur(8px);
-  animation: tmlIgnite 0.9s ease-out 0.15s both, tmlTailPulse 2.8s ease-in-out 1.05s infinite;
+  fill: rgba(255, 45, 77, 0.15);
+  filter: blur(4.5px);
+  animation: tmlIgnite 0.7s ease-out 0.1s both, tmlTailPulse 4.5s ease-in-out 0.8s infinite;
 }
 
 @keyframes tmlIgnite {
   0% { opacity: 0; }
-  55% { opacity: 0.25; }
-  70% { opacity: 1; }
-  80% { opacity: 0.5; }
   100% { opacity: 1; }
 }
-@keyframes tmlHeadPulse { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
-@keyframes tmlTailPulse { 0%, 100% { opacity: 0.78; } 50% { opacity: 1; } }
-@keyframes tmlBeamPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.95; } }
+@keyframes tmlHeadPulse { 0%, 100% { opacity: 0.92; } 50% { opacity: 1; } }
+@keyframes tmlTailPulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 1; } }
 
 /* ── clickable zones ── */
 .tml-hit {
@@ -83,7 +76,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .tml-draw { animation-duration: 0.01s; }
-  .tml-head-core, .tml-head-halo, .tml-beam, .tml-tail-core, .tml-tail-halo {
+  .tml-head-core, .tml-head-halo, .tml-tail-core, .tml-tail-halo {
     animation: none;
   }
 }

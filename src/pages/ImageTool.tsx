@@ -67,7 +67,7 @@ export default function ImageTool() {
         <div className="imgtool-header">
           <a href="/" className="imgtool-back">← Back to site</a>
           <h1>Product Image Tool</h1>
-          <p>Upload product photos — each is resized to 800×800, placed on an anthracite background, and stamped with the THub.ge badge.</p>
+          <p>Upload product photos — each is resized to 800×600 (4:3), placed on an anthracite background, and stamped with the THub.ge badge.</p>
         </div>
 
         <label

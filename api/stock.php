@@ -53,7 +53,7 @@ if ($action === 'update') {
     $delta = $newQty - (int)$m['qty'];
     if ($delta !== 0) {
       $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
-                     ON DUPLICATE KEY UPDATE qty = GREATEST(0, qty + VALUES(qty))')
+                     ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty)')
           ->execute([$m['product_id'], $delta]);
     }
     $pdo->prepare('UPDATE stock_movements SET qty = ?, type = ?, note = ? WHERE id = ?')
@@ -77,7 +77,7 @@ if ($action === 'delete') {
   $pdo->beginTransaction();
   try {
     $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
-                   ON DUPLICATE KEY UPDATE qty = GREATEST(0, qty + VALUES(qty))')
+                   ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty)')
         ->execute([$m['product_id'], -(int)$m['qty']]);
     $pdo->prepare('DELETE FROM stock_movements WHERE id = ?')->execute([$id]);
     $pdo->commit();
@@ -98,7 +98,7 @@ if (!is_array($items) || count($items) === 0) fail(400, 'No items');
 $pdo->beginTransaction();
 try {
   $invUp = $pdo->prepare('INSERT INTO inventory (product_id, qty) VALUES (?,?)
-                          ON DUPLICATE KEY UPDATE qty = GREATEST(0, qty + VALUES(qty))');
+                          ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty)');
   $mv = $pdo->prepare('INSERT INTO stock_movements (employee_id, product_id, product_name, part_number, type, qty, note) VALUES (?,?,?,?,?,?,?)');
   foreach ($items as $it) {
     $pid = substr((string)($it['productId'] ?? ''), 0, 64);

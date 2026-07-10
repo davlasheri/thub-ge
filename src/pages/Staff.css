@@ -39,6 +39,14 @@
 
 .staff-header-right { display: flex; align-items: center; gap: 10px; }
 .staff-user { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.staff-theme-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: none; border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.staff-theme-btn:hover { color: var(--text); border-color: var(--text-muted); }
 .staff-logout {
   background: var(--surface); color: var(--text); font-size: 13px; font-weight: 600;
   padding: 7px 14px; border-radius: 8px;

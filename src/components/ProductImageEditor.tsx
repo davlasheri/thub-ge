@@ -3,7 +3,7 @@ import { loadImageFile, renderProductImage, exportCanvas } from '../utils/imageP
 
 /*
  * Zoom/crop editor for product photos. Shows a live preview of the final
- * 800×800 image (dark background + THub badge); the photo can be zoomed with
+ * 800×600 (4:3) image (dark background + THub badge); the photo can be zoomed with
  * the slider / mouse wheel and repositioned by dragging.
  */
 

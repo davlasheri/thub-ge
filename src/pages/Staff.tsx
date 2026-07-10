@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
+import { useTheme } from '../context/ThemeContext';
 import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import {
@@ -25,6 +26,7 @@ const GEL = (n: number | string) => `${(Number(n) || 0).toFixed(2)} ₾`;
 export default function Staff() {
   const [session, setSession] = useState<Session | null>(loadSession);
   const [tab, setTab] = useState<'pos' | 'dashboard' | 'sales' | 'inventory' | 'cash'>('pos');
+  const { theme, toggleTheme } = useTheme();
 
   // Admin staff login also unlocks the site admin panel (/admin)
   const handleLogin = (s: Session) => {
@@ -59,6 +61,23 @@ export default function Staff() {
         </nav>
         <div className="staff-header-right">
           {session.local && <span className="staff-local-badge" title="მონაცემთა ბაზა არ არის მიერთებული — გაყიდვები ინახება მხოლოდ ამ ბრაუზერში">ლოკალური რეჟიმი</span>}
+          <button
+            className="staff-theme-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'ღია თემა' : 'მუქი თემა'}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
           <span className="staff-user">{session.employee.displayName}</span>
           <button className="staff-logout" onClick={logout}>გასვლა</button>
         </div>
@@ -137,7 +156,8 @@ function PosView({ session }: { session: Session }) {
   const StockChip = ({ id }: { id: string }) => {
     const n = inv[id];
     if (n === undefined) return null;
-    return <span className={`pos-stock ${n === 0 ? 'pos-stock-zero' : ''}`}>{n === 0 ? 'ამოიწურა' : `მარაგი: ${n}`}</span>;
+    // negative balance = oversold, i.e. the physical count was wrong
+    return <span className={`pos-stock ${n <= 0 ? 'pos-stock-zero' : ''}`}>{n === 0 ? 'ამოიწურა' : `მარაგი: ${n}`}</span>;
   };
 
   // model filter — like admin-products; parts with no ticked models fit all
@@ -216,8 +236,8 @@ function PosView({ session }: { session: Session }) {
       setInv(prev => {
         const next = { ...prev };
         for (const l of ticket) {
-          if (l.productId !== 'custom' && next[l.productId] !== undefined) {
-            next[l.productId] = Math.max(0, next[l.productId] - l.qty);
+          if (l.productId !== 'custom') {
+            next[l.productId] = (next[l.productId] ?? 0) - l.qty;
           }
         }
         return next;
@@ -647,12 +667,12 @@ function InventoryView({ session }: { session: Session }) {
     p.partNumber.toLowerCase().includes(q) || (p.batch ?? '').toLowerCase().includes(q)
   );
   const totalUnits = products.reduce((s, p) => s + (inv[p.id] ?? 0), 0);
-  const outOfStock = products.filter(p => (inv[p.id] ?? 0) === 0).length;
+  const outOfStock = products.filter(p => (inv[p.id] ?? 0) <= 0).length;
 
   // quick edit in the stock list — logged as adjustment so the report stays true
   const adjustTo = async (p: { id: string; name: string; partNumber: string }, target: number) => {
     const current = inv[p.id] ?? 0;
-    const clean = Math.max(0, Math.round(target) || 0);
+    const clean = Math.round(target) || 0;
     const delta = clean - current;
     if (delta === 0) return;
     setInv(prev => ({ ...(prev ?? {}), [p.id]: clean }));
@@ -711,7 +731,7 @@ function InventoryView({ session }: { session: Session }) {
             {list.map(p => {
               const qty = inv[p.id] ?? 0;
               return (
-                <div key={p.id} className={`inv-row ${qty === 0 ? 'inv-row-zero' : ''}`}>
+                <div key={p.id} className={`inv-row ${qty <= 0 ? 'inv-row-zero' : ''}`}>
                   <img src={p.image} alt="" className="pos-result-img" />
                   <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                   <span className="inv-price">{GEL(p.price)}</span>
