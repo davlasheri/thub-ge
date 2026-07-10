@@ -21,43 +21,82 @@ interface ModelPhoto {
   zones: Zone[];
 }
 
-// Zone rectangles are fractions of the photo box so each model's zones track
-// its own image placement.
-const SEDAN_ZONES: Zone[] = [
-  { sec: 'body',       label: 'წინა ბამპერი',     frac: [0.00, 0.42, 0.085, 0.53] },
-  { sec: 'electrical', label: 'ფარები',           frac: [0.015, 0.38, 0.115, 0.20] },
-  { sec: 'closure',    label: 'კაპოტი / ფრანქი',  frac: [0.10, 0.24, 0.215, 0.26] },
-  { sec: 'roof',       label: 'მინა და სახურავი',  frac: [0.30, 0.00, 0.46, 0.28] },
-  { sec: 'ext-fit',    label: 'სარკე და გარე',    frac: [0.315, 0.28, 0.07, 0.14] },
-  { sec: 'closure',    label: 'კარები',           frac: [0.315, 0.42, 0.40, 0.44] },
-  { sec: 'closure',    label: 'საბარგული',        frac: [0.72, 0.10, 0.20, 0.30] },
-  { sec: 'electrical', label: 'უკანა ფარები',     frac: [0.885, 0.28, 0.105, 0.18] },
-  { sec: 'body',       label: 'უკანა ბამპერი',    frac: [0.905, 0.46, 0.095, 0.48] },
-  { sec: 'hv-battery', label: 'HV ბატარეა',       frac: [0.16, 0.86, 0.68, 0.14] },
-];
-
-const SUV_ZONES: Zone[] = [
-  { sec: 'body',       label: 'წინა ბამპერი',     frac: [0.00, 0.48, 0.085, 0.48] },
-  { sec: 'electrical', label: 'ფარები',           frac: [0.015, 0.40, 0.12, 0.18] },
-  { sec: 'closure',    label: 'კაპოტი / ფრანქი',  frac: [0.09, 0.26, 0.20, 0.24] },
-  { sec: 'roof',       label: 'მინა და სახურავი',  frac: [0.27, 0.00, 0.52, 0.32] },
-  { sec: 'ext-fit',    label: 'სარკე და გარე',    frac: [0.29, 0.32, 0.07, 0.14] },
-  { sec: 'closure',    label: 'კარები',           frac: [0.29, 0.46, 0.42, 0.42] },
-  { sec: 'closure',    label: 'საბარგული',        frac: [0.79, 0.10, 0.16, 0.36] },
-  { sec: 'electrical', label: 'უკანა ფარები',     frac: [0.88, 0.34, 0.11, 0.16] },
-  { sec: 'body',       label: 'უკანა ბამპერი',    frac: [0.90, 0.50, 0.10, 0.46] },
-  { sec: 'hv-battery', label: 'HV ბატარეა',       frac: [0.16, 0.88, 0.66, 0.12] },
-];
-
-const withLabel = (zones: Zone[], sec: string, label: string): Zone[] =>
-  zones.map(z => (z.sec === sec && z.label === 'კარები' ? { ...z, label } : z));
-
+// Zone rectangles are fractions of the photo box, calibrated per model
+// against the actual image (grid overlay). Later zones win on overlap, so the
+// wheels come last and stay clickable over the doors/battery areas.
 const MODELS: Record<string, ModelPhoto> = {
-  // image aspect ratios: ms 3.289, m3 3.117, mx 2.836, my 2.707
-  MS: { img: 'ms', box: [50, 49, 800, 243], zones: SEDAN_ZONES },
-  M3: { img: 'm3', box: [70, 48, 760, 244], zones: SEDAN_ZONES },
-  MX: { img: 'mx', box: [60, 17, 780, 275], zones: withLabel(SUV_ZONES, 'closure', 'ფალკონ-კარები') },
-  MY: { img: 'my', box: [80, 19, 740, 273], zones: SUV_ZONES },
+  // refreshed Model S, image ratio 3.210
+  MS: {
+    img: 'ms', box: [50, 43, 800, 249],
+    zones: [
+      { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.44, 0.075, 0.48] },
+      { sec: 'electrical',   label: 'ფარები',          frac: [0.010, 0.40, 0.090, 0.17] },
+      { sec: 'closure',      label: 'კაპოტი / ფრანქი', frac: [0.075, 0.25, 0.215, 0.24] },
+      { sec: 'roof',         label: 'მინა და სახურავი', frac: [0.290, 0.00, 0.570, 0.30] },
+      { sec: 'ext-fit',      label: 'სარკე და გარე',   frac: [0.290, 0.30, 0.055, 0.13] },
+      { sec: 'closure',      label: 'კარები',          frac: [0.330, 0.32, 0.400, 0.56] },
+      { sec: 'closure',      label: 'საბარგული',       frac: [0.860, 0.22, 0.120, 0.22] },
+      { sec: 'electrical',   label: 'უკანა ფარები',    frac: [0.940, 0.36, 0.060, 0.13] },
+      { sec: 'body',         label: 'უკანა ბამპერი',   frac: [0.920, 0.49, 0.080, 0.42] },
+      { sec: 'hv-battery',   label: 'HV ბატარეა',      frac: [0.260, 0.86, 0.460, 0.12] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.085, 0.50, 0.160, 0.47] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.720, 0.50, 0.160, 0.47] },
+    ],
+  },
+  // image ratio 3.117
+  M3: {
+    img: 'm3', box: [70, 48, 760, 244],
+    zones: [
+      { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.47, 0.075, 0.44] },
+      { sec: 'electrical',   label: 'ფარები',          frac: [0.015, 0.42, 0.100, 0.16] },
+      { sec: 'closure',      label: 'კაპოტი / ფრანქი', frac: [0.080, 0.29, 0.220, 0.23] },
+      { sec: 'roof',         label: 'მინა და სახურავი', frac: [0.300, 0.00, 0.530, 0.32] },
+      { sec: 'ext-fit',      label: 'სარკე და გარე',   frac: [0.300, 0.33, 0.055, 0.13] },
+      { sec: 'closure',      label: 'კარები',          frac: [0.340, 0.34, 0.370, 0.54] },
+      { sec: 'closure',      label: 'საბარგული',       frac: [0.830, 0.21, 0.130, 0.22] },
+      { sec: 'electrical',   label: 'უკანა ფარები',    frac: [0.940, 0.34, 0.060, 0.13] },
+      { sec: 'body',         label: 'უკანა ბამპერი',   frac: [0.920, 0.47, 0.080, 0.43] },
+      { sec: 'hv-battery',   label: 'HV ბატარეა',      frac: [0.270, 0.85, 0.440, 0.12] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.090, 0.52, 0.170, 0.46] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.700, 0.52, 0.170, 0.46] },
+    ],
+  },
+  // image ratio 2.836
+  MX: {
+    img: 'mx', box: [60, 17, 780, 275],
+    zones: [
+      { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.48, 0.070, 0.40] },
+      { sec: 'electrical',   label: 'ფარები',          frac: [0.010, 0.43, 0.095, 0.15] },
+      { sec: 'closure',      label: 'კაპოტი / ფრანქი', frac: [0.070, 0.29, 0.170, 0.22] },
+      { sec: 'roof',         label: 'ვინდშილდი და სახურავი', frac: [0.230, 0.00, 0.620, 0.33] },
+      { sec: 'ext-fit',      label: 'სარკე და გარე',   frac: [0.235, 0.34, 0.055, 0.13] },
+      { sec: 'closure',      label: 'ფალკონ-კარები',   frac: [0.300, 0.33, 0.380, 0.53] },
+      { sec: 'closure',      label: 'საბარგული',       frac: [0.850, 0.20, 0.120, 0.25] },
+      { sec: 'electrical',   label: 'უკანა ფარები',    frac: [0.930, 0.35, 0.065, 0.13] },
+      { sec: 'body',         label: 'უკანა ბამპერი',   frac: [0.910, 0.48, 0.090, 0.40] },
+      { sec: 'hv-battery',   label: 'HV ბატარეა',      frac: [0.280, 0.85, 0.400, 0.12] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.095, 0.50, 0.180, 0.46] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.675, 0.50, 0.200, 0.46] },
+    ],
+  },
+  // image ratio 2.707
+  MY: {
+    img: 'my', box: [80, 19, 740, 273],
+    zones: [
+      { sec: 'body',         label: 'წინა ბამპერი',    frac: [0.000, 0.50, 0.070, 0.42] },
+      { sec: 'electrical',   label: 'ფარები',          frac: [0.010, 0.44, 0.095, 0.16] },
+      { sec: 'closure',      label: 'კაპოტი / ფრანქი', frac: [0.065, 0.28, 0.195, 0.24] },
+      { sec: 'roof',         label: 'მინა და სახურავი', frac: [0.260, 0.00, 0.580, 0.34] },
+      { sec: 'ext-fit',      label: 'სარკე და გარე',   frac: [0.250, 0.27, 0.055, 0.14] },
+      { sec: 'closure',      label: 'კარები',          frac: [0.310, 0.34, 0.390, 0.54] },
+      { sec: 'closure',      label: 'საბარგული',       frac: [0.840, 0.20, 0.130, 0.26] },
+      { sec: 'electrical',   label: 'უკანა ფარები',    frac: [0.930, 0.29, 0.065, 0.15] },
+      { sec: 'body',         label: 'უკანა ბამპერი',   frac: [0.910, 0.48, 0.090, 0.42] },
+      { sec: 'hv-battery',   label: 'HV ბატარეა',      frac: [0.270, 0.86, 0.420, 0.12] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.090, 0.54, 0.170, 0.44] },
+      { sec: 'wheels-tires', label: 'დისკი და საბურავი', frac: [0.700, 0.54, 0.180, 0.44] },
+    ],
+  },
 };
 
 interface Props {
