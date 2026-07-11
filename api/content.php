@@ -21,10 +21,23 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS site_content (
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// Public content keys — the only rows served to anonymous visitors. Keeps an
+// accidental/sensitive key from ever being exposed through the public GET.
+$PUBLIC_KEYS = [
+  'thub_admin_products', 'thub_deleted_products',
+  'thub_admin_models', 'thub_deleted_models',
+  'thub_admin_generations',
+  'thub_admin_catalog', 'thub_deleted_sections',
+  'thub_cars',
+  'thub_site_settings',
+];
+
 if ($method === 'GET') {
-  $rows = $pdo->query("SELECT k, v FROM site_content")->fetchAll();
+  $ph = implode(',', array_fill(0, count($PUBLIC_KEYS), '?'));
+  $rows = $pdo->prepare("SELECT k, v FROM site_content WHERE k IN ($ph)");
+  $rows->execute($PUBLIC_KEYS);
   $content = [];
-  foreach ($rows as $r) $content[$r['k']] = $r['v'];
+  foreach ($rows->fetchAll() as $r) $content[$r['k']] = $r['v'];
   ok(['content' => $content]);
 }
 

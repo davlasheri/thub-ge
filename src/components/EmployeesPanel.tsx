@@ -50,7 +50,7 @@ export default function EmployeesPanel({ session }: { session: Session }) {
   };
 
   const resetPassword = (emp: EmployeeRecord) => {
-    const pw = window.prompt(`ახალი პაროლი — ${emp.username} (მინ. 6 სიმბოლო):`);
+    const pw = window.prompt(`ახალი პაროლი — ${emp.username} (მინ. 8 სიმბოლო):`);
     if (pw === null) return;
     patch({ id: emp.id, newPassword: pw }, 'პაროლი შეიცვალა ✓');
   };

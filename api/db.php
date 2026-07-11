@@ -113,12 +113,14 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS cash_movements (
   FOREIGN KEY (employee_id) REFERENCES employees(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// Seed a default admin the first time (change the password after first login!)
+// Seed a single default admin the first time. IMPORTANT: change this password
+// immediately after the first login — it is public in the repo. No staff
+// account is seeded (the old user1/1234 demo account was a standing risk);
+// create staff from the admin panel with a strong password instead.
 $count = (int)$pdo->query('SELECT COUNT(*) c FROM employees')->fetch()['c'];
 if ($count === 0) {
   $st = $pdo->prepare('INSERT INTO employees (username, display_name, password_hash, role) VALUES (?,?,?,?)');
   $st->execute(['admin', 'Administrator', password_hash('thub2026', PASSWORD_DEFAULT), 'admin']);
-  $st->execute(['user1', 'გამყიდველი', password_hash('1234', PASSWORD_DEFAULT), 'staff']);
 }
 
 // ── Tokens: base64(username|expires|hmac) ──────────────────────────────────
@@ -144,9 +146,11 @@ function check_token(?string $token, array $cfg, PDO $pdo): array {
 }
 
 function bearer_token(): ?string {
+  // Header only — never accept the token from the query string, where it would
+  // leak into access logs, proxy logs, and Referer headers.
   $h = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
   if (preg_match('/Bearer\s+(\S+)/', $h, $m)) return $m[1];
-  return $_GET['token'] ?? null;
+  return null;
 }
 
 function body_json(): array {
