@@ -158,3 +158,5 @@
   .contact-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
 }
+
+.contact-form-sent { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px; }

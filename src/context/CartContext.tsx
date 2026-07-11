@@ -1,6 +1,15 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CartItem, Product } from '../types';
 import { productGel } from '../utils/currency';
+
+const CART_KEY = 'thub_cart';
+
+function readStoredCart(): CartItem[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CART_KEY) ?? '[]');
+    return Array.isArray(raw) ? raw.filter(i => i?.product?.id && i.quantity > 0) : [];
+  } catch { return []; }
+}
 
 interface CartContextType {
   items: CartItem[];
@@ -15,9 +24,15 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  // Persist the cart so a page reload / PWA relaunch doesn't lose it.
+  const [items, setItems] = useState<CartItem[]>(readStoredCart);
+
+  useEffect(() => {
+    try { localStorage.setItem(CART_KEY, JSON.stringify(items)); } catch { /* quota — ignore */ }
+  }, [items]);
 
   const addToCart = (product: Product) => {
+    if (!product.inStock) return; // never cart an out-of-stock item
     setItems(prev => {
       const existing = prev.find(i => i.product.id === product.id);
       if (existing) {

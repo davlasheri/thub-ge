@@ -81,8 +81,8 @@ export default function Service() {
   const { settings } = useSiteSettings();
   const phone = settings.contact.phone || '+995 599 286 244';
   const phoneHref = settings.contact.phoneHref || 'tel:+995599286244';
-  const waNumber = '995599286244';
-  const waText = encodeURIComponent('Hi THub.ge! I\'d like to book a Tesla service appointment.');
+  const waNumber = settings.contact.phone.replace(/\D/g, '') || '995599286244';
+  const waText = encodeURIComponent(t('wa_service_book'));
 
   const [titleLine1, titleLine2] = t('service_title').split('\n');
 

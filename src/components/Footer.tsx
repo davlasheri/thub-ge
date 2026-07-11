@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLang } from '../context/LanguageContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { APP_VERSION, CHANGELOG } from '../data/changelog';
 import './Footer.css';
 
 export default function Footer() {
   const { t } = useLang();
+  const { settings } = useSiteSettings();
+  const c = settings.contact;
   const [versionsOpen, setVersionsOpen] = useState(false);
 
   return (
@@ -29,14 +32,14 @@ export default function Footer() {
             <h4>{t('footer_company')}</h4>
             <Link to="/about">{t('footer_about')}</Link>
             <Link to="/contact">{t('footer_contact')}</Link>
-            <a href="#">{t('footer_shipping')}</a>
-            <a href="#">{t('footer_returns')}</a>
+            <Link to="/contact">{t('footer_shipping')}</Link>
+            <Link to="/contact">{t('footer_returns')}</Link>
           </div>
           <div className="footer-col">
             <h4>{t('footer_support')}</h4>
-            <a href="tel:+995599286244">+995 599 286 244</a>
-            <a href="mailto:info@thub.ge">info@thub.ge</a>
-            <p className="footer-address">Tbilisi, Georgia</p>
+            <a href={c.phoneHref}>{c.phone}</a>
+            <a href={`mailto:${c.email1}`}>{c.email1}</a>
+            <p className="footer-address">{c.address}</p>
           </div>
         </div>
       </div>
@@ -48,7 +51,7 @@ export default function Footer() {
           <div className="footer-version-wrap">
             {versionsOpen && (
               <div className="footer-versions" onMouseLeave={() => setVersionsOpen(false)}>
-                <p className="footer-versions-title">ვერსიების ისტორია</p>
+                <p className="footer-versions-title">{t('foot_versions')}</p>
                 <div className="footer-versions-list">
                   {CHANGELOG.map((entry, i) => (
                     <div key={entry.version} className="footer-version-entry">
@@ -60,7 +63,7 @@ export default function Footer() {
                         <p className="footer-version-head">
                           <strong>v{entry.version}</strong>
                           <span>{entry.date}</span>
-                          {i === 0 && <span className="footer-version-current">მიმდინარე</span>}
+                          {i === 0 && <span className="footer-version-current">{t('foot_current')}</span>}
                         </p>
                         <ul>
                           {entry.changes.map((c, j) => <li key={j}>{c}</li>)}

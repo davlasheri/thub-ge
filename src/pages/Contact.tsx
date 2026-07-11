@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLang } from '../context/LanguageContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import './Contact.css';
@@ -8,6 +9,28 @@ export default function Contact() {
   const { t } = useLang();
   const { settings } = useSiteSettings();
   const c = settings.contact;
+
+  const [form, setForm] = useState({ name: '', phone: '', email: '', subject: '', message: '' });
+  const [sent, setSent] = useState(false);
+  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const waNumber = c.phone.replace(/\D/g, '') || '995599286244';
+
+  // No mail backend on the hosting — deliver the inquiry over WhatsApp, the
+  // same channel used for orders, so nothing is silently lost.
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const subject = form.subject || t('contact_subj_inquiry');
+    const lines = [
+      `📩 ${t('contact_form_title')} — THub.ge`,
+      `${t('contact_name')}: ${form.name}`,
+      `${t('contact_phone')}: ${form.phone}`,
+      form.email ? `${t('contact_email_label')}: ${form.email}` : '',
+      `${t('contact_subject')}: ${subject}`,
+      `${t('contact_message')}: ${form.message}`,
+    ].filter(Boolean);
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
+    setSent(true);
+  };
 
   return (
     <main className="contact-page">
@@ -56,28 +79,40 @@ export default function Contact() {
           </div>
 
           {/* Contact Form */}
-          <form className="contact-form" onSubmit={e => { e.preventDefault(); alert(t('contact_send') + '!'); }}>
+          {sent ? (
+            <div className="contact-form contact-form-sent">
+              <div className="cart-empty-icon" style={{ fontSize: 48 }}>✅</div>
+              <h2>{t('cart_order_sent')}</h2>
+              <button type="button" className="btn-primary contact-submit" onClick={() => setSent(false)}>
+                {t('contact_send')}
+              </button>
+            </div>
+          ) : (
+          <form className="contact-form" onSubmit={submit}>
             <h2>{t('contact_form_title')}</h2>
 
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="name">{t('contact_name')}</label>
-                <input id="name" type="text" placeholder={t('contact_name_ph')} required />
+                <input id="name" type="text" placeholder={t('contact_name_ph')} required
+                  value={form.name} onChange={e => set('name', e.target.value)} />
               </div>
               <div className="form-group">
                 <label htmlFor="phone">{t('contact_phone')}</label>
-                <input id="phone" type="tel" placeholder="+995 5XX XXX XXX" />
+                <input id="phone" type="tel" placeholder="+995 5XX XXX XXX" required
+                  value={form.phone} onChange={e => set('phone', e.target.value)} />
               </div>
             </div>
 
             <div className="form-group">
               <label htmlFor="email">{t('contact_email_label')}</label>
-              <input id="email" type="email" placeholder="your@email.com" required />
+              <input id="email" type="email" placeholder="your@email.com"
+                value={form.email} onChange={e => set('email', e.target.value)} />
             </div>
 
             <div className="form-group">
               <label htmlFor="subject">{t('contact_subject')}</label>
-              <select id="subject">
+              <select id="subject" value={form.subject} onChange={e => set('subject', e.target.value)}>
                 <option>{t('contact_subj_inquiry')}</option>
                 <option>{t('contact_subj_order')}</option>
                 <option>{t('contact_subj_install')}</option>
@@ -88,7 +123,8 @@ export default function Contact() {
 
             <div className="form-group">
               <label htmlFor="message">{t('contact_message')}</label>
-              <textarea id="message" rows={5} placeholder={t('contact_message_ph')} required />
+              <textarea id="message" rows={5} placeholder={t('contact_message_ph')} required
+                value={form.message} onChange={e => set('message', e.target.value)} />
             </div>
 
             <button type="submit" className="btn-primary contact-submit">
@@ -99,6 +135,7 @@ export default function Contact() {
               </svg>
             </button>
           </form>
+          )}
         </div>
       </div>
     </main>

@@ -7,6 +7,7 @@ import { CarListing } from '../types';
 import { TranslationKey } from '../data/translations';
 import './Cars.css';
 import { usePageMeta } from '../utils/seo';
+import { IMG_FALLBACK, onImgError } from '../utils/imgFallback';
 
 type TFn = (k: TranslationKey) => string;
 
@@ -15,16 +16,16 @@ function conditionColor(c: CarListing['condition']) {
 }
 
 function CarCard({ car, t, phone, waNumber }: { car: CarListing; t: TFn; phone: string; waNumber: string }) {
-  const photo = car.photos[0] || 'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?w=800&q=70';
+  const photo = car.photos[0] || IMG_FALLBACK;
   const condKey = `condition_${car.condition}` as TranslationKey;
   const waText = encodeURIComponent(
-    `Hi THub.ge! I'm interested in your ${car.year} Tesla ${car.model} (${car.price.toLocaleString()} ₾, ${car.mileage.toLocaleString()} km). Can you send more details?`
+    `${t('wa_car_intro')} ${car.year} Tesla ${car.model} — ${car.price.toLocaleString()} ₾, ${car.mileage.toLocaleString()} km`
   );
 
   return (
     <div className={`car-card ${!car.available ? 'car-card-sold' : ''}`}>
       <div className="car-card-photo">
-        <img src={photo} alt={`${car.year} Tesla ${car.model}`} loading="lazy" />
+        <img src={photo} alt={`${car.year} Tesla ${car.model}`} loading="lazy" onError={onImgError} />
         {!car.available && <div className="car-sold-overlay">{t('cars_sold')}</div>}
       </div>
       <div className="car-card-body">
@@ -80,7 +81,7 @@ export default function Cars() {
   const [filter, setFilter] = useState('all');
 
   const phone = settings.contact.phoneHref || 'tel:+995599286244';
-  const waNumber = '995599286244';
+  const waNumber = settings.contact.phone.replace(/\D/g, '') || '995599286244';
 
   const displayed = filter === 'all' ? cars : cars.filter(c => c.model === filter);
   const presentModels = [...new Set(cars.map(c => c.model))];

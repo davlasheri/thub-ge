@@ -17,9 +17,16 @@ export function getUsdRate(): number {
   }
 }
 
+/** A USD amount converted to GEL, rounded to whole lari — the single rule used
+ *  everywhere (public display and POS) so the price shown always matches the
+ *  price charged. */
+export function usdToGel(usd: number, rate = getUsdRate()): number {
+  return Math.round(usd * rate);
+}
+
 /** Price of a product in GEL for public display (whole lari for USD items). */
 export function productGel(p: { price: number; currency?: string }, rate = getUsdRate()): number {
-  return p.currency === 'USD' ? Math.round(p.price * rate) : p.price;
+  return p.currency === 'USD' ? usdToGel(p.price, rate) : p.price;
 }
 
 export const fmtUsd = (n: number | string) => `$${(Number(n) || 0).toFixed(2)}`;

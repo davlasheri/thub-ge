@@ -58,7 +58,7 @@ export default function About() {
         <div className="about-cta">
           <h2>{t('about_cta_title')}</h2>
           <p>{t('about_cta_sub')}</p>
-          <Link to="/products" className="btn-primary about-cta-btn">{t('about_cta_btn')}</Link>
+          <Link to="/catalog" className="btn-primary about-cta-btn">{t('about_cta_btn')}</Link>
         </div>
       </div>
     </main>
