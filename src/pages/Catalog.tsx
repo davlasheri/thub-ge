@@ -15,7 +15,8 @@ import ModelBlueprint from '../components/ModelBlueprint';
 import { sectionArt } from '../utils/partArt';
 import './Catalog.css';
 import { usePageMeta } from '../utils/seo';
-import { productGel } from '../utils/currency';
+import { productGel, usdSiteTag } from '../utils/currency';
+import { onImgError } from '../utils/imgFallback';
 
 type TFn = (k: TranslationKey) => string;
 
@@ -481,7 +482,7 @@ function EpcCard({ product, onAddToCart, accentColor, lang, t }: {
   return (
     <div className="epc-card">
       <Link to={`/products/${product.id}`} className="epc-card-img-wrap">
-        <img src={product.image} alt={product.name} loading="lazy" />
+        <img src={product.image} alt={product.name} loading="lazy" onError={onImgError} />
         {!product.inStock && <div className="epc-card-oos">{t('prod_out_of_stock')}</div>}
         {product.badge && (
           <span className={`badge badge-${product.badge} epc-card-badge`}>{itemStatusLabel(product.badge, lang)}</span>
@@ -495,7 +496,7 @@ function EpcCard({ product, onAddToCart, accentColor, lang, t }: {
         <p className="epc-card-desc">{product.description}</p>
         
         <div className="epc-card-footer">
-          <span className="epc-card-price">{productGel(product).toLocaleString()} ₾</span>
+          <span className="epc-card-price">{productGel(product).toLocaleString()} ₾{usdSiteTag(product) && <span className="price-usd-tag">{usdSiteTag(product)}</span>}</span>
           <button
             className="btn-primary epc-add-btn"
             style={product.inStock && accentColor ? { background: accentColor } as React.CSSProperties : {}}

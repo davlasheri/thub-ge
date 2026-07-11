@@ -23,3 +23,16 @@ export function productGel(p: { price: number; currency?: string }, rate = getUs
 }
 
 export const fmtUsd = (n: number | string) => `$${(Number(n) || 0).toFixed(2)}`;
+
+/**
+ * "$1,200" tag shown next to the lari price on the public site for USD items —
+ * only when the admin has turned the option on (off by default).
+ */
+export function usdSiteTag(p: { price: number; currency?: string }): string | null {
+  if (p.currency !== 'USD') return null;
+  try {
+    const stored = JSON.parse(localStorage.getItem('thub_site_settings') ?? '{}');
+    if (stored?.pos?.showUsdOnSite !== true) return null;
+  } catch { return null; }
+  return `$${p.price.toLocaleString()}`;
+}

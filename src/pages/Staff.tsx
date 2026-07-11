@@ -15,6 +15,7 @@ import {
   clearStockMovements, clearCashMovements,
 } from '../utils/staffApi';
 import { fmtUsd, getUsdRate } from '../utils/currency';
+import { onImgError } from '../utils/imgFallback';
 import './Staff.css';
 
 const PAYMENT_LABELS: Record<Payment, string> = {
@@ -348,7 +349,7 @@ function PosView({ session }: { session: Session }) {
           <div className="pos-results">
             {results.map(p => (
               <button key={p.id} className="pos-result" onClick={() => add(p)}>
-                <img src={p.image} alt="" className="pos-result-img" />
+                <img src={p.image} alt="" className="pos-result-img" onError={onImgError} />
                 <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                 <StockChip id={p.id} />
                 <span className={`pos-result-price ${p.currency === 'USD' ? 'pos-price-usd' : ''}`}>{posPrice(p)}</span>
@@ -369,7 +370,7 @@ function PosView({ session }: { session: Session }) {
               {subProducts.length === 0 && <p className="pos-empty">ამ სექციაში პროდუქტები არ არის</p>}
               {subProducts.map(p => (
                 <button key={p.id} className="pos-result" onClick={() => add(p)}>
-                  <img src={p.image} alt="" className="pos-result-img" />
+                  <img src={p.image} alt="" className="pos-result-img" onError={onImgError} />
                   <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                   <StockChip id={p.id} />
                   <span className={`pos-result-price ${p.currency === 'USD' ? 'pos-price-usd' : ''}`}>{posPrice(p)}</span>
@@ -769,7 +770,7 @@ function InventoryView({ session }: { session: Session }) {
               const qty = inv[p.id] ?? 0;
               return (
                 <div key={p.id} className={`inv-row ${qty <= 0 ? 'inv-row-zero' : ''}`}>
-                  <img src={p.image} alt="" className="pos-result-img" />
+                  <img src={p.image} alt="" className="pos-result-img" onError={onImgError} />
                   <span className="pos-result-name">{p.name}<small>{p.partNumber}{p.batch ? ` · ${p.batch}` : ''}</small></span>
                   <span className={`inv-price ${p.currency === 'USD' ? 'pos-price-usd' : ''}`}>{posPrice(p)}</span>
                   <div className="inv-qty-ctrl">

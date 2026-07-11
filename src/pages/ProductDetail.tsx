@@ -9,7 +9,8 @@ import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
 import { usePageMeta } from '../utils/seo';
 import './ProductDetail.css';
-import { productGel } from '../utils/currency';
+import { productGel, usdSiteTag } from '../utils/currency';
+import { onImgError } from '../utils/imgFallback';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -68,7 +69,7 @@ export default function ProductDetail() {
 
         <div className="detail-grid">
           <div className="detail-img-wrap">
-            <img src={product.image} alt={product.name} />
+            <img src={product.image} alt={product.name} onError={onImgError} />
             {product.badge && (
               <span className={`badge badge-${product.badge} detail-badge`}>{itemStatusLabel(product.badge, lang)}</span>
             )}
@@ -84,7 +85,7 @@ export default function ProductDetail() {
             
 
             <div className="detail-price-row">
-              <span className="detail-price">{productGel(product).toLocaleString()} ₾</span>
+              <span className="detail-price">{productGel(product).toLocaleString()} ₾{usdSiteTag(product) && <span className="price-usd-tag">{usdSiteTag(product)}</span>}</span>
               <span className={`detail-stock ${product.inStock ? 'in-stock' : 'out-of-stock'}`}>
                 {product.inStock ? t('detail_in_stock') : t('detail_out_of_stock')}
               </span>
@@ -147,7 +148,7 @@ export default function ProductDetail() {
             <div className="related-grid">
               {related.map(p => (
                 <Link key={p.id} to={`/products/${p.id}`} className="related-card">
-                  <img src={p.image} alt={p.name} />
+                  <img src={p.image} alt={p.name} onError={onImgError} />
                   <div className="related-info">
                     <p style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>#{p.partNumber}</p>
                     <p className="related-name">{lang === 'ka' ? p.nameGe : p.name}</p>
