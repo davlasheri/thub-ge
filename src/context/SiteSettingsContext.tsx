@@ -23,9 +23,15 @@ export interface HomeSettings {
   bannerRu: string;
 }
 
+export interface PosSettings {
+  /** USD→GEL exchange rate used to show USD-priced products in lari and to book USD sales. */
+  usdRate: number;
+}
+
 export interface SiteSettings {
   contact: ContactSettings;
   home: HomeSettings;
+  pos: PosSettings;
 }
 
 const DEFAULTS: SiteSettings = {
@@ -47,12 +53,16 @@ const DEFAULTS: SiteSettings = {
     bannerEn: '',
     bannerRu: '',
   },
+  pos: {
+    usdRate: 2.7,
+  },
 };
 
 interface SiteSettingsCtx {
   settings: SiteSettings;
   updateContact: (c: ContactSettings) => void;
   updateHome: (h: HomeSettings) => void;
+  updatePos: (p: PosSettings) => void;
 }
 
 const Ctx = createContext<SiteSettingsCtx | null>(null);
@@ -64,6 +74,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
       return {
         contact: { ...DEFAULTS.contact, ...(stored.contact ?? {}) },
         home:    { ...DEFAULTS.home,    ...(stored.home    ?? {}) },
+        pos:     { ...DEFAULTS.pos,     ...(stored.pos     ?? {}) },
       };
     } catch {
       return DEFAULTS;
@@ -77,8 +88,9 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
 
   const updateContact = (c: ContactSettings) => persist({ ...settings, contact: c });
   const updateHome    = (h: HomeSettings)    => persist({ ...settings, home: h });
+  const updatePos     = (p: PosSettings)     => persist({ ...settings, pos: p });
 
-  return <Ctx.Provider value={{ settings, updateContact, updateHome }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ settings, updateContact, updateHome, updatePos }}>{children}</Ctx.Provider>;
 }
 
 export function useSiteSettings() {

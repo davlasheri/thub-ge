@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { CartItem } from '../types';
+import { productGel } from './currency';
 
 function makeOrderNum(): string {
   const now = new Date();
@@ -85,7 +86,7 @@ function buildDoc(items: CartItem[], phone: string, totalPrice: number, orderNum
       doc.rect(20, y - 5.5, W - 40, rowH, 'F');
     }
 
-    const rowTotal = item.product.price * item.quantity;
+    const rowTotal = productGel(item.product) * item.quantity;
     const name = item.product.name.length > 50
       ? item.product.name.slice(0, 48) + '…'
       : item.product.name;
@@ -95,7 +96,7 @@ function buildDoc(items: CartItem[], phone: string, totalPrice: number, orderNum
     doc.text(item.product.partNumber, COL.part, y);
     doc.text(name, COL.name, y);
     doc.text(String(item.quantity), COL.qty, y, { align: 'center' });
-    doc.text(`${item.product.price.toLocaleString()} GEL`, COL.unit, y);
+    doc.text(`${productGel(item.product).toLocaleString()} GEL`, COL.unit, y);
     doc.text(`${rowTotal.toLocaleString()} GEL`, COL.total, y, { align: 'right' });
 
     y += rowH;
@@ -187,7 +188,7 @@ export function buildOrderSummary(
     ``,
     ...items.map(
       item =>
-        `• ${item.product.name} (${item.product.partNumber}) × ${item.quantity} — ${(item.product.price * item.quantity).toLocaleString()} GEL`,
+        `• ${item.product.name} (${item.product.partNumber}) × ${item.quantity} — ${(productGel(item.product) * item.quantity).toLocaleString()} GEL`,
     ),
     ``,
     `💰 TOTAL: ${totalPrice.toLocaleString()} GEL`,

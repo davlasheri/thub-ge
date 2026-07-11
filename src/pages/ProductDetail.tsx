@@ -9,6 +9,7 @@ import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
 import { usePageMeta } from '../utils/seo';
 import './ProductDetail.css';
+import { productGel } from '../utils/currency';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -83,7 +84,7 @@ export default function ProductDetail() {
             
 
             <div className="detail-price-row">
-              <span className="detail-price">{product.price.toLocaleString()} ₾</span>
+              <span className="detail-price">{productGel(product).toLocaleString()} ₾</span>
               <span className={`detail-stock ${product.inStock ? 'in-stock' : 'out-of-stock'}`}>
                 {product.inStock ? t('detail_in_stock') : t('detail_out_of_stock')}
               </span>
@@ -150,7 +151,7 @@ export default function ProductDetail() {
                   <div className="related-info">
                     <p style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace' }}>#{p.partNumber}</p>
                     <p className="related-name">{lang === 'ka' ? p.nameGe : p.name}</p>
-                    <p className="related-price">{p.price.toLocaleString()} ₾</p>
+                    <p className="related-price">{productGel(p).toLocaleString()} ₾</p>
                   </div>
                 </Link>
               ))}

@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSiteSettings, ContactSettings, HomeSettings } from '../context/SiteSettingsContext';
 import { useCars } from '../context/CarsContext';
 import { getCatName, slugify } from '../utils/catalog';
+import { fmtUsd, productGel } from '../utils/currency';
 import { TeslaModel, Product, CatalogSection, CatalogSubsection, CarListing } from '../types';
 import EmployeesPanel from '../components/EmployeesPanel';
 import { suggestCategory, CategorySuggestion } from '../utils/partNumber';
@@ -27,7 +28,7 @@ type FitsState = Record<string, { enabled: boolean; from: string; to: string }>;
 interface ProductForm {
   name: string; nameGe: string; partNumber: string; batch: string;
   sectionId: string; subsectionId: string;
-  price: string; description: string; image: string;
+  price: string; currency: 'GEL' | 'USD'; description: string; image: string;
   stockQty: string;
   inStock: boolean; visible: boolean; badge: '' | 'new-original' | 'used-original' | 'new-replica' | 'used-replica';
   rating: string; reviews: string;
@@ -42,7 +43,7 @@ function emptyProductForm(catalog: CatalogSection[], models: TeslaModel[]): Prod
     name: '', nameGe: '', partNumber: '', batch: '',
     sectionId: firstSection?.id ?? '',
     subsectionId: firstSection?.subsections[0]?.id ?? '',
-    price: '', description: '', image: '',
+    price: '', currency: 'GEL', description: '', image: '',
     stockQty: '0',
     inStock: true, visible: true, badge: '', rating: '4.5', reviews: '0', fits,
   };
@@ -59,7 +60,8 @@ function productToForm(p: Product, models: TeslaModel[], stockQty: number): Prod
   return {
     name: p.name, nameGe: p.nameGe, partNumber: p.partNumber, batch: p.batch ?? '',
     sectionId: p.sectionId, subsectionId: p.subsectionId,
-    price: String(p.price), description: p.description, image: p.image,
+    price: String(p.price), currency: p.currency === 'USD' ? 'USD' : 'GEL',
+    description: p.description, image: p.image,
     stockQty: String(stockQty),
     inStock: p.inStock, visible: p.visible !== false, badge: p.badge ?? '', rating: String(p.rating), reviews: String(p.reviews), fits,
   };
@@ -74,7 +76,7 @@ function formToProduct(f: ProductForm, id: string): Product {
     id, partNumber: f.partNumber.trim(), name: f.name.trim(), nameGe: f.nameGe.trim(),
     batch: f.batch.trim() || undefined,
     sectionId: f.sectionId, subsectionId: f.subsectionId,
-    price: parseFloat(f.price) || 0, currency: 'GEL',
+    price: parseFloat(f.price) || 0, currency: f.currency,
     image: f.image.trim() || 'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?w=600&q=80',
     description: f.description.trim(), fits: fitsOut, inStock: f.inStock, visible: f.visible,
     badge: f.badge || undefined, rating: parseFloat(f.rating) || 4.5, reviews: parseInt(f.reviews) || 0,
@@ -441,6 +443,32 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 }
 
 // ── Products list ──────────────────────────────────────────────────────────
+// USD→GEL rate: converts USD products to lari on the public site and books
+// dollar sales in the POS. Synced through site settings to every device.
+function UsdRateEditor() {
+  const { settings, updatePos } = useSiteSettings();
+  const [value, setValue] = useState(String(settings.pos.usdRate));
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    const rate = parseFloat(value);
+    if (!isFinite(rate) || rate <= 0) { setValue(String(settings.pos.usdRate)); return; }
+    updatePos({ ...settings.pos, usdRate: rate });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="admin-usd-rate" title="დოლარის კურსი — ამ კურსით ჩანს $ პროდუქტების ფასი საიტზე ლარში">
+      <span className="admin-usd-rate-label">$1 =</span>
+      <input className="admin-input admin-usd-rate-input" type="number" min="0" step="0.01"
+        value={value} onChange={e => setValue(e.target.value)}
+        onBlur={save} onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+      <span className="admin-usd-rate-label">₾{saved ? ' ✓' : ''}</span>
+    </div>
+  );
+}
+
 function ProductsList({ products, allProducts, models, inventory, allCount, search, sectionFilter, modelFilter, catalog, isAdmin, onSearch, onSectionFilter, onModelFilter, onAdd, onEdit, onDelete }: {
   products: Product[]; allProducts: Product[]; models: TeslaModel[]; inventory: Record<string, number>; allCount: number; search: string; sectionFilter: string; modelFilter: string;
   catalog: CatalogSection[]; isAdmin: (id: string) => boolean;
@@ -454,10 +482,13 @@ function ProductsList({ products, allProducts, models, inventory, allCount, sear
           <h1 className="admin-page-title">პროდუქტები</h1>
           <p className="admin-page-sub">სულ: <strong>{allCount}</strong> · ნაჩვენებია: <strong>{products.length}</strong></p>
         </div>
-        <button className="admin-btn-primary" onClick={onAdd}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          ახალი პროდუქტი
-        </button>
+        <div className="admin-header-actions">
+          <UsdRateEditor />
+          <button className="admin-btn-primary" onClick={onAdd}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            ახალი პროდუქტი
+          </button>
+        </div>
       </div>
       <div className="admin-filters">
         <input type="text" className="admin-search" style={{ marginBottom: 0 }} placeholder="ძებნა სახელით ან ნომრით..."
@@ -588,7 +619,11 @@ function ProductRow({ product, catalog, models, stockQty, isAdmin, onEdit, onDel
               })}
         </div>
       </div>
-      <div className="admin-product-price">{product.price.toLocaleString()} ₾</div>
+      <div className="admin-product-price">
+        {product.currency === 'USD'
+          ? <>{fmtUsd(product.price)}<small className="admin-price-gel">≈ {productGel(product).toLocaleString()} ₾</small></>
+          : <>{product.price.toLocaleString()} ₾</>}
+      </div>
       <div className="admin-product-actions">
         <button className="admin-btn-icon" onClick={() => onEdit(product)} title="რედაქტირება">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -807,8 +842,20 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
                 )}
               </div>
               <div className="admin-field">
-                <label className="admin-label">ფასი (₾) *</label>
-                <input className="admin-input" type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} placeholder="1850" />
+                <label className="admin-label">ფასი *</label>
+                <div className="admin-price-row">
+                  <input className="admin-input" type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)} placeholder="1850" />
+                  <select className="admin-input admin-price-currency" value={form.currency}
+                    onChange={e => set('currency', e.target.value as 'GEL' | 'USD')}>
+                    <option value="GEL">₾ ლარი</option>
+                    <option value="USD">$ დოლარი</option>
+                  </select>
+                </div>
+                {form.currency === 'USD' && (
+                  <p className="admin-hint" style={{ marginTop: 6, color: 'var(--text-muted)' }}>
+                    საიტზე მყიდველი დაინახავს მხოლოდ ლარში გადაყვანილ ფასს — დოლარი ჩანს მხოლოდ POS-ში.
+                  </p>
+                )}
               </div>
             </div>
             <div className="admin-row-2">

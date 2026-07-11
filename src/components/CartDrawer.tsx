@@ -3,6 +3,7 @@ import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { generateOrderPdf, generateOrderPdfBlob, buildOrderSummary } from '../utils/orderPdf';
 import './CartDrawer.css';
+import { productGel } from '../utils/currency';
 
 interface Props {
   isOpen: boolean;
@@ -80,7 +81,7 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
                   <img src={item.product.image} alt={item.product.name} className="cart-item-img" />
                   <div className="cart-item-info">
                     <p className="cart-item-name">{item.product.name}</p>
-                    <p className="cart-item-price">{item.product.price.toLocaleString()} ₾</p>
+                    <p className="cart-item-price">{productGel(item.product).toLocaleString()} ₾</p>
                     <div className="cart-item-qty">
                       <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>−</button>
                       <span>{item.quantity}</span>

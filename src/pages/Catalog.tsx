@@ -15,6 +15,7 @@ import ModelBlueprint from '../components/ModelBlueprint';
 import { sectionArt } from '../utils/partArt';
 import './Catalog.css';
 import { usePageMeta } from '../utils/seo';
+import { productGel } from '../utils/currency';
 
 type TFn = (k: TranslationKey) => string;
 
@@ -494,7 +495,7 @@ function EpcCard({ product, onAddToCart, accentColor, lang, t }: {
         <p className="epc-card-desc">{product.description}</p>
         
         <div className="epc-card-footer">
-          <span className="epc-card-price">{product.price.toLocaleString()} ₾</span>
+          <span className="epc-card-price">{productGel(product).toLocaleString()} ₾</span>
           <button
             className="btn-primary epc-add-btn"
             style={product.inStock && accentColor ? { background: accentColor } as React.CSSProperties : {}}
