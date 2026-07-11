@@ -1,46 +1,53 @@
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { generateOrderPdf, generateOrderPdfBlob, buildOrderSummary } from '../utils/orderPdf';
 import './CartDrawer.css';
 import { productGel } from '../utils/currency';
+import { onImgError } from '../utils/imgFallback';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// enough digits to be a real phone number, ignoring spaces/dashes/+
+const phoneDigits = (s: string) => s.replace(/\D/g, '');
+const isValidPhone = (s: string) => phoneDigits(s).length >= 9;
+
 export default function CartDrawer({ isOpen, onClose }: Props) {
   const { items, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const { settings } = useSiteSettings();
   const [phone, setPhone] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [phoneError, setPhoneError] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const canDownload = phone.trim().length >= 9 && termsAccepted;
+  const canDownload = isValidPhone(phone) && termsAccepted;
+  const itemName = (p: { name: string; nameGe: string }) =>
+    lang === 'ka' ? (p.nameGe || p.name) : p.name;
+  // WhatsApp number comes from admin contact settings, with a safe fallback
+  const waNumber = phoneDigits(settings.contact.phone) || '995599286244';
 
   function handleDownload() {
-    if (phone.trim().length < 9) {
-      setPhoneError(true);
-      return;
-    }
+    if (!isValidPhone(phone)) { setPhoneError(true); return; }
     generateOrderPdf(items, phone.trim(), totalPrice);
   }
 
   async function handleWhatsApp() {
-    if (phone.trim().length < 9) {
-      setPhoneError(true);
-      return;
-    }
+    if (!isValidPhone(phone)) { setPhoneError(true); return; }
     const { blob, orderNum } = generateOrderPdfBlob(items, phone.trim(), totalPrice);
     const summary = buildOrderSummary(items, phone.trim(), totalPrice, orderNum);
-    const waUrl = `https://wa.me/995599286244?text=${encodeURIComponent(summary)}`;
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(summary)}`;
 
     if (typeof navigator.canShare === 'function') {
       const file = new File([blob], `thub-order-${orderNum}.pdf`, { type: 'application/pdf' });
       if (navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: 'THub.ge Order', text: summary });
+          orderSent();
           return;
         } catch {
           // user cancelled — fall through to wa.me link
@@ -48,18 +55,30 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
       }
     }
     window.open(waUrl, '_blank');
+    orderSent();
+  }
+
+  // Show the confirmation but keep the cart — opening WhatsApp doesn't prove the
+  // message was actually sent, so we never destroy the cart out from under them.
+  function orderSent() {
+    setSent(true);
+  }
+
+  function closeDrawer() {
+    setSent(false);
+    onClose();
   }
 
   return (
     <>
       <div
         className={`cart-overlay ${isOpen ? 'cart-overlay-open' : ''}`}
-        onClick={onClose}
+        onClick={closeDrawer}
       />
       <aside className={`cart-drawer ${isOpen ? 'cart-drawer-open' : ''}`}>
         <div className="cart-header">
           <h2>{t('cart_title')}</h2>
-          <button className="cart-close" onClick={onClose} aria-label="Close">
+          <button className="cart-close" onClick={closeDrawer} aria-label="Close">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -67,20 +86,26 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
           </button>
         </div>
 
-        {items.length === 0 ? (
+        {sent ? (
+          <div className="cart-empty">
+            <div className="cart-empty-icon">✅</div>
+            <p>{t('cart_order_sent')}</p>
+            <button className="btn-primary" onClick={closeDrawer}>{t('cart_continue')}</button>
+          </div>
+        ) : items.length === 0 ? (
           <div className="cart-empty">
             <div className="cart-empty-icon">🛒</div>
             <p>{t('cart_empty')}</p>
-            <button className="btn-primary" onClick={onClose}>{t('cart_continue')}</button>
+            <button className="btn-primary" onClick={closeDrawer}>{t('cart_continue')}</button>
           </div>
         ) : (
           <>
             <div className="cart-items">
               {items.map(item => (
                 <div key={item.product.id} className="cart-item">
-                  <img src={item.product.image} alt={item.product.name} className="cart-item-img" />
+                  <img src={item.product.image} alt={itemName(item.product)} className="cart-item-img" onError={onImgError} />
                   <div className="cart-item-info">
-                    <p className="cart-item-name">{item.product.name}</p>
+                    <p className="cart-item-name">{itemName(item.product)}</p>
                     <p className="cart-item-price">{productGel(item.product).toLocaleString()} ₾</p>
                     <div className="cart-item-qty">
                       <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>−</button>

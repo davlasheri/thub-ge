@@ -7,6 +7,7 @@ import { TranslationKey } from '../data/translations';
 import { CarListing } from '../types';
 import { usePageMeta } from '../utils/seo';
 import './CarDetail.css';
+import { IMG_FALLBACK, onImgError } from '../utils/imgFallback';
 
 type TFn = (k: TranslationKey) => string;
 
@@ -27,19 +28,19 @@ export default function CarDetail() {
   if (!car) {
     return (
       <div className="car-detail-notfound">
-        <h2>Car not found</h2>
+        <h2>{t('notfound_text')}</h2>
         <Link to="/cars" className="btn-primary">{t('cars_back')}</Link>
       </div>
     );
   }
 
-  const photos = car.photos.length ? car.photos : ['https://images.unsplash.com/photo-1617469767053-d3b523a0b982?w=800&q=70'];
+  const photos = car.photos.length ? car.photos : [IMG_FALLBACK];
   const condKey = `condition_${car.condition}` as TranslationKey;
   const phone = settings.contact.phone || '+995 599 286 244';
   const phoneHref = settings.contact.phoneHref || 'tel:+995599286244';
-  const waNumber = '995599286244';
+  const waNumber = settings.contact.phone.replace(/\D/g, '') || '995599286244';
   const waText = encodeURIComponent(
-    `Hi THub.ge! I'm interested in your ${car.year} Tesla ${car.model} (${car.price.toLocaleString()} ₾, ${car.mileage.toLocaleString()} km). Can you send more details?`
+    `${t('wa_car_intro')} ${car.year} Tesla ${car.model} — ${car.price.toLocaleString()} ₾, ${car.mileage.toLocaleString()} km`
   );
 
   const SpecRow = ({ label, value }: { label: string; value: string }) => (
@@ -58,7 +59,7 @@ export default function CarDetail() {
           {/* Gallery */}
           <div className="car-gallery">
             <div className="car-gallery-main">
-              <img src={photos[photoIdx]} alt={`${car.year} Tesla ${car.model}`} />
+              <img src={photos[photoIdx]} alt={`${car.year} Tesla ${car.model}`} onError={onImgError} />
               {!car.available && <div className="car-gallery-sold">{t('cars_sold')}</div>}
             </div>
             {photos.length > 1 && (

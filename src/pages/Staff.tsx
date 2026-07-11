@@ -14,7 +14,7 @@ import {
   updateStockMovement, deleteStockMovement, updateCashMovement, deleteCashMovement,
   clearStockMovements, clearCashMovements,
 } from '../utils/staffApi';
-import { fmtUsd, getUsdRate } from '../utils/currency';
+import { fmtUsd, getUsdRate, usdToGel } from '../utils/currency';
 import { onImgError } from '../utils/imgFallback';
 import './Staff.css';
 
@@ -237,7 +237,8 @@ function PosView({ session }: { session: Session }) {
   const parsedRate = parseFloat(rateStr);
   const usdRate = isFinite(parsedRate) && parsedRate > 0 ? parsedRate : 0;
   const hasUsd = ticket.some(l => l.currency === 'USD');
-  const lineGel = (l: TicketLine) => l.currency === 'USD' ? round2(l.unitPrice * usdRate) : l.unitPrice;
+  // same whole-lari conversion the public site uses, so shown price = charged price
+  const lineGel = (l: TicketLine) => l.currency === 'USD' ? usdToGel(l.unitPrice, usdRate) : l.unitPrice;
   const usdTotal = ticket.reduce((s, l) => s + (l.currency === 'USD' ? l.qty * l.unitPrice : 0), 0);
   const total = ticket.reduce((s, l) => s + l.qty * lineGel(l), 0);
 
@@ -247,7 +248,7 @@ function PosView({ session }: { session: Session }) {
     setBusy(true); setErr('');
     try {
       // book USD lines in GEL at today's rate; the rate is kept in the note
-      const usdNote = hasUsd ? `USD: ${fmtUsd(usdTotal)} × ${usdRate} = ${GEL(round2(usdTotal * usdRate))}` : '';
+      const usdNote = hasUsd ? `USD: ${fmtUsd(usdTotal)} × ${usdRate} = ${GEL(usdToGel(usdTotal, usdRate))}` : '';
       const fullNote = [note.trim(), usdNote].filter(Boolean).join(' | ');
       const res = await recordSale(session, {
         items: ticket.map(l => ({ productId: l.productId, name: l.name, partNumber: l.partNumber, qty: l.qty, unitPrice: lineGel(l) })),
@@ -436,7 +437,7 @@ function PosView({ session }: { session: Session }) {
                 <input className="staff-input pos-usd-rate-input" inputMode="decimal" value={rateStr}
                   onChange={e => setRateStr(e.target.value)} />
                 <span className="pos-usd-rate-label">₾</span>
-                <span className="pos-usd-rate-sum">{fmtUsd(usdTotal)} ≈ {GEL(round2(usdTotal * usdRate))}</span>
+                <span className="pos-usd-rate-sum">{fmtUsd(usdTotal)} ≈ {GEL(usdToGel(usdTotal, usdRate))}</span>
               </div>
             )}
             <div className="pos-total"><span>ჯამი</span><strong>{GEL(total)}</strong></div>

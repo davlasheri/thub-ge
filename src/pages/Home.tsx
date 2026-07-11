@@ -45,7 +45,7 @@ export default function Home() {
 
         <div className="container home2-hero-inner">
           <h1 className="home2-title">
-            ყველა ნაწილი. <span className="home2-title-red">ერთი ადგილი.</span>
+            {t('home_hero_title')} <span className="home2-title-red">{t('home_hero_accent')}</span>
           </h1>
           <p className="home2-sub">{tagline}</p>
 
@@ -71,7 +71,7 @@ export default function Home() {
             <div className={`home2-zone-label ${zoneLabel ? 'home2-zone-label-on' : ''}`}>
               {zoneLabel
                 ? `${zoneLabel} — ${activeModel?.name ?? ''}`
-                : `შეეხეთ ნაწილს — გაიხსნება ${activeModel?.name ?? ''}-ის კატალოგი`}
+                : `${t('home_hero_hint')}${activeModel ? ` — ${activeModel.name}` : ''}`}
             </div>
           </div>
 
