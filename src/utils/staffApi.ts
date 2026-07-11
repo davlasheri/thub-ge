@@ -97,6 +97,8 @@ export function saveSession(s: Session | null) {
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
+export const SESSION_EXPIRED = 'სესია ამოიწურა — გთხოვთ, ხელახლა შეხვიდეთ სისტემაში';
+
 async function post(path: string, body: unknown, token?: string) {
   const res = await fetch(`${API}/${path}`, {
     method: 'POST',
@@ -106,6 +108,9 @@ async function post(path: string, body: unknown, token?: string) {
     },
     body: JSON.stringify(body),
   });
+  // A 401 on a request that carried a token means the token expired mid-shift —
+  // surface a clear message (login uses no token, so its 401 is untouched).
+  if (token && res.status === 401) throw new Error(SESSION_EXPIRED);
   return res;
 }
 
@@ -703,6 +708,9 @@ function computeLocalStats(sales: Sale[], days: number): Stats {
     const p = pay.get(s.payment) ?? { revenue: 0, sales: 0 };
     p.revenue += s.total; p.sales++;
     pay.set(s.payment, p);
+    // top products count sales only — a return (negative total) must not inflate
+    // sold quantity/revenue, matching the server's `WHERE total >= 0`
+    if (Number(s.total) < 0) continue;
     for (const it of s.items) {
       const k = `${it.name}|${it.partNumber ?? ''}`;
       const e = top.get(k) ?? { name: it.name, partNumber: it.partNumber ?? '', qty: 0, revenue: 0 };

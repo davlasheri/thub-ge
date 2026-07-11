@@ -142,6 +142,7 @@ export default function Admin() {
 
   const [editProductId, setEditProductId] = useState<string | null>(null);
   const [productForm, setProductForm]     = useState<ProductForm>(() => emptyProductForm(catalog, models));
+  const [savingProduct, setSavingProduct] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [productSectionFilter, setProductSectionFilter] = useState('all');
   const [productModelFilter, setProductModelFilter] = useState('all');
@@ -172,6 +173,8 @@ export default function Admin() {
   // re-upload; failed uploads keep the embedded copy and everything works.
   const migrationTried = useRef<Set<string>>(new Set());
   const migrating = useRef(false);
+  const productsRef = useRef(products);
+  productsRef.current = products;
   useEffect(() => {
     if (!authed || migrating.current) return;
     const target = products.find(p =>
@@ -179,8 +182,16 @@ export default function Admin() {
     if (!target) return;
     migrating.current = true;
     migrationTried.current.add(target.id);
+    const targetId = target.id;
     uploadProductImage(target.image, { partNumber: target.partNumber, productId: target.id })
-      .then(url => { if (url) updateProduct({ ...target, image: url }); })
+      .then(url => {
+        if (!url) return;
+        // Merge only the image onto the *latest* version of the product — the
+        // admin may have edited/saved it while the upload was in flight, so we
+        // must not write back the stale snapshot captured above.
+        const latest = productsRef.current.find(p => p.id === targetId);
+        if (latest) updateProduct({ ...latest, image: url });
+      })
       .finally(() => { migrating.current = false; });
   });
 
@@ -197,50 +208,65 @@ export default function Admin() {
     setView('product-form');
   };
   const handleSaveProduct = async () => {
+    if (savingProduct) return; // guard against a double-click minting two products
     if (!productForm.name.trim() || !productForm.partNumber.trim() || !productForm.price) {
       alert('შეავსეთ სახელი, ნომერი და ფასი.'); return;
     }
     if (productForm.image && !isValidImageSrc(productForm.image)) {
       alert('ფოტოს მონაცემები დაზიანებულია და ბრაუზერი ვერ აჩვენებს — ატვირთეთ ფოტო ხელახლა.'); return;
     }
-    const id = editProductId ?? genId();
-    // photos are stored as files on the server (small catalog JSON + SEO
-    // names); when the upload isn't possible the embedded copy is kept
-    let form = productForm;
-    if (isDataImage(form.image)) {
-      const prev = editProductId ? products.find(p => p.id === editProductId)?.image : undefined;
-      const url = await uploadProductImage(form.image, {
-        partNumber: form.partNumber.trim(),
-        productId: id,
-        replaces: prev ? uploadedFileName(prev) : undefined,
-      });
-      if (url) form = { ...form, image: url };
-    }
-    if (editProductId) updateProduct(formToProduct(form, id));
-    else               addProduct(formToProduct(form, id));
+    // An empty qty field means "don't touch stock" — never read it as 0, which
+    // would post a negative adjustment and wipe the product's balance.
+    const qtyRaw = productForm.stockQty.trim();
+    const qtyGiven = qtyRaw !== '' && Number.isFinite(parseInt(qtyRaw, 10));
+    const qty = qtyGiven ? Math.max(0, parseInt(qtyRaw, 10)) : (inventory[editProductId ?? ''] ?? 0);
+    const delta = qty - (inventory[editProductId ?? ''] ?? 0);
+    if (delta < 0 && !confirm(`მარაგი შემცირდება ${-delta} ერთეულით (→ ${qty}). გავაგრძელოთ?`)) return;
 
-    // stock changes go through addStock so they land in the movement report
-    // (მოძრაობის რეპორტი) with the date and the admin's name
-    const qty = Math.max(0, parseInt(productForm.stockQty) || 0);
-    const delta = qty - (inventory[id] ?? 0);
-    if (delta !== 0) {
-      const s = loadSession();
-      if (s) {
-        try {
-          await addStock(s, {
-            type: 'adjustment',
-            items: [{ productId: id, name: productForm.name.trim(), partNumber: productForm.partNumber.trim(), qty: delta }],
-            note: editProductId ? 'ადმინ პანელი — მარაგის ცვლილება' : 'ადმინ პანელი — ახალი პროდუქტი',
-          });
-          setInventory(prev => ({ ...prev, [id]: qty }));
-        } catch (ex) {
-          alert(`პროდუქტი შენახულია, მაგრამ მარაგის რაოდენობა ვერ შეინახა: ${ex instanceof Error ? ex.message : 'შეცდომა'}`);
-        }
-      } else {
-        alert('პროდუქტი შენახულია, მაგრამ მარაგის შესანახად საჭიროა ხელახლა შესვლა ადმინის ანგარიშით.');
+    setSavingProduct(true);
+    try {
+      const id = editProductId ?? genId();
+      // photos are stored as files on the server (small catalog JSON + SEO
+      // names); when the upload isn't possible the embedded copy is kept
+      let form = productForm;
+      if (isDataImage(form.image)) {
+        const prev = editProductId ? products.find(p => p.id === editProductId)?.image : undefined;
+        const url = await uploadProductImage(form.image, {
+          partNumber: form.partNumber.trim(),
+          productId: id,
+          replaces: prev ? uploadedFileName(prev) : undefined,
+        });
+        if (url) form = { ...form, image: url };
       }
+      if (editProductId) updateProduct(formToProduct(form, id));
+      else               addProduct(formToProduct(form, id));
+
+      // stock changes go through addStock so they land in the movement report
+      // (მოძრაობის რეპორტი) with the date and the admin's name
+      if (delta !== 0) {
+        const s = loadSession();
+        if (s) {
+          try {
+            await addStock(s, {
+              type: 'adjustment',
+              items: [{ productId: id, name: form.name.trim(), partNumber: form.partNumber.trim(), qty: delta }],
+              note: editProductId ? 'ადმინ პანელი — მარაგის ცვლილება' : 'ადმინ პანელი — ახალი პროდუქტი',
+            });
+            setInventory(prev => ({ ...prev, [id]: qty }));
+          } catch (ex) {
+            // keep the form open so the qty can be retried rather than lost
+            alert(`პროდუქტი შენახულია, მაგრამ მარაგის რაოდენობა ვერ შეინახა: ${ex instanceof Error ? ex.message : 'შეცდომა'}`);
+            return;
+          }
+        } else {
+          alert('პროდუქტი შენახულია, მაგრამ მარაგის შესანახად საჭიროა ხელახლა შესვლა ადმინის ანგარიშით.');
+          return;
+        }
+      }
+      setView('list');
+    } finally {
+      setSavingProduct(false);
     }
-    setView('list');
   };
 
   const displayedProducts = products.filter(p => {
@@ -359,7 +385,7 @@ export default function Admin() {
         )}
         {tab === 'products' && view === 'product-form' && (
           <ProductFormView
-            products={products}
+            products={products} saving={savingProduct}
             form={productForm} onChange={setProductForm}
             onSave={handleSaveProduct} onCancel={() => setView('list')}
             isEdit={!!editProductId} editId={editProductId} catalog={catalog} models={models}
@@ -677,8 +703,8 @@ function ProductRow({ product, catalog, models, stockQty, isAdmin, onEdit, onDel
 }
 
 // ── Product form ───────────────────────────────────────────────────────────
-function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, editId, catalog, models }: {
-  products: Product[];
+function ProductFormView({ products, saving, form, onChange, onSave, onCancel, isEdit, editId, catalog, models }: {
+  products: Product[]; saving: boolean;
   form: ProductForm; onChange: (f: ProductForm) => void;
   onSave: () => void; onCancel: () => void; isEdit: boolean; editId: string | null;
   catalog: CatalogSection[]; models: TeslaModel[];
@@ -748,10 +774,10 @@ function ProductFormView({ products, form, onChange, onSave, onCancel, isEdit, e
           <h1 className="admin-page-title">{isEdit ? 'პროდუქტის რედაქტირება' : 'ახალი პროდუქტი'}</h1>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="admin-btn-ghost" onClick={onCancel}>გაუქმება</button>
-          <button className="admin-btn-primary" onClick={onSave}>
+          <button className="admin-btn-ghost" onClick={onCancel} disabled={saving}>გაუქმება</button>
+          <button className="admin-btn-primary" onClick={onSave} disabled={saving}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            შენახვა
+            {saving ? 'ინახება…' : 'შენახვა'}
           </button>
         </div>
       </div>
