@@ -11,7 +11,8 @@ import { getCatName } from '../utils/catalog';
 import { Product } from '../types';
 import './Products.css';
 import { usePageMeta } from '../utils/seo';
-import { productGel } from '../utils/currency';
+import { productGel, usdSiteTag } from '../utils/currency';
+import { onImgError } from '../utils/imgFallback';
 
 export default function Products() {
   usePageMeta('ნაწილები', 'Tesla-ს ნაწილების სრული სია თქვენი მოდელისთვის — ფასები, მარაგი, მიწოდება.');
@@ -150,7 +151,7 @@ function ShopCard({ product, onAdd, modelColor, lang }: { product: Product; onAd
   return (
     <div className="product-card">
       <Link to={`/products/${product.id}`} className="product-card-img-wrap">
-        <img src={product.image} alt={product.name} loading="lazy" />
+        <img src={product.image} alt={product.name} loading="lazy" onError={onImgError} />
         {product.badge && <span className={`badge badge-${product.badge} product-badge`}>{itemStatusLabel(product.badge, lang)}</span>}
         {!product.inStock && <div className="out-of-stock-overlay">{t('prod_out_of_stock')}</div>}
       </Link>
@@ -160,7 +161,7 @@ function ShopCard({ product, onAdd, modelColor, lang }: { product: Product; onAd
           <h3 className="product-name">{displayName}</h3>
         </Link>
         <div className="product-footer">
-          <span className="product-price">{productGel(product).toLocaleString()} ₾</span>
+          <span className="product-price">{productGel(product).toLocaleString()} ₾{usdSiteTag(product) && <span className="price-usd-tag">{usdSiteTag(product)}</span>}</span>
           <button
             className="add-to-cart-btn btn-primary"
             disabled={!product.inStock}

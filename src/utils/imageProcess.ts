@@ -102,3 +102,15 @@ export async function processImageFile(file: File, view: ImageView = DEFAULT_VIE
   renderProductImage(canvas, img, view);
   return exportCanvas(canvas, file.name);
 }
+
+/**
+ * True when the image source is safe to save. Catches base64 data URLs whose
+ * payload is corrupt (e.g. characters lost in a copy/paste) — a broken string
+ * would otherwise be stored and the product photo would never load again.
+ */
+export function isValidImageSrc(src: string): boolean {
+  const m = src.match(/^data:image\/[a-z0-9.+-]+;base64,([\s\S]*)$/i);
+  if (!m) return true; // plain URLs and non-base64 data URLs pass through
+  const b64 = m[1];
+  return b64.length > 0 && b64.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(b64);
+}

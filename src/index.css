@@ -150,3 +150,6 @@ input, select {
 @media (max-width: 768px) {
   .container { padding: 0 16px; }
 }
+
+/* $ price tag next to the lari price (shown only when enabled in admin) */
+.price-usd-tag { margin-left: 7px; font-size: 0.78em; font-weight: 700; color: #3fa96b; white-space: nowrap; }

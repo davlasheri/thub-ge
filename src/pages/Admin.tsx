@@ -15,6 +15,8 @@ import { fmtUsd, productGel } from '../utils/currency';
 import { TeslaModel, Product, CatalogSection, CatalogSubsection, CarListing } from '../types';
 import EmployeesPanel from '../components/EmployeesPanel';
 import { suggestCategory, CategorySuggestion } from '../utils/partNumber';
+import { isValidImageSrc } from '../utils/imageProcess';
+import { onImgError } from '../utils/imgFallback';
 import { login as staffLogin, loadSession, saveSession, getInventory, addStock, Session as StaffSession } from '../utils/staffApi';
 import './Admin.css';
 
@@ -179,6 +181,9 @@ export default function Admin() {
   const handleSaveProduct = async () => {
     if (!productForm.name.trim() || !productForm.partNumber.trim() || !productForm.price) {
       alert('შეავსეთ სახელი, ნომერი და ფასი.'); return;
+    }
+    if (productForm.image && !isValidImageSrc(productForm.image)) {
+      alert('ფოტოს მონაცემები დაზიანებულია და ბრაუზერი ვერ აჩვენებს — ატვირთეთ ფოტო ხელახლა.'); return;
     }
     const id = editProductId ?? genId();
     if (editProductId) updateProduct(formToProduct(productForm, id));
@@ -465,6 +470,11 @@ function UsdRateEditor() {
         value={value} onChange={e => setValue(e.target.value)}
         onBlur={save} onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
       <span className="admin-usd-rate-label">₾{saved ? ' ✓' : ''}</span>
+      <label className="admin-usd-show" title="ჩართვისას საიტზე ლარის გვერდით $ ფასიც გამოჩნდება USD პროდუქტებზე">
+        <input type="checkbox" checked={settings.pos.showUsdOnSite === true}
+          onChange={e => updatePos({ ...settings.pos, showUsdOnSite: e.target.checked })} />
+        $ საიტზეც
+      </label>
     </div>
   );
 }
@@ -573,7 +583,7 @@ function ZoomThumb({ src, alt }: { src: string; alt: string }) {
       <img
         src={src} alt={alt} className="admin-product-thumb admin-thumb-clickable"
         title="სურათის გადიდება"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen(true)} onError={onImgError}
       />
       {open && (
         <div className="admin-lightbox" onClick={() => setOpen(false)}>

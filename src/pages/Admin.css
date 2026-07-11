@@ -760,3 +760,9 @@
 .admin-price-row input { flex: 1; min-width: 0; }
 .admin-price-currency { width: auto; flex-shrink: 0; }
 .admin-price-gel { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted, #999); }
+.admin-usd-show {
+  display: flex; align-items: center; gap: 5px; margin-left: 4px;
+  font-size: 12px; font-weight: 700; color: var(--text-muted, #999);
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+.admin-usd-show input { accent-color: #3fa96b; cursor: pointer; }

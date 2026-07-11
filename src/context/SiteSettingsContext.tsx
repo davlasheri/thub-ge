@@ -26,6 +26,8 @@ export interface HomeSettings {
 export interface PosSettings {
   /** USD→GEL exchange rate used to show USD-priced products in lari and to book USD sales. */
   usdRate: number;
+  /** When true, the public site also shows the $ price next to the lari for USD items. */
+  showUsdOnSite: boolean;
 }
 
 export interface SiteSettings {
@@ -55,6 +57,7 @@ const DEFAULTS: SiteSettings = {
   },
   pos: {
     usdRate: 2.7,
+    showUsdOnSite: false,
   },
 };
 
