@@ -147,7 +147,17 @@ function PosView({ session }: { session: Session }) {
   const [query, setQuery] = useState('');
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState<{ sectionId: string; subId: string } | null>(null);
-  const [ticket, setTicket] = useState<TicketLine[]>([]);
+  // Persist the open ticket so a reload, tab crash, or forced re-login on an
+  // expired token never loses an in-progress sale.
+  const [ticket, setTicket] = useState<TicketLine[]>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('thub_pos_ticket') ?? '[]');
+      return Array.isArray(raw) ? raw : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('thub_pos_ticket', JSON.stringify(ticket)); } catch { /* ignore */ }
+  }, [ticket]);
   const [payment, setPayment] = useState<Payment>('cash');
   const [phone, setPhone] = useState('');
   const [note, setNote] = useState('');
