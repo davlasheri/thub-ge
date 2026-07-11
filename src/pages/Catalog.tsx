@@ -406,7 +406,7 @@ function ModelCard({ model, onClick, t }: { model: TeslaModel; onClick: () => vo
           {t('epc_view_btn')} →
         </button>
       </div>
-      <div className="epc-model-card-visual">
+      <div className={`epc-model-card-visual ${PHOTO_BY_MODEL[model.id] ? 'epc-visual-photo' : ''}`}>
         <div className={`epc-sil-wrap ${PHOTO_BY_MODEL[model.id] ? 'epc-sil-photo' : ''}`} style={{ color: model.color }}>
           <ModelSilhouette modelId={model.id} tall={isTall} />
         </div>

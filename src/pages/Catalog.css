@@ -148,8 +148,11 @@
 .epc-model-card:hover .epc-sil-wrap { opacity: 0.45; }
 
 /* real car photo variant — full-strength, theme-matched shadow/glow */
-.epc-sil-wrap.epc-sil-photo { opacity: 0.92; padding: 14px 12px; display: flex; align-items: center; }
+.epc-sil-wrap.epc-sil-photo { opacity: 1; padding: 14px 12px; display: flex; align-items: center; }
 .epc-model-card:hover .epc-sil-wrap.epc-sil-photo { opacity: 1; }
+/* the edge-fade overlay suits the faint blueprints only — on real photos it
+   whites out the car's front */
+.epc-model-card-visual.epc-visual-photo::before { display: none; }
 .epc-model-photo {
   width: 100%; height: auto; display: block;
   filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.06));
