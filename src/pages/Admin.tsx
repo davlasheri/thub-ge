@@ -17,6 +17,7 @@ import EmployeesPanel from '../components/EmployeesPanel';
 import { suggestCategory, CategorySuggestion } from '../utils/partNumber';
 import { isValidImageSrc } from '../utils/imageProcess';
 import { onImgError } from '../utils/imgFallback';
+import { uploadProductImage, isDataImage, uploadedFileName } from '../utils/imageUpload';
 import { login as staffLogin, loadSession, saveSession, getInventory, addStock, Session as StaffSession } from '../utils/staffApi';
 import './Admin.css';
 
@@ -166,6 +167,23 @@ export default function Admin() {
     if (s) getInventory(s).then(setInventory).catch(() => {});
   }, [authed]);
 
+  // Migrate embedded (base64) photos to server files, one per pass, so the
+  // catalog JSON shrinks. Corrupt photo data is skipped — those need a manual
+  // re-upload; failed uploads keep the embedded copy and everything works.
+  const migrationTried = useRef<Set<string>>(new Set());
+  const migrating = useRef(false);
+  useEffect(() => {
+    if (!authed || migrating.current) return;
+    const target = products.find(p =>
+      isDataImage(p.image) && isValidImageSrc(p.image) && !migrationTried.current.has(p.id));
+    if (!target) return;
+    migrating.current = true;
+    migrationTried.current.add(target.id);
+    uploadProductImage(target.image, { partNumber: target.partNumber, productId: target.id })
+      .then(url => { if (url) updateProduct({ ...target, image: url }); })
+      .finally(() => { migrating.current = false; });
+  });
+
   if (!authed) return <LoginScreen onLogin={() => { sessionStorage.setItem(SESSION_KEY, '1'); setAuthed(true); }} />;
 
   const startAddProduct = () => {
@@ -186,8 +204,20 @@ export default function Admin() {
       alert('ფოტოს მონაცემები დაზიანებულია და ბრაუზერი ვერ აჩვენებს — ატვირთეთ ფოტო ხელახლა.'); return;
     }
     const id = editProductId ?? genId();
-    if (editProductId) updateProduct(formToProduct(productForm, id));
-    else               addProduct(formToProduct(productForm, id));
+    // photos are stored as files on the server (small catalog JSON + SEO
+    // names); when the upload isn't possible the embedded copy is kept
+    let form = productForm;
+    if (isDataImage(form.image)) {
+      const prev = editProductId ? products.find(p => p.id === editProductId)?.image : undefined;
+      const url = await uploadProductImage(form.image, {
+        partNumber: form.partNumber.trim(),
+        productId: id,
+        replaces: prev ? uploadedFileName(prev) : undefined,
+      });
+      if (url) form = { ...form, image: url };
+    }
+    if (editProductId) updateProduct(formToProduct(form, id));
+    else               addProduct(formToProduct(form, id));
 
     // stock changes go through addStock so they land in the movement report
     // (მოძრაობის რეპორტი) with the date and the admin's name

@@ -17,14 +17,31 @@ import './Catalog.css';
 import { usePageMeta } from '../utils/seo';
 import { productGel, usdSiteTag } from '../utils/currency';
 import { onImgError } from '../utils/imgFallback';
+import { useTheme } from '../context/ThemeContext';
 
 type TFn = (k: TranslationKey) => string;
 
 type EpcView = 'models' | 'groups' | 'parts';
 
 // ── Silhouettes ───────────────────────────────────────────────────────────────
+// Real configurator photos like the home page — white car in light theme,
+// black car in dark. Custom admin-added models fall back to the line drawing.
+const PHOTO_BY_MODEL: Record<string, string> = { MS: 'ms', M3: 'm3', MX: 'mx', MY: 'my' };
+
 function ModelSilhouette({ modelId }: { modelId: string; tall?: boolean }) {
-  return <ModelBlueprint modelId={modelId} />;
+  const { theme } = useTheme();
+  const img = PHOTO_BY_MODEL[modelId];
+  if (!img) return <ModelBlueprint modelId={modelId} />;
+  const color = theme === 'light' ? 'white' : 'black';
+  return (
+    <img
+      key={`${img}-${color}`}
+      className="epc-model-photo"
+      src={`${import.meta.env.BASE_URL}cars/hero-${img}-${color}.webp`}
+      alt=""
+      loading="lazy"
+    />
+  );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -390,7 +407,7 @@ function ModelCard({ model, onClick, t }: { model: TeslaModel; onClick: () => vo
         </button>
       </div>
       <div className="epc-model-card-visual">
-        <div className="epc-sil-wrap" style={{ color: model.color }}>
+        <div className={`epc-sil-wrap ${PHOTO_BY_MODEL[model.id] ? 'epc-sil-photo' : ''}`} style={{ color: model.color }}>
           <ModelSilhouette modelId={model.id} tall={isTall} />
         </div>
       </div>
