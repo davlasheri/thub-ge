@@ -7,7 +7,7 @@ import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
-import { usePageMeta } from '../utils/seo';
+import { usePageMeta, useJsonLd, SITE } from '../utils/seo';
 import './ProductDetail.css';
 import { productGel, usdSiteTag } from '../utils/currency';
 import { onImgError } from '../utils/imgFallback';
@@ -22,7 +22,29 @@ export default function ProductDetail() {
   const { catalog } = useCatalog();
   const { models } = useModels();
   const product = getById(id ?? '');
-  usePageMeta(product ? `${product.name} — #${product.partNumber}` : 'ნაწილი', product?.description);
+  const metaName = product ? (lang === 'ka' ? (product.nameGe || product.name) : product.name) : '';
+  usePageMeta(
+    product ? `${metaName} — #${product.partNumber}` : 'ნაწილი',
+    product?.description || (product ? `${metaName} — Tesla ${product.partNumber}` : undefined),
+    product?.image,
+  );
+  // schema.org/Product structured data → eligible for Google rich results
+  useJsonLd(product ? {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: metaName,
+    sku: product.partNumber,
+    image: product.image?.startsWith('http') ? product.image : SITE + product.image,
+    description: product.description || metaName,
+    brand: { '@type': 'Brand', name: 'Tesla' },
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'GEL',
+      price: productGel(product),
+      availability: product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `${SITE}/products/${product.id}`,
+    },
+  } : null);
 
   if (!product) {
     return (

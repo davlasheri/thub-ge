@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useLang } from '../context/LanguageContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
-import { generateOrderPdf, generateOrderPdfBlob, buildOrderSummary } from '../utils/orderPdf';
 import './CartDrawer.css';
 import { productGel } from '../utils/currency';
 import { onImgError } from '../utils/imgFallback';
@@ -31,13 +30,17 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
   // WhatsApp number comes from admin contact settings, with a safe fallback
   const waNumber = phoneDigits(settings.contact.phone) || '995599286244';
 
-  function handleDownload() {
+  // jsPDF + html2canvas are heavy (~700KB) and only needed when a customer
+  // actually checks out, so the module is loaded on demand, not up-front.
+  async function handleDownload() {
     if (!isValidPhone(phone)) { setPhoneError(true); return; }
+    const { generateOrderPdf } = await import('../utils/orderPdf');
     generateOrderPdf(items, phone.trim(), totalPrice);
   }
 
   async function handleWhatsApp() {
     if (!isValidPhone(phone)) { setPhoneError(true); return; }
+    const { generateOrderPdfBlob, buildOrderSummary } = await import('../utils/orderPdf');
     const { blob, orderNum } = generateOrderPdfBlob(items, phone.trim(), totalPrice);
     const summary = buildOrderSummary(items, phone.trim(), totalPrice, orderNum);
     const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(summary)}`;

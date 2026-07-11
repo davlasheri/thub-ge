@@ -4,7 +4,11 @@ require __DIR__ . '/db.php';
 $me = check_token(bearer_token(), $CFG, $pdo);
 if ($me['role'] !== 'admin') fail(403, 'მხოლოდ ადმინისტრატორისთვის');
 
-$TABLES = ['employees', 'sales', 'sale_items', 'inventory', 'stock_movements', 'cash_movements'];
+// site_content holds the whole editable catalog (products, categories, models,
+// cars, settings) — it MUST be in the backup or a restore loses the catalogue.
+// Note: uploaded product photos live as files under api/uploads/ and are not in
+// this DB dump; include that folder in the hosting's file backup separately.
+$TABLES = ['employees', 'sales', 'sale_items', 'inventory', 'stock_movements', 'cash_movements', 'site_content'];
 
 $dump = ['created' => date('c'), 'version' => 1, 'tables' => []];
 foreach ($TABLES as $t) {
