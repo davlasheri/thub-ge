@@ -160,12 +160,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ── GET: recent sales with items ─────────────────────────────────────────────
+// Everyone sees the sales list (needed for returns/lookups), but customer phone
+// numbers (PII) are only returned to admin accounts.
+$isAdmin = $emp['role'] === 'admin';
 $limit = min(200, max(1, (int)($_GET['limit'] ?? 50)));
+$phoneCol = $isAdmin ? 's.customer_phone' : "''";
 $sales = $pdo->prepare(
-  'SELECT s.id, s.total, s.payment, s.customer_phone AS customerPhone, s.note,
+  "SELECT s.id, s.total, s.payment, $phoneCol AS customerPhone, s.note,
           s.ref_sale_id AS refSaleId, s.created_at AS createdAt, e.display_name AS employee
    FROM sales s JOIN employees e ON e.id = s.employee_id
-   ORDER BY s.id DESC LIMIT ' . $limit
+   ORDER BY s.id DESC LIMIT " . $limit
 );
 $sales->execute();
 $rows = $sales->fetchAll();

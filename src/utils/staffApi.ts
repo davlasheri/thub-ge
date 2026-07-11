@@ -198,7 +198,7 @@ export async function createEmployee(
 ): Promise<void> {
   const username = payload.username.trim().toLowerCase();
   if (!/^[a-z0-9._-]{3,32}$/.test(username)) throw new Error('მომხმარებელი: 3-32 სიმბოლო (a-z, 0-9, . _ -)');
-  if (payload.password.length < 4) throw new Error('პაროლი მინიმუმ 4 სიმბოლო');
+  if (payload.password.length < 8) throw new Error('პაროლი მინიმუმ 8 სიმბოლო');
   if (session.local) {
     const list = readLocalEmployees();
     if (list.some(e => e.username === username)) throw new Error('ასეთი მომხმარებელი უკვე არსებობს');
@@ -229,7 +229,7 @@ export async function updateEmployee(
     const isSelf = session.employee.id === payload.id || emp.username === session.employee.username;
     if (payload.role !== undefined && isSelf && payload.role !== 'admin') throw new Error('საკუთარი როლის დაქვეითება არ შეიძლება');
     if (payload.active !== undefined && isSelf && !payload.active) throw new Error('საკუთარი ანგარიშის გათიშვა არ შეიძლება');
-    if (payload.newPassword !== undefined && payload.newPassword.length < 4) throw new Error('პაროლი მინიმუმ 4 სიმბოლო');
+    if (payload.newPassword !== undefined && payload.newPassword.length < 8) throw new Error('პაროლი მინიმუმ 8 სიმბოლო');
     if (payload.displayName !== undefined) emp.displayName = payload.displayName.trim() || emp.username;
     if (payload.role !== undefined) emp.role = payload.role;
     if (payload.active !== undefined) emp.active = payload.active;

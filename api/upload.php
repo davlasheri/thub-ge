@@ -40,6 +40,18 @@ $ext = ['jpeg' => 'jpg', 'png' => 'png', 'webp' => 'webp'][$m[1]];
 $dir = __DIR__ . '/uploads';
 if (!is_dir($dir) && !@mkdir($dir, 0755, true)) fail(500, 'uploads dir not writable');
 
+// Defense-in-depth: images are served as static files, but nothing in this
+// folder may ever run as a script (in case the validation above regresses).
+$htaccess = "$dir/.htaccess";
+if (!is_file($htaccess)) {
+  @file_put_contents($htaccess,
+    "<IfModule mod_php.c>\n  php_admin_flag engine off\n</IfModule>\n" .
+    "<IfModule mod_php7.c>\n  php_admin_flag engine off\n</IfModule>\n" .
+    "<IfModule mod_php8.c>\n  php_admin_flag engine off\n</IfModule>\n" .
+    "<FilesMatch \"\\.(php|phtml|phar|cgi|pl|py|sh|htaccess)$\">\n  Require all denied\n</FilesMatch>\n"
+  );
+}
+
 $slug = function (string $s): string {
   $s = strtolower($s);
   $s = preg_replace('/[^a-z0-9]+/', '-', $s) ?? '';
