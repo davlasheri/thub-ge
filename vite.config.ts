@@ -29,6 +29,21 @@ export default defineConfig({
         // navigation fallback as well.
         navigateFallbackDenylist: [/\/api\//],
         globPatterns: ['**/*.{js,css,html,svg,png}'],
+        runtimeCaching: [
+          {
+            // Catalog content: network-first so online users always get fresh
+            // data, but a cached copy lets the installed PWA still show the
+            // catalogue offline. Only content.php — sales/auth/stock stay
+            // strictly network-only (never cached).
+            urlPattern: ({ url }: { url: URL }) => url.pathname.endsWith('/api/content.php'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'thub-content',
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { VehicleProvider } from './context/VehicleContext';
 import { useLang } from './context/LanguageContext';
@@ -8,12 +9,15 @@ import Catalog from './pages/Catalog';
 import ProductDetail from './pages/ProductDetail';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import Admin from './pages/Admin';
-import ImageTool from './pages/ImageTool';
 import Cars from './pages/Cars';
 import CarDetail from './pages/CarDetail';
 import Service from './pages/Service';
-import Staff from './pages/Staff';
+
+// Staff-only screens are large and never needed by a shopper — load them on
+// demand so they stay out of the initial bundle every visitor downloads.
+const Admin = lazy(() => import('./pages/Admin'));
+const ImageTool = lazy(() => import('./pages/ImageTool'));
+const Staff = lazy(() => import('./pages/Staff'));
 
 function NotFound() {
   const { t } = useLang();
@@ -26,13 +30,19 @@ function NotFound() {
   );
 }
 
+const lazyFallback = (
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+    იტვირთება…
+  </div>
+);
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/pos" element={<Staff />} />
+      <Route path="/admin" element={<Suspense fallback={lazyFallback}><Admin /></Suspense>} />
+      <Route path="/pos" element={<Suspense fallback={lazyFallback}><Staff /></Suspense>} />
       <Route path="/staff" element={<Navigate to="/pos" replace />} />
-      <Route path="/image-tool" element={<ImageTool />} />
+      <Route path="/image-tool" element={<Suspense fallback={lazyFallback}><ImageTool /></Suspense>} />
       <Route path="*" element={
         <VehicleProvider>
           <Header />
