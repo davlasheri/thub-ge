@@ -283,14 +283,14 @@ export default function Admin() {
 
   const downloadBackup = async () => {
     const s = loadSession();
-    if (!s || s.local) { alert('ბექაფი მუშაობს მხოლოდ მონაცემთა ბაზასთან — გახსენით საიტი thub.ge-ზე'); return; }
+    if (!s || s.local) { alert('ბექაფი მუშაობს მხოლოდ მონაცემთა ბაზასთან — გახსენით საიტი teslahub.ge-ზე'); return; }
     try {
       const res = await fetch('api/backup.php?mode=download', { headers: { Authorization: `Bearer ${s.token}` } });
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `thub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `teslahub-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
@@ -302,7 +302,7 @@ export default function Admin() {
     <aside className={`admin-sidebar ${navOpen ? 'admin-sidebar-open' : ''}`}>
       <div className="admin-sidebar-top">
         <div className="admin-logo">
-          <span className="admin-logo-t">T</span>Hub <span className="admin-logo-admin">Admin</span>
+          <span className="admin-logo-t">Tesla</span>Hub <span className="admin-logo-admin">Admin</span>
         </div>
         <button className="admin-close-btn" onClick={() => setNavOpen(false)} aria-label="Close menu">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -369,7 +369,7 @@ export default function Admin() {
               <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <span className="admin-topbar-logo"><span style={{ color: 'var(--red)' }}>T</span>Hub Admin</span>
+          <span className="admin-topbar-logo"><span style={{ color: 'var(--red)' }}>Tesla</span>Hub Admin</span>
         </div>
         {tab === 'products' && view === 'list' && (
           <ProductsList
@@ -484,7 +484,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
     <div className="admin-login-page">
       <form className="admin-login-card" onSubmit={submit}>
         <div className="admin-logo" style={{ marginBottom: 24 }}>
-          <span className="admin-logo-t">T</span>Hub <span className="admin-logo-admin">Admin</span>
+          <span className="admin-logo-t">Tesla</span>Hub <span className="admin-logo-admin">Admin</span>
         </div>
         <h2>ადმინ პანელი</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>შედით თანამშრომლის ანგარიშით (ადმინის როლი)</p>
@@ -809,7 +809,7 @@ function ProductFormView({ products, saving, form, onChange, onSave, onCancel, i
                 </button>
               )}
               <p className="admin-img-process-note">
-                ↑ 800×600 (4:3) · მუქი ფონი · THub.ge ბეიჯი · მასშტაბი და პოზიცია მორგებადია
+                ↑ 800×600 (4:3) · მუქი ფონი · TeslaHub.ge ბეიჯი · მასშტაბი და პოზიცია მორგებადია
               </p>
               <div className="admin-img-divider"><span>ან URL-ით</span></div>
               <input type="text" className="admin-input" placeholder="https://images.unsplash.com/..."
@@ -1381,8 +1381,8 @@ function ContactSettingsView() {
         </div>
         <div className="admin-card">
           <h3 className="admin-card-title">ელ. ფოსტა</h3>
-          <div className="admin-field"><label className="admin-label">ელ. ფოსტა 1</label><input className="admin-input" value={form.email1} onChange={e => set('email1', e.target.value)} placeholder="info@thub.ge" /></div>
-          <div className="admin-field"><label className="admin-label">ელ. ფოსტა 2</label><input className="admin-input" value={form.email2} onChange={e => set('email2', e.target.value)} placeholder="orders@thub.ge" /></div>
+          <div className="admin-field"><label className="admin-label">ელ. ფოსტა 1</label><input className="admin-input" value={form.email1} onChange={e => set('email1', e.target.value)} placeholder="info@teslahub.ge" /></div>
+          <div className="admin-field"><label className="admin-label">ელ. ფოსტა 2</label><input className="admin-input" value={form.email2} onChange={e => set('email2', e.target.value)} placeholder="orders@teslahub.ge" /></div>
         </div>
         <div className="admin-card">
           <h3 className="admin-card-title">სამუშაო საათები</h3>

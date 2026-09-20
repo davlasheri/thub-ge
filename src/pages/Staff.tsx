@@ -56,7 +56,7 @@ export default function Staff() {
   return (
     <div className="staff-page">
       <header className="staff-header">
-        <Link to="/" className="staff-logo"><span className="logo-t">T</span>Hub<span className="staff-logo-ge">.ge</span> <span className="staff-logo-suffix">POS</span></Link>
+        <Link to="/" className="staff-logo"><span className="logo-t">Tesla</span>Hub<span className="staff-logo-ge">.ge</span> <span className="staff-logo-suffix">POS</span></Link>
         <nav className="staff-tabs">
           <button className={tab === 'pos' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('pos')}>🧾 გაყიდვა</button>
           {isAdmin && <button className={tab === 'dashboard' ? 'staff-tab staff-tab-active' : 'staff-tab'} onClick={() => setTab('dashboard')}>📊 სტატისტიკა</button>}
@@ -120,7 +120,7 @@ function StaffLogin({ onLogin }: { onLogin: (s: Session) => void }) {
   return (
     <div className="staff-login-page">
       <form className="staff-login-card" onSubmit={submit}>
-        <div className="staff-login-logo"><span className="logo-t">T</span>Hub.ge</div>
+        <div className="staff-login-logo"><span className="logo-t">Tesla</span>Hub.ge</div>
         <h1>თანამშრომლის შესვლა</h1>
         <input className="staff-input" placeholder="მომხმარებელი" value={username}
           onChange={e => setUsername(e.target.value)} autoFocus autoComplete="username" />

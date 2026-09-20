@@ -35,7 +35,7 @@ export default function Header() {
       <header className="header">
         <div className="container header-inner">
           <Link to="/" className="logo">
-            <span className="logo-t">T</span>Hub
+            <span className="logo-t">Tesla</span>Hub
             <span className="logo-ge">.ge</span>
           </Link>
 
