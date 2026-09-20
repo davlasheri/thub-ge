@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const SITE = 'https://thub.ge';
+const SITE = 'https://teslahub.ge';
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
@@ -21,7 +21,7 @@ export function usePageMeta(title: string, description?: string, image?: string)
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const fullTitle = title ? `${title} | THub.ge` : 'THub.ge — Tesla-ს ნაწილები საქართველოში';
+    const fullTitle = title ? `${title} | TeslaHub.ge` : 'TeslaHub.ge — Tesla-ს ნაწილები საქართველოში';
     document.title = fullTitle;
     const url = SITE + (pathname === '/' ? '/' : pathname);
 
@@ -36,7 +36,7 @@ export function usePageMeta(title: string, description?: string, image?: string)
     canonical.href = url;
 
     // keep social preview tags in sync with the current page
-    upsertMeta('property', 'og:title', title || 'THub.ge — Tesla Parts Georgia');
+    upsertMeta('property', 'og:title', title || 'TeslaHub.ge — Tesla Parts Georgia');
     upsertMeta('property', 'og:url', url);
     if (description) {
       upsertMeta('property', 'og:description', description);

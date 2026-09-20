@@ -3,7 +3,7 @@ const W = 800;
 const H = 600;
 const BG = '#2B2B2C';
 const PAD = 64;
-const LOGO = 'THub.ge';
+const LOGO = 'TeslaHub.ge';
 const LOGO_RED = '#E3193A';
 
 function drawRoundRect(
@@ -37,7 +37,7 @@ export function loadImageFile(file: File): Promise<HTMLImageElement> {
   });
 }
 
-/** Draws the 800×600 product image: dark bg, the photo (zoomed/panned), THub badge. */
+/** Draws the 800×600 product image: dark bg, the photo (zoomed/panned), TeslaHub badge. */
 export function renderProductImage(
   canvas: HTMLCanvasElement,
   img: HTMLImageElement,
@@ -87,7 +87,7 @@ export function exportCanvas(canvas: HTMLCanvasElement, srcFileName: string): Pr
         resolve({
           dataUrl: canvas.toDataURL('image/jpeg', 0.93),
           blobUrl: URL.createObjectURL(blob),
-          fileName: srcFileName.replace(/\.[^.]+$/, '') + '-thub.jpg',
+          fileName: srcFileName.replace(/\.[^.]+$/, '') + '-teslahub.jpg',
         });
       },
       'image/jpeg',

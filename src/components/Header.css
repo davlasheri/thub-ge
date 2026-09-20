@@ -157,6 +157,14 @@
 .hamburger-open span:nth-child(2) { opacity: 0; }
 .hamburger-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* The TeslaHub.ge wordmark is wider than the old one: tighten it on
+   tablet widths so the logo, seven nav links and actions still fit one row. */
+@media (max-width: 1024px) {
+  .header-inner { gap: 16px; }
+  .logo { font-size: 22px; }
+  .logo-ge { font-size: 15px; }
+}
+
 @media (max-width: 768px) {
   .hamburger { display: flex; }
 

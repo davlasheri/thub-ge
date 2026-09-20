@@ -46,10 +46,10 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
     const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(summary)}`;
 
     if (typeof navigator.canShare === 'function') {
-      const file = new File([blob], `thub-order-${orderNum}.pdf`, { type: 'application/pdf' });
+      const file = new File([blob], `teslahub-order-${orderNum}.pdf`, { type: 'application/pdf' });
       if (navigator.canShare({ files: [file] })) {
         try {
-          await navigator.share({ files: [file], title: 'THub.ge Order', text: summary });
+          await navigator.share({ files: [file], title: 'TeslaHub.ge Order', text: summary });
           orderSent();
           return;
         } catch {

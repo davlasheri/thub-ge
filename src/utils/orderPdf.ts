@@ -25,7 +25,7 @@ function buildDoc(items: CartItem[], phone: string, totalPrice: number, orderNum
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(26);
   doc.setTextColor(255, 255, 255);
-  doc.text('THub.ge', 20, 18);
+  doc.text('TeslaHub.ge', 20, 18);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -127,7 +127,7 @@ function buildDoc(items: CartItem[], phone: string, totalPrice: number, orderNum
   doc.setFontSize(8.5);
   doc.setTextColor(...GRAY);
   doc.text(
-    'By signing below, the customer confirms agreement with THub.ge terms and conditions.',
+    'By signing below, the customer confirms agreement with TeslaHub.ge terms and conditions.',
     20, y,
   );
 
@@ -150,7 +150,7 @@ function buildDoc(items: CartItem[], phone: string, totalPrice: number, orderNum
   doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
   doc.text(
-    'THub.ge  ·  Tbilisi, Georgia  ·  +995 599 286 244  ·  info@thub.ge',
+    'TeslaHub.ge  ·  Tbilisi, Georgia  ·  +995 599 286 244  ·  info@teslahub.ge',
     W / 2,
     pageH - 5,
     { align: 'center' },
@@ -161,7 +161,7 @@ function buildDoc(items: CartItem[], phone: string, totalPrice: number, orderNum
 
 export function generateOrderPdf(items: CartItem[], phone: string, totalPrice: number): void {
   const orderNum = makeOrderNum();
-  buildDoc(items, phone, totalPrice, orderNum).save(`thub-order-${orderNum}.pdf`);
+  buildDoc(items, phone, totalPrice, orderNum).save(`teslahub-order-${orderNum}.pdf`);
 }
 
 export function generateOrderPdfBlob(
@@ -181,7 +181,7 @@ export function buildOrderSummary(
 ): string {
   const dateStr = new Date().toLocaleDateString('en-GB');
   const lines = [
-    `🛒 THub.ge — New Order`,
+    `🛒 TeslaHub.ge — New Order`,
     `📋 ${orderNum}`,
     `📅 ${dateStr}`,
     `📞 ${phone}`,

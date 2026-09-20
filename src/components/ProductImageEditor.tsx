@@ -3,7 +3,7 @@ import { loadImageFile, renderProductImage, exportCanvas } from '../utils/imageP
 
 /*
  * Zoom/crop editor for product photos. Shows a live preview of the final
- * 800×600 (4:3) image (dark background + THub badge); the photo can be zoomed with
+ * 800×600 (4:3) image (dark background + TeslaHub badge); the photo can be zoomed with
  * the slider / mouse wheel and repositioned by dragging.
  * Source is either a freshly picked File or the product's current image
  * (data URL / https URL), so existing photos can be re-cropped too.

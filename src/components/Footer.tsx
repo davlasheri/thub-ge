@@ -16,7 +16,7 @@ export default function Footer() {
       <div className="container footer-inner">
         <div className="footer-brand">
           <Link to="/" className="footer-logo">
-            <span className="logo-t">T</span>Hub<span className="logo-ge">.ge</span>
+            <span className="logo-t">Tesla</span>Hub<span className="logo-ge">.ge</span>
           </Link>
           <p className="footer-tagline">{t('footer_tagline')}<br />{t('footer_delivery')}</p>
         </div>
@@ -46,7 +46,7 @@ export default function Footer() {
 
       <div className="footer-bottom">
         <div className="container footer-bottom-inner">
-          <p>© {new Date().getFullYear()} THub.ge — {t('footer_rights')}</p>
+          <p>© {new Date().getFullYear()} TeslaHub.ge — {t('footer_rights')}</p>
 
           <div className="footer-version-wrap">
             {versionsOpen && (

@@ -19,7 +19,7 @@ $json = json_encode($dump, JSON_UNESCAPED_UNICODE);
 // mode=download: stream the dump to the admin's browser
 if (($_GET['mode'] ?? '') === 'download') {
   header('Content-Type: application/json; charset=utf-8');
-  header('Content-Disposition: attachment; filename="thub-backup-' . date('Y-m-d-His') . '.json"');
+  header('Content-Disposition: attachment; filename="teslahub-backup-' . date('Y-m-d-His') . '.json"');
   echo $json;
   exit;
 }

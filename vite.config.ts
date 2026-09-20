@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'THub.ge — Tesla Parts & POS',
-        short_name: 'THub.ge',
+        name: 'TeslaHub.ge — Tesla Parts & POS',
+        short_name: 'TeslaHub.ge',
         description: 'Tesla parts store, catalogue and point of sale',
         lang: 'ka',
         theme_color: '#0d0d0d',

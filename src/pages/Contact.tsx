@@ -5,7 +5,7 @@ import './Contact.css';
 import { usePageMeta } from '../utils/seo';
 
 export default function Contact() {
-  usePageMeta('კონტაქტი', 'დაგვიკავშირდით: +995 599 286 244, info@thub.ge — Tesla ნაწილები და სერვისი თბილისში.');
+  usePageMeta('კონტაქტი', 'დაგვიკავშირდით: +995 599 286 244, info@teslahub.ge — Tesla ნაწილები და სერვისი თბილისში.');
   const { t } = useLang();
   const { settings } = useSiteSettings();
   const c = settings.contact;
@@ -21,7 +21,7 @@ export default function Contact() {
     e.preventDefault();
     const subject = form.subject || t('contact_subj_inquiry');
     const lines = [
-      `📩 ${t('contact_form_title')} — THub.ge`,
+      `📩 ${t('contact_form_title')} — TeslaHub.ge`,
       `${t('contact_name')}: ${form.name}`,
       `${t('contact_phone')}: ${form.phone}`,
       form.email ? `${t('contact_email_label')}: ${form.email}` : '',

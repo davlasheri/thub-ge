@@ -1,5 +1,5 @@
 <?php
-// THub.ge API configuration.
+// TeslaHub.ge API configuration.
 // Copy this file to config.php (same folder) and fill in your MySQL details
 // from cPanel -> MySQL Databases. config.php is never overwritten by deploys.
 return [

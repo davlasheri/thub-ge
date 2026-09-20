@@ -1,3 +1,13 @@
+# Canonical host: the old thub.ge domain and www.teslahub.ge permanently
+# redirect to https://teslahub.ge, keeping the path and query string.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteCond %{HTTP_HOST} ^(www\.)?thub\.ge$ [NC,OR]
+RewriteCond %{HTTP_HOST} ^www\.teslahub\.ge$ [NC]
+RewriteRule ^(.*)$ https://teslahub.ge/$1 [R=301,L]
+</IfModule>
+
 # SPA routing: serve real files/directories as-is, everything else → index.html
 <IfModule mod_rewrite.c>
 RewriteEngine On

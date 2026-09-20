@@ -6,4 +6,4 @@ Disallow: /staff
 Disallow: /image-tool
 Disallow: /api/
 
-Sitemap: https://thub.ge/sitemap.xml
+Sitemap: https://teslahub.ge/sitemap.xml
