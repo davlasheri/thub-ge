@@ -12,6 +12,7 @@ import Contact from './pages/Contact';
 import Cars from './pages/Cars';
 import CarDetail from './pages/CarDetail';
 import Service from './pages/Service';
+import { usePageMeta } from './utils/seo';
 
 // Staff-only screens are large and never needed by a shopper — load them on
 // demand so they stay out of the initial bundle every visitor downloads.
@@ -21,6 +22,7 @@ const Staff = lazy(() => import('./pages/Staff'));
 
 function NotFound() {
   const { t } = useLang();
+  usePageMeta('404', undefined, undefined, { noindex: true });
   return (
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
       <h2 style={{ fontSize: 48, fontWeight: 900 }}>404</h2>
