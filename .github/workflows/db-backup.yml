@@ -5,23 +5,88 @@ on:
     - cron: '0 2 * * *'   # every night 02:00 UTC (06:00 Tbilisi)
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   backup:
     runs-on: ubuntu-latest
+    env:
+      SITE: https://teslahub.ge
     steps:
-      - name: Trigger server-side backup
+      - name: Check required secrets
+        env:
+          BACKUP_USER: ${{ secrets.BACKUP_USER }}
+          BACKUP_PASS: ${{ secrets.BACKUP_PASS }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          missing=""
+          [ -n "$BACKUP_USER" ] || missing="$missing BACKUP_USER"
+          [ -n "$BACKUP_PASS" ] || missing="$missing BACKUP_PASS"
+          [ -n "$BACKUP_ENCRYPTION_KEY" ] || missing="$missing BACKUP_ENCRYPTION_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error title=Backup not configured::Missing repository secret(s):$missing. Add them in Settings → Secrets and variables → Actions. BACKUP_USER/BACKUP_PASS = an admin POS account; BACKUP_ENCRYPTION_KEY = a long random passphrase used to encrypt the backup file."
+            exit 1
+          fi
+
+      - name: Log in to the staff API
         env:
           BACKUP_USER: ${{ secrets.BACKUP_USER }}
           BACKUP_PASS: ${{ secrets.BACKUP_PASS }}
         run: |
-          if [ -z "$BACKUP_USER" ] || [ -z "$BACKUP_PASS" ]; then
-            echo "::error::Set BACKUP_USER and BACKUP_PASS repository secrets (an admin POS account)."
+          set -euo pipefail
+          # Build the JSON body in Python so quotes/backslashes in the password are escaped safely.
+          BODY=$(python3 -c 'import json,os; print(json.dumps({"username": os.environ["BACKUP_USER"], "password": os.environ["BACKUP_PASS"]}))')
+          RESP=$(curl -sS --fail-with-body -X POST "$SITE/api/auth.php" \
+            -H 'Content-Type: application/json' --data "$BODY") || {
+            echo "::error title=Login failed::Could not log in to $SITE/api/auth.php — check BACKUP_USER/BACKUP_PASS (must be an active admin account)."
+            exit 1
+          }
+          TOKEN=$(echo "$RESP" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("token",""))')
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=Login failed::The API did not return a token."
             exit 1
           fi
-          TOKEN=$(curl -sf -X POST https://thub.ge/api/auth.php \
-            -H 'Content-Type: application/json' \
-            -d "{\"username\":\"$BACKUP_USER\",\"password\":\"$BACKUP_PASS\"}" \
-            | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
-          RESULT=$(curl -sf -X POST "https://thub.ge/api/backup.php" -H "Authorization: Bearer $TOKEN")
+          echo "::add-mask::$TOKEN"
+          echo "TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Trigger server-side backup (kept on the server, newest 14)
+        run: |
+          set -euo pipefail
+          RESULT=$(curl -sS --fail-with-body -X POST "$SITE/api/backup.php" -H "Authorization: Bearer $TOKEN")
           echo "Backup result: $RESULT"
           echo "$RESULT" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get("ok"), d'
+
+      - name: Download backup and encrypt it
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          STAMP=$(date -u +%Y-%m-%d-%H%M%S)
+          mkdir -p out
+          curl -sS --fail-with-body "$SITE/api/backup.php?mode=download" \
+            -H "Authorization: Bearer $TOKEN" -o backup.json
+          # sanity check: must be a JSON dump with the expected tables
+          python3 - <<'PY'
+          import json
+          d = json.load(open("backup.json", encoding="utf-8"))
+          assert isinstance(d.get("tables"), dict) and "site_content" in d["tables"], "unexpected backup format"
+          print("Rows per table:", {k: len(v) for k, v in d["tables"].items()})
+          PY
+          # The repo is public, so artifacts are downloadable by any signed-in GitHub
+          # user — the dump is ALWAYS encrypted before upload.
+          # Restore: gpg --decrypt teslahub-backup-*.json.gz.gpg | gunzip > backup.json
+          gzip -9 -c backup.json | gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --pinentry-mode loopback --passphrase-fd 3 \
+            -o "out/teslahub-backup-$STAMP.json.gz.gpg" 3<<<"$BACKUP_ENCRYPTION_KEY"
+          shred -u backup.json
+          ls -l out/
+
+      - name: Upload encrypted backup as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: teslahub-db-backup-${{ github.run_id }}
+          path: out/*.gpg
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0   # already gzipped + encrypted
