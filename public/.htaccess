@@ -19,12 +19,62 @@ RewriteRule ^api/ - [L]
 RewriteRule . /index.html [L]
 </IfModule>
 
-# Sensible caching: hashed assets forever, HTML always revalidated
+# ── Security headers ────────────────────────────────────────────────────────
+# No full Content-Security-Policy on purpose (it could break the site); only
+# frame-ancestors, which just stops other sites from framing this one.
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Content-Security-Policy "frame-ancestors 'self'"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ── Caching ─────────────────────────────────────────────────────────────────
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType image/avif .avif
+  AddType image/webp .webp
+</IfModule>
+
+# Fallback when mod_headers is missing: HTML always revalidated, images 1 month.
+# (No blanket 1-year rule for JS/CSS: sw.js and registerSW.js are not hashed.)
 <IfModule mod_expires.c>
-ExpiresActive On
-ExpiresByType text/html "access plus 0 seconds"
-ExpiresByType application/javascript "access plus 1 year"
-ExpiresByType text/css "access plus 1 year"
-ExpiresByType image/png "access plus 1 month"
-ExpiresByType image/svg+xml "access plus 1 month"
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/webp "access plus 1 month"
+  ExpiresByType image/avif "access plus 1 month"
+  ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+# Flag Vite's content-hashed build output and uploaded product photos (every
+# upload gets a new unique file name), which can be cached "forever".
+<IfModule mod_setenvif.c>
+  SetEnvIf Request_URI "^/assets/" THUB_IMMUTABLE
+  SetEnvIf Request_URI "^/api/uploads/" THUB_IMMUTABLE
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Other images (public icons, car photos): 30 days …
+  <FilesMatch "\.(webp|jpe?g|png|gif|svg|avif|ico)$">
+    Header set Cache-Control "public, max-age=2592000" env=!THUB_IMMUTABLE
+  </FilesMatch>
+
+  # … and hashed /assets/* + /api/uploads/* are immutable for a year
+  Header set Cache-Control "public, max-age=31536000, immutable" env=THUB_IMMUTABLE
+
+  # The app shell, service worker and manifest must always be revalidated so
+  # a new deploy reaches visitors immediately.
+  <FilesMatch "^(index\.html|sw\.js|registerSW\.js|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+# ── Compression: Brotli when the server has mod_brotli (ignored otherwise) ──
+<IfModule mod_brotli.c>
+  <IfModule mod_filter.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml application/xml application/javascript text/javascript application/json application/manifest+json image/svg+xml
+  </IfModule>
 </IfModule>
