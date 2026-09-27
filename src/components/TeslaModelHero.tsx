@@ -16,7 +16,7 @@ interface Zone {
 }
 
 interface ModelPhoto {
-  img: string;                        // /cars/hero-<img>-<color>.webp
+  img: string;                        // /img/cars/hero-<img>-<color>.webp
   box: [number, number, number, number]; // image placement in the 900×300 viewBox
   head: [number, number];             // headlight centre as fractions of the image
   tail: [number, number];             // taillight centre as fractions of the image
@@ -117,7 +117,7 @@ export default function TeslaModelHero({ modelId, onZoneClick, onZoneHover }: Pr
   const m = MODELS[modelId] ?? MODELS.M3;
   const [bx, by, bw, bh] = m.box;
   const color = theme === 'light' ? 'white' : 'black';
-  const src = `${import.meta.env.BASE_URL}cars/hero-${m.img}-${color}.webp`;
+  const src = `${import.meta.env.BASE_URL}img/cars/hero-${m.img}-${color}.webp`;
 
   // lamp centres in viewBox coordinates (dark theme glow)
   const hx = bx + m.head[0] * bw, hy = by + m.head[1] * bh;
