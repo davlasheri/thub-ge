@@ -113,14 +113,33 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS cash_movements (
   FOREIGN KEY (employee_id) REFERENCES employees(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// Seed a single default admin the first time. IMPORTANT: change this password
-// immediately after the first login — it is public in the repo. No staff
-// account is seeded (the old user1/1234 demo account was a standing risk);
-// create staff from the admin panel with a strong password instead.
+// Seed a single admin ONLY when the employees table is empty (fresh install).
+// An existing admin's password is never touched. No password lives in the
+// repo: set 'admin_initial_password' in config.php (or the THUB_ADMIN_INITIAL_PASSWORD
+// environment variable) before the first request; otherwise a random one is
+// generated and written to api/private/initial-admin-password.txt (blocked
+// from the web) — read it via cPanel File Manager, log in, change it, delete the file.
+// No staff account is seeded; create staff from the admin panel.
 $count = (int)$pdo->query('SELECT COUNT(*) c FROM employees')->fetch()['c'];
 if ($count === 0) {
+  $seedPw = (string)($CFG['admin_initial_password'] ?? '');
+  if ($seedPw === '') $seedPw = (string)(getenv('THUB_ADMIN_INITIAL_PASSWORD') ?: '');
+  if (strlen($seedPw) < 8) {
+    $seedPw = rtrim(strtr(base64_encode(random_bytes(12)), '+/', '-_'), '=');
+    $privDir = __DIR__ . '/private';
+    if (!is_dir($privDir)) @mkdir($privDir, 0700, true);
+    @file_put_contents("$privDir/.htaccess", "Require all denied\n");
+    @file_put_contents("$privDir/index.html", '');
+    if (@file_put_contents("$privDir/initial-admin-password.txt",
+        "TeslaHub.ge first admin login\nusername: admin\npassword: $seedPw\n" .
+        "Change this password after logging in, then delete this file.\n") === false) {
+      fail(500, 'Cannot seed admin: set admin_initial_password in api/config.php');
+    }
+    @chmod("$privDir/initial-admin-password.txt", 0600);
+  }
   $st = $pdo->prepare('INSERT INTO employees (username, display_name, password_hash, role) VALUES (?,?,?,?)');
-  $st->execute(['admin', 'Administrator', password_hash('thub2026', PASSWORD_DEFAULT), 'admin']);
+  $st->execute(['admin', 'Administrator', password_hash($seedPw, PASSWORD_DEFAULT), 'admin']);
+  unset($seedPw);
 }
 
 // ── Tokens: base64(username|expires|hmac) ──────────────────────────────────
