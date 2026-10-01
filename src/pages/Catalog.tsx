@@ -37,7 +37,7 @@ function ModelSilhouette({ modelId }: { modelId: string; tall?: boolean }) {
     <img
       key={`${img}-${color}`}
       className="epc-model-photo"
-      src={`${import.meta.env.BASE_URL}cars/hero-${img}-${color}.webp`}
+      src={`${import.meta.env.BASE_URL}img/cars/hero-${img}-${color}.webp`}
       alt=""
       loading="lazy"
     />

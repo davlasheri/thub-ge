@@ -7,7 +7,7 @@ import { useProducts } from '../context/ProductsContext';
 import { useCatalog } from '../context/CatalogContext';
 import { useModels } from '../context/ModelsContext';
 import { getCatName } from '../utils/catalog';
-import { usePageMeta, useJsonLd, SITE } from '../utils/seo';
+import { usePageMeta, useJsonLd, absoluteImageUrl, SITE } from '../utils/seo';
 import './ProductDetail.css';
 import { productGel, usdSiteTag } from '../utils/currency';
 import { onImgError } from '../utils/imgFallback';
@@ -27,6 +27,8 @@ export default function ProductDetail() {
     product ? `${metaName} — #${product.partNumber}` : 'ნაწილი',
     product?.description || (product ? `${metaName} — Tesla ${product.partNumber}` : undefined),
     product?.image,
+    // unknown or hidden product → "not found" view: keep it out of the index
+    { noindex: !product },
   );
   // schema.org/Product structured data → eligible for Google rich results
   useJsonLd(product ? {
@@ -34,13 +36,18 @@ export default function ProductDetail() {
     '@type': 'Product',
     name: metaName,
     sku: product.partNumber,
-    image: product.image?.startsWith('http') ? product.image : SITE + product.image,
+    // data:/blob: images can't be an absolute URL → fall back to the site logo
+    image: absoluteImageUrl(product.image) ?? `${SITE}/pwa-512x512.png`,
     description: product.description || metaName,
     brand: { '@type': 'Brand', name: 'Tesla' },
     offers: {
       '@type': 'Offer',
       priceCurrency: 'GEL',
       price: productGel(product),
+      // used parts (used-original / used-replica) → UsedCondition, else NewCondition
+      itemCondition: product.badge?.startsWith('used-')
+        ? 'https://schema.org/UsedCondition'
+        : 'https://schema.org/NewCondition',
       availability: product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       url: `${SITE}/products/${product.id}`,
     },

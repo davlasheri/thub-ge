@@ -4,6 +4,10 @@ Disallow: /admin
 Disallow: /pos
 Disallow: /staff
 Disallow: /image-tool
+# Private staff API stays blocked, but Google needs the public catalogue data
+# and product photos to render product pages.
 Disallow: /api/
+Allow: /api/content.php
+Allow: /api/uploads/
 
 Sitemap: https://teslahub.ge/sitemap.xml

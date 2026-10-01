@@ -88,7 +88,10 @@ const SESSION_KEY = 'thub_staff_session';
 export function loadSession(): Session | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const s: Session | null = raw ? JSON.parse(raw) : null;
+    // a stale browser-only session must not be resumed in production
+    if (s?.local && !LOCAL_MODE_ENABLED) { sessionStorage.removeItem(SESSION_KEY); return null; }
+    return s;
   } catch { return null; }
 }
 export function saveSession(s: Session | null) {
@@ -125,21 +128,25 @@ function writeLocalSales(sales: Sale[]) {
 // Local-mode employees carry a plain password field (browser-only demo data).
 type LocalEmployee = EmployeeRecord & { password: string };
 
+// Local (browser-only) mode is a development aid only. In production builds it
+// is disabled: if the server API is unreachable, sales must NOT be silently
+// recorded in this browser only (they would never reach the shop's database).
+const LOCAL_MODE_ENABLED = !import.meta.env.PROD;
+export const API_UNAVAILABLE =
+  'სერვერთან კავშირი ვერ დამყარდა — შესვლა და გაყიდვების აღრიცხვა ახლა შეუძლებელია. ' +
+  'შეამოწმეთ ინტერნეტი ან სცადეთ მოგვიანებით. (Server unavailable — sales cannot be recorded offline.)';
+
 function readLocalEmployees(): LocalEmployee[] {
   let list: LocalEmployee[] = [];
   try { list = JSON.parse(localStorage.getItem(LOCAL_EMP_KEY) ?? '[]'); }
   catch { list = []; }
-  if (!list.some(e => e.username === 'admin')) {
+  // No built-in passwords: the dev-only local admin uses a password set in
+  // .env.local (VITE_LOCAL_ADMIN_PASSWORD) or one changed earlier in local mode.
+  const devAdminPw = localStorage.getItem(LOCAL_PW_KEY) || import.meta.env.VITE_LOCAL_ADMIN_PASSWORD;
+  if (devAdminPw && !list.some(e => e.username === 'admin')) {
     list.unshift({
       id: 1, username: 'admin', displayName: 'Administrator', role: 'admin',
-      active: true, password: localStorage.getItem(LOCAL_PW_KEY) || 'thub2026',
-    });
-  }
-  if (!list.some(e => e.username === 'user1')) {
-    list.push({
-      id: Math.max(...list.map(e => e.id)) + 1,
-      username: 'user1', displayName: 'გამყიდველი', role: 'staff',
-      active: true, password: '1234',
+      active: true, password: devAdminPw,
     });
   }
   return list;
@@ -165,7 +172,9 @@ export async function login(username: string, password: string): Promise<Session
     if (!apiMissing && e instanceof Error && e.message !== 'Failed to fetch') throw e;
     apiMissing = true;
   }
-  // local mode: check against browser-stored employee list
+  // production: never fall back to browser-only storage
+  if (!LOCAL_MODE_ENABLED) throw new Error(API_UNAVAILABLE);
+  // local mode (dev only): check against browser-stored employee list
   const emp = readLocalEmployees().find(
     e => e.username === username.toLowerCase() && e.active && e.password === password,
   );
@@ -203,7 +212,7 @@ export async function createEmployee(
     const list = readLocalEmployees();
     if (list.some(e => e.username === username)) throw new Error('ასეთი მომხმარებელი უკვე არსებობს');
     list.push({
-      id: Math.max(...list.map(e => e.id)) + 1,
+      id: Math.max(0, ...list.map(e => e.id)) + 1,
       username,
       displayName: payload.displayName.trim() || username,
       role: payload.role,

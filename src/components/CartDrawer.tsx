@@ -159,9 +159,9 @@ export default function CartDrawer({ isOpen, onClose }: Props) {
                   />
                   <span>
                     {t('checkout_terms')}{' '}
-                    <a href="#" className="cart-terms-link" onClick={e => e.preventDefault()}>
-                      {t('checkout_terms_link')}
-                    </a>
+                    {/* TODO: link to real Terms & Privacy pages once they exist
+                        (e.g. /terms). Until then this is plain text, not a dead link. */}
+                    <span>{t('checkout_terms_link')}</span>
                   </span>
                 </label>
               </div>

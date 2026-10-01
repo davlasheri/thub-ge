@@ -29,6 +29,21 @@ export default defineConfig({
         // navigation fallback as well.
         navigateFallbackDenylist: [/\/api\//],
         globPatterns: ['**/*.{js,css,html,svg,png}'],
+        // Staff/admin/POS screens and the order-PDF libraries are lazy chunks a
+        // shopper rarely or never needs — don't make every visitor's service
+        // worker download them up front. They still load on demand from the
+        // network when those screens are opened.
+        globIgnores: [
+          '**/node_modules/**',
+          'assets/Admin-*',
+          'assets/Staff-*',
+          'assets/ImageTool-*',
+          'assets/imageProcess-*',
+          'assets/orderPdf-*',
+          'assets/html2canvas*',
+          'assets/index.es-*',
+          'assets/purify*',
+        ],
         runtimeCaching: [
           {
             // Catalog content: network-first so online users always get fresh

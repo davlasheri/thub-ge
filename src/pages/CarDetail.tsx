@@ -23,7 +23,7 @@ export default function CarDetail() {
   const [photoIdx, setPhotoIdx] = useState(0);
 
   const car = id ? getById(id) : undefined;
-  usePageMeta(car ? `Tesla ${car.model} ${car.year} იყიდება` : 'ავტომობილი', car?.description);
+  usePageMeta(car ? `Tesla ${car.model} ${car.year} იყიდება` : 'ავტომობილი', car?.description, undefined, { noindex: !car });
 
   if (!car) {
     return (

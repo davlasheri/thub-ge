@@ -11,4 +11,8 @@ return [
   'secret'    => 'CHANGE_ME_TO_A_LONG_RANDOM_STRING',
   // Sessions last this many hours after login.
   'token_hours' => 12,
+  // Password for the first 'admin' account. Used ONLY on a fresh install when no
+  // employees exist yet — it never changes an existing admin. Leave empty to have
+  // a random one written to api/private/initial-admin-password.txt instead.
+  'admin_initial_password' => '',
 ];
